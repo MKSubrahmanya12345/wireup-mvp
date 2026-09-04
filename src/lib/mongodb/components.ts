@@ -12,6 +12,12 @@ const logger = createLogger('mongodb:components');
 
 type RawComponent = Partial<ComponentDocument> & { _id?: unknown };
 
+function asIso(value: unknown): string | undefined {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string' && value.length > 0) return value;
+  return undefined;
+}
+
 function toDefinition(raw: RawComponent): ComponentDefinition | null {
   if (!raw.id || !raw.name) return null;
   return {
@@ -38,8 +44,8 @@ function toDefinition(raw: RawComponent): ComponentDefinition | null {
     keywords: Array.isArray(raw.keywords) ? raw.keywords : [],
     simulator: raw.simulator,
     metadata: (raw.metadata as Record<string, unknown>) ?? {},
-    createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : undefined,
-    updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : undefined,
+    createdAt: asIso(raw.createdAt),
+    updatedAt: asIso(raw.updatedAt),
   };
 }
 

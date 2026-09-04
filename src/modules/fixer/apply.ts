@@ -266,7 +266,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
           }
           const field = change.field as keyof ProjectRequirements;
           const before = working.requirements[field];
-          (working.requirements as Record<string, unknown>)[field] = clone(change.value);
+          (working.requirements as unknown as Record<string, unknown>)[field] = clone(change.value);
           record(change, `requirements.${field} updated (${summariseValue(before)} → ${summariseValue(change.value)})`);
           break;
         }
