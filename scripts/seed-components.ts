@@ -14,14 +14,12 @@
  * `.env` itself (Node's `--env-file` is not assumed).
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import { connectMongo, disconnectMongo } from '@/lib/mongodb/client';
 import { countComponents, listComponents, upsertComponents } from '@/lib/mongodb/components';
 import { getComponentModel } from '@/models/Component';
 import { SEED_COMPONENTS, checkCatalogIntegrity } from '@/modules/components/catalog';
 import { ComponentDefinitionSchema } from '@/modules/components/schema';
+import { loadDotEnv } from '@/lib/validation/dotenv';
 import { env, resetEnvCache, requireMongoEnv, EnvError } from '@/lib/validation/env';
 import { describeError } from '@/lib/logging/logger';
 import type { ComponentDefinition } from '@/types/component';
@@ -59,46 +57,6 @@ environment (read from .env / .env.local, or the process environment):
   MONGODB_URI   connection string (required)
   MONGODB_DB    database name (default "wireup")
 `.trim();
-
-/**
- * Minimal `.env` loader: `KEY=VALUE` lines, `#` comments, optional `export`
- * prefix and quoted values. Existing process env always wins so that CI and
- * container deployments are not silently overridden.
- */
-function loadDotEnv(cwd: string): string[] {
-  const loaded: string[] = [];
-  for (const filename of ['.env.local', '.env']) {
-    const path = resolve(cwd, filename);
-    if (!existsSync(path)) continue;
-    let text: string;
-    try {
-      text = readFileSync(path, 'utf8');
-    } catch {
-      continue;
-    }
-    for (const rawLine of text.split(/\r?\n/)) {
-      const line = rawLine.trim();
-      if (line.length === 0 || line.startsWith('#')) continue;
-      const withoutExport = line.startsWith('export ') ? line.slice('export '.length).trim() : line;
-      const separator = withoutExport.indexOf('=');
-      if (separator <= 0) continue;
-      const key = withoutExport.slice(0, separator).trim();
-      let value = withoutExport.slice(separator + 1).trim();
-      if (
-        (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
-        (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
-      ) {
-        value = value.slice(1, -1);
-      }
-      if (key.length === 0) continue;
-      if (process.env[key] === undefined) {
-        process.env[key] = value;
-        loaded.push(`${filename}:${key}`);
-      }
-    }
-  }
-  return loaded;
-}
 
 function summariseByCategory(components: ComponentDefinition[]): { category: string; count: number }[] {
   const counts = new Map<string, number>();

@@ -8,11 +8,12 @@
  * breadboard/jumpers that are physically required to build anything at all.
  */
 
-import type { ComponentDefinition, ComponentRole } from '@/types/component';
+import type { ComponentCategory, ComponentDefinition, ComponentRole } from '@/types/component';
 import type { ProjectRequirements } from '@/types/project';
 import type { PromptAnalysis } from '@/modules/project-understanding/heuristics';
 import { getMcuProfile } from '@/modules/pin-planner/mcu-profiles';
 
+import { partLogicVoltage } from './compatibility';
 import type { DraftSelection } from './types';
 
 export interface DefaultsInput {
@@ -34,6 +35,185 @@ interface CatalogIndex {
 function indexCatalog(catalog: ComponentDefinition[]): CatalogIndex {
   return { byId: new Map(catalog.map((component) => [component.id, component])) };
 }
+
+/**
+ * Feature → part mapping.
+ *
+ * The prompt analysis knows the request mentions temperature, a display, a
+ * buzzer, motors… but nobody turned those signals into a bill of materials
+ * unless the model did it. That left the deterministic fallback with a
+ * controller, a breadboard and nothing to wire — zero pin assignments and a
+ * validator full of `missing_component` errors. These rules close that gap:
+ * for every detected feature that has an obvious catalog counterpart, add it
+ * (unless something equivalent is already selected) with a reason a human can
+ * audit. The model's own selections always win — these only fill the gaps.
+ */
+interface FeaturePartRule {
+  feature: string;
+  /** Catalog ids in preference order; the first one present is used. */
+  candidates: string[];
+  /** Category the replacement must live in to count as "already covered". */
+  category: ComponentCategory;
+  /** Matches the id/name/keywords/aliases of a part that already covers this. */
+  coveredBy: RegExp;
+  role: ComponentRole;
+  /** Optional `requirements.quantities` key driving the quantity. */
+  quantityKey?: string;
+  reason: string;
+}
+
+const FEATURE_PART_RULES: FeaturePartRule[] = [
+  {
+    feature: 'temperature_humidity',
+    candidates: ['dht22-temperature-humidity', 'dht11-temperature-humidity'],
+    category: 'sensor',
+    coveredBy: /temp|humid|dht|bme|bmp|sht|climate|weather/i,
+    role: 'sensor',
+    reason: 'The request needs temperature/humidity readings; a DHT22 gives ±0.5 °C / ±2 %RH on a single digital line.',
+  },
+  {
+    feature: 'distance',
+    candidates: ['hc-sr04-ultrasonic'],
+    category: 'sensor',
+    coveredBy: /ultrasonic|hc[-\s]?sr04|distance|sonar|range/i,
+    role: 'sensor',
+    reason: 'Distance measurement was requested; the HC-SR04 measures 2–400 cm with a TRIGGER/ECHO pair.',
+  },
+  {
+    feature: 'motion',
+    candidates: ['pir-sensor-hc-sr501'],
+    category: 'sensor',
+    coveredBy: /pir|motion|presence|hc[-\s]?sr501/i,
+    role: 'sensor',
+    reason: 'Motion/presence detection was requested; the HC-SR501 PIR outputs a single digital high while motion is seen.',
+  },
+  {
+    feature: 'obstacle_avoidance',
+    candidates: ['ir-obstacle-sensor'],
+    category: 'sensor',
+    coveredBy: /obstacle|infrared|\bir\b|avoidance|collision/i,
+    role: 'sensor',
+    reason: 'Obstacle detection was requested; an IR reflectance sensor reports proximity on one digital line.',
+  },
+  {
+    feature: 'line_following',
+    candidates: ['ir-obstacle-sensor'],
+    category: 'sensor',
+    coveredBy: /obstacle|infrared|\bir\b|line/i,
+    role: 'sensor',
+    quantityKey: 'ir_sensors',
+    reason: 'Line following needs IR reflectance sensors to see the track; two give a left/right error signal.',
+  },
+  {
+    feature: 'gas_air_quality',
+    candidates: ['mq-2-gas-smoke-sensor', 'mq-2-gas-sensor'],
+    category: 'sensor',
+    coveredBy: /\bmq[-\s]?\d|gas|smoke|lpg|air\s*quality/i,
+    role: 'sensor',
+    reason: 'Gas/smoke sensing was requested; the MQ-2 provides an analog output proportional to combustible gas concentration.',
+  },
+  {
+    feature: 'soil_moisture',
+    candidates: ['soil-moisture-sensor'],
+    category: 'sensor',
+    coveredBy: /soil|moisture/i,
+    role: 'sensor',
+    reason: 'Soil moisture sensing was requested; the probe feeds an analog value the firmware can threshold.',
+  },
+  {
+    feature: 'light_sensing',
+    candidates: ['ldr-photoresistor'],
+    category: 'sensor',
+    coveredBy: /ldr|photoresistor|light|brightness|cds/i,
+    role: 'sensor',
+    reason: 'Ambient light sensing was requested; an LDR in a divider gives an ADC-readable voltage.',
+  },
+  {
+    feature: 'imu',
+    candidates: ['mpu6050-imu'],
+    category: 'sensor',
+    coveredBy: /mpu|imu|accel|gyro|tilt|orientation/i,
+    role: 'sensor',
+    reason: 'Orientation/motion tracking was requested; the MPU-6050 provides 3-axis acceleration and gyro over I2C.',
+  },
+  {
+    feature: 'display',
+    candidates: ['oled-ssd1306-i2c', 'lcd-1602-i2c'],
+    category: 'display',
+    coveredBy: /oled|ssd1306|lcd|display|screen|1602/i,
+    role: 'display',
+    reason: 'The request asks for a visual readout; an SSD1306 OLED needs only two I2C lines and no backlight drive.',
+  },
+  {
+    feature: 'lighting',
+    candidates: ['led-5mm'],
+    category: 'actuator',
+    coveredBy: /\bled|neopixel|ws2812|rgb|light|lamp/i,
+    role: 'actuator',
+    quantityKey: 'leds',
+    reason: 'Indicator lighting was requested; a 5 mm LED with a series resistor is the standard status indicator.',
+  },
+  {
+    feature: 'sound',
+    candidates: ['buzzer-active-5v', 'buzzer-passive'],
+    category: 'actuator',
+    coveredBy: /buzzer|piezo|speaker|alarm|beep|tone/i,
+    role: 'actuator',
+    reason: 'An audible alarm was requested; an active buzzer tones on a single high GPIO with no PWM needed.',
+  },
+  {
+    feature: 'high_current_switching',
+    candidates: ['relay-module-5v-1ch'],
+    category: 'actuator',
+    coveredBy: /relay|pump|fan|mains|solenoid|220v|110v/i,
+    role: 'actuator',
+    reason: 'A high-current/AC load was requested; an opto-isolated relay module keeps that load off the MCU pin.',
+  },
+  {
+    feature: 'user_input',
+    candidates: ['pushbutton-6mm'],
+    category: 'input_device',
+    coveredBy: /button|pushbutton|switch|potentiometer|joystick|encoder/i,
+    role: 'input',
+    quantityKey: 'buttons',
+    reason: 'User input was requested; a tactile pushbutton to ground with the internal pull-up is the simplest reliable input.',
+  },
+  {
+    feature: 'battery_power',
+    candidates: ['battery-9v', 'battery-holder-4xaa'],
+    category: 'power',
+    coveredBy: /batter|lipo|li-po|li-ion|9v|cell|holder|power\s*bank|usb/i,
+    role: 'power',
+    reason: 'The request asks for battery operation, so a portable supply is part of the bill of materials.',
+  },
+  {
+    feature: 'motor_control',
+    candidates: ['dc-motor-generic-6v'],
+    category: 'motor',
+    coveredBy: /dc\s*motor|gear\s*motor|\bmotor\b|wheel/i,
+    role: 'actuator',
+    quantityKey: 'motors',
+    reason: 'Motor drive was requested; a 6 V DC gear motor is the standard load (a driver is added by the next rule).',
+  },
+  {
+    feature: 'stepper',
+    candidates: ['stepper-motor-nema17', 'stepper-28byj48-uln2003'],
+    category: 'motor',
+    coveredBy: /stepper|nema|28byj/i,
+    role: 'actuator',
+    quantityKey: 'steppers',
+    reason: 'Precise positioning was requested; a NEMA 17 bipolar stepper with a chopper driver gives repeatable steps.',
+  },
+  {
+    feature: 'servo',
+    candidates: ['servo-motor-sg90', 'servo-motor-mg996r'],
+    category: 'motor',
+    coveredBy: /servo|sg90|mg99/i,
+    role: 'actuator',
+    quantityKey: 'servos',
+    reason: 'Angular positioning was requested; an SG90 micro servo takes a 50 Hz PWM command straight from a GPIO.',
+  },
+];
 
 export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
   const { drafts, catalog, requirements, analysis } = input;
@@ -94,6 +274,31 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
   const hasRadio =
     controllerDefinition?.metadata.bluetooth !== undefined &&
     (controllerDefinition.metadata.bluetooth as { classic?: boolean; ble?: boolean }).classic === true;
+
+  /* 1b. Parts the prompt actually asked for ---------------------------------- */
+  const textOf = (definition: ComponentDefinition): string =>
+    [definition.id, definition.name, ...(definition.keywords ?? []), ...(definition.aliases ?? [])].join(' ').toLowerCase();
+
+  for (const rule of FEATURE_PART_RULES) {
+    if (!features.has(rule.feature)) continue;
+
+    const covered = [...drafts, ...additions].some((draft) => {
+      const definition = definitionOf(draft.componentId);
+      return definition !== undefined && definition.category === rule.category && rule.coveredBy.test(textOf(definition));
+    });
+    if (covered) continue;
+
+    const chosen = rule.candidates.find((candidate) => byId.has(candidate));
+    if (!chosen) {
+      notes.push(`Feature "${rule.feature}" was detected but none of ${rule.candidates.join(' / ')} is in the catalog.`);
+      continue;
+    }
+
+    const requested = rule.quantityKey ? requirements.quantities?.[rule.quantityKey] : undefined;
+    const quantity = typeof requested === 'number' && requested > 0 ? Math.min(12, Math.round(requested)) : 1;
+    add(chosen, quantity, rule.role, rule.reason);
+    notes.push(`Added ${definitionOf(chosen)?.name ?? chosen} for the "${rule.feature}" requirement (deterministic feature rule).`);
+  }
 
   /* 2. Motor drivers --------------------------------------------------------- */
   const motorDrafts = [...drafts, ...additions].filter((draft) => definitionOf(draft.componentId)?.category === 'motor');
@@ -197,6 +402,27 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
         1,
         'power',
         `${fiveVoltOutputs.map((draft) => definitionOf(draft.componentId)?.name ?? draft.componentId).join(', ')} output 5 V into a ${mcuLogic} V MCU pin. A bidirectional level shifter protects the input and keeps the logic thresholds clean.`,
+      );
+    }
+  }
+
+  /* 5b. …and a 5 V MCU driving 3.3 V logic needs it just as much ------------- */
+  if (mcuLogic >= 5) {
+    const lowVoltageLogic = [...drafts, ...additions].filter((draft) => {
+      const definition = definitionOf(draft.componentId);
+      if (!definition || definition.category === 'microcontroller') return false;
+      const partLogic = partLogicVoltage(definition);
+      return partLogic !== undefined && partLogic <= 3.3 && partLogic < mcuLogic;
+    });
+
+    if (lowVoltageLogic.length > 0 && !present('logic-level-shifter-4ch')) {
+      add(
+        'logic-level-shifter-4ch',
+        1,
+        'power',
+        `${lowVoltageLogic.map((draft) => definitionOf(draft.componentId)?.name ?? draft.componentId).join(', ')} expect ${
+          partLogicVoltage(definitionOf(lowVoltageLogic[0]!.componentId)!) ?? 3.3
+        } V logic while ${controllerDefinition?.name ?? 'the MCU'} drives ${mcuLogic} V. A bidirectional level shifter keeps those lines inside the part's rating.`,
       );
     }
   }
