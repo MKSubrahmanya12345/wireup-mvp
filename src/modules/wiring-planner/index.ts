@@ -181,24 +181,51 @@ function resolveRails(
   // Supply rail.
   const supplyEntry = power.supplyInstanceId ? index.get(power.supplyInstanceId) : undefined;
   if (supplyEntry?.definition) {
-    const pin = positivePinOf(supplyEntry.definition) ?? '+';
-    const voltage = supplyEntry.definition.powerSourceRequirements?.outputVoltage ?? supplyEntry.definition.voltage;
+    /*
+     * When the controller itself is the supply (a USB-powered dev board), VIN is
+     * an *input* — the board sources its 5 V rail, so that is the pin other
+     * parts can be fed from.
+     */
+    const boardIsSupply =
+      supplyEntry.instanceId === controllerInstanceId && supplyEntry.definition.metadata.usbPowered === true;
+    const boardLogicVoltage = supplyEntry.definition.voltage ?? 5;
+    const pin = boardIsSupply
+      ? (logicPinOf(supplyEntry.definition, boardLogicVoltage) ?? positivePinOf(supplyEntry.definition) ?? '3V3')
+      : (positivePinOf(supplyEntry.definition) ?? '+');
+    const voltage = boardIsSupply
+      ? boardLogicVoltage
+      : (supplyEntry.definition.powerSourceRequirements?.outputVoltage ?? supplyEntry.definition.voltage);
     plan.supply = {
       instanceId: supplyEntry.instanceId,
       pin,
       voltage: voltage ?? 0,
-      label: `${voltage ?? '?'} V supply`,
+      label: boardIsSupply
+        ? `${voltage ?? '?'} V board rail (USB powered)`
+        : `${voltage ?? '?'} V supply`,
       definition: supplyEntry.definition,
     };
   } else if (selections.some((selection) => selection.category === 'motor' || selection.role === 'driver')) {
     notes.push('No supply component could be resolved for the motor rail.');
   }
 
-  // Regulator / converter output becomes the logic rail when present.
-  const regulator = selections.find((selection) => {
-    const definition = catalog.find((component) => component.id === selection.componentId);
-    return definition?.category === 'power' && definition.powerSourceRequirements?.outputVoltage !== undefined;
-  });
+  /*
+   * Regulator / converter output becomes the logic rail when present.
+   *
+   * A battery also has `powerSourceRequirements.outputVoltage`, and treating it
+   * as "the regulator" made the raw pack voltage the logic rail — so 5 V parts
+   * were fed 7.4 V and validation failed every battery-powered design. A
+   * regulator converts; a cell only supplies.
+   */
+  const describes = (definition: ComponentDefinition): string => `${definition.id} ${definition.name}`.toLowerCase();
+  const isRegulatorLike = (definition: ComponentDefinition | undefined): boolean =>
+    definition?.category === 'power' &&
+    definition.powerSourceRequirements?.outputVoltage !== undefined &&
+    !/batter|lipo|li-po|li-ion|cell|holder|usb|power\s*bank|bench/i.test(describes(definition)) &&
+    /regulat|buck|boost|converter|ldo|lm7805|lm2596|ams1117|mb102/i.test(describes(definition));
+
+  const regulator = selections.find((selection) =>
+    isRegulatorLike(catalog.find((component) => component.id === selection.componentId)),
+  );
 
   const logicVoltage = controllerDefinition?.voltage ?? 5;
 
@@ -221,7 +248,9 @@ function resolveRails(
   if (!plan.logic) {
     const driverWithRegulator = selections.find((selection) => {
       const definition = catalog.find((component) => component.id === selection.componentId);
-      return typeof definition?.metadata.onboardRegulator === 'string';
+      // The controller's own regulator is handled by the MCU-board-rail branch
+      // below; matching it here would make the board's VIN *input* a 5 V source.
+      return definition?.category !== 'microcontroller' && typeof definition?.metadata.onboardRegulator === 'string';
     });
     const definition = driverWithRegulator ? catalog.find((component) => component.id === driverWithRegulator.componentId) : undefined;
     const threshold = typeof definition?.metadata.regulatorInputThresholdV === 'number' ? definition.metadata.regulatorInputThresholdV : undefined;
@@ -646,24 +675,63 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
         continue;
       }
 
-      /* Everything else: pick the rail that fits the part's voltage window. */
-      const powerPin = definition.pins.find((entry) => entry.type === 'power' && entry.required)?.name ?? definition.powerPins[0];
-      if (powerPin) {
-        const maxCurrent = definition.currentRequirements?.maxMa ?? 0;
-        const wantsRawSupply = maxCurrent > 500 && rails.supply !== undefined && fitsWindow(definition, rails.supply.voltage);
-        const rail = wantsRawSupply ? rails.supply : rails.logic ?? rails.supply;
+      /*
+       * Everything else: pair a power pin with a rail that actually fits it.
+       *
+       * Choosing the pin and the rail independently is what fed 7.4 V into an
+       * Arduino's 5 V pin: the board also has a VIN input rated 7–12 V, and a
+       * rail must never be wired back into the part that sources it.
+       */
+      const powerPinCandidates = definition.pins.filter((entry) => entry.type === 'power');
+      const maxCurrent = definition.currentRequirements?.maxMa ?? 0;
+      const railOptions = [
+        ...(maxCurrent > 500 ? [rails.supply, rails.motorRail, rails.logic] : [rails.logic, rails.motorRail, rails.supply]),
+      ].filter((rail): rail is RailSource => rail !== undefined && rail.instanceId !== instance.instanceId);
 
-        if (rail && !fitsWindow(definition, rail.voltage) && rails.supply && fitsWindow(definition, rails.supply.voltage)) {
-          connectPower(instance.instanceId, powerPin, rails.supply, `${rail.label} is outside the ${definition.name} voltage window, so the raw supply rail is used.`);
-        } else {
+      const partMax = definition.motorRequirements?.supplyVoltageMax ?? definition.maxVoltage;
+      const pinAcceptsRail = (pinVoltage: number | undefined, rail: RailSource): boolean => {
+        // VIN / RAW style input: a wide unregulated window declared by one number.
+        if (pinVoltage !== undefined && pinVoltage >= 7 && (partMax === undefined || pinVoltage > partMax)) {
+          return rail.voltage >= pinVoltage * 0.7 && rail.voltage <= pinVoltage * 1.3;
+        }
+        // Everything else: the part's own voltage window decides, and the rail
+        // must not exceed what the pin is labelled for.
+        return fitsWindow(definition, rail.voltage) && (pinVoltage === undefined || rail.voltage <= pinVoltage + 0.6);
+      };
+
+      let powerPin: string | undefined;
+      let powerRail: RailSource | undefined;
+      for (const candidate of powerPinCandidates) {
+        const rail = railOptions.find((option) => pinAcceptsRail(candidate.voltage, option));
+        if (rail) {
+          powerPin = candidate.name;
+          powerRail = rail;
+          break;
+        }
+      }
+
+      if (powerPin && powerRail) {
+        connectPower(
+          instance.instanceId,
+          powerPin,
+          powerRail,
+          maxCurrent > 500
+            ? `${definition.name} can draw ${maxCurrent} mA, above what the logic rail should supply, so it is fed from the ${powerRail.label}.`
+            : `${definition.name} runs from the ${powerRail.label} on its ${powerPin} pin.`,
+        );
+      } else {
+        const fallbackPin =
+          definition.pins.find((entry) => entry.type === 'power' && entry.required)?.name ?? definition.powerPins[0];
+        const fallbackRail = railOptions[0];
+        if (fallbackPin) {
           connectPower(
             instance.instanceId,
-            powerPin,
-            rail,
-            wantsRawSupply
-              ? `${definition.name} can draw ${maxCurrent} mA, above what the logic rail should supply, so it is fed from the supply rail.`
-              : `${definition.name} runs from the ${rail?.label ?? 'logic'} rail.`,
+            fallbackPin,
+            fallbackRail,
+            `No rail matches the ${definition.name} voltage window — ${fallbackRail?.label ?? 'the available rail'} is used and the mismatch must be resolved.`,
           );
+        } else {
+          state.notes.push(`${instance.instanceId} has no power pin in the catalog, so it was left unpowered.`);
         }
       }
 

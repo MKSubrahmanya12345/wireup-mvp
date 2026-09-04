@@ -6,7 +6,7 @@
  * about hardware — modules own their own schemas.
  */
 
-import { converse, type BedrockOp, type TokenUsage } from '@/lib/bedrock/client';
+import { BedrockError, converse, type BedrockOp, type TokenUsage } from '@/lib/bedrock/client';
 import { createLogger } from '@/lib/logging/logger';
 import { parseJsonLoose, truncate } from '@/lib/validation/json';
 
@@ -31,6 +31,8 @@ export interface StructuredCallResult {
   payload?: unknown;
   raw: string;
   error?: string;
+  /** Machine-readable failure class (e.g. `EAI_AGAIN`) when Bedrock errored. */
+  code?: string;
   /** True when JSON repair was needed to recover the payload. */
   repaired: boolean;
   model: string;
@@ -127,11 +129,27 @@ Respond again with the COMPLETE corrected JSON object only. No markdown fences, 
     } catch (error) {
       // Transport / model level failure: not retryable here (client already retried).
       const message = error instanceof Error ? error.message : String(error);
-      logger.error('structured call failed', { op: options.op, model, error: message });
+      // The client resolved the model even though the call failed — report it
+      // instead of the pre-call 'unknown' placeholder.
+      if (error instanceof BedrockError && error.model && error.model !== 'unknown') {
+        model = error.model;
+      }
+      const code = error instanceof BedrockError ? error.code : undefined;
+      if (error instanceof BedrockError && error.attempts > 0) {
+        attempts = error.attempts;
+      }
+      logger.error('structured call failed', {
+        op: options.op,
+        model,
+        ...(code ? { code } : {}),
+        attempts,
+        error: message,
+      });
       return {
         ok: false,
         raw: lastRaw,
         error: message,
+        ...(code ? { code } : {}),
         repaired: false,
         model,
         durationMs: Date.now() - startedAt,

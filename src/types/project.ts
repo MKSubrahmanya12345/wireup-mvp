@@ -16,6 +16,8 @@ export type ProjectStatus =
   | 'fixing'
   | 'completed'
   | 'completed_with_warnings'
+  /** Finished, but blocking validation issues are still unresolved. */
+  | 'completed_with_errors'
   | 'failed';
 
 export type GenerationStage =

@@ -56,12 +56,19 @@ const STATUS_LABEL: Record<ProjectState['status'], string> = {
   fixing: 'fixing',
   completed: 'completed',
   completed_with_warnings: 'completed · warnings',
+  completed_with_errors: 'completed · unresolved errors',
   failed: 'failed',
 };
 
 export function StatusBadge({ status }: { status: ProjectState['status'] }) {
   const tone: Tone =
-    status === 'completed' ? 'ok' : status === 'failed' ? 'err' : status === 'completed_with_warnings' ? 'warn' : 'info';
+    status === 'completed'
+      ? 'ok'
+      : status === 'failed' || status === 'completed_with_errors'
+        ? 'err'
+        : status === 'completed_with_warnings'
+          ? 'warn'
+          : 'info';
   return (
     <span className="row row--tight">
       <span className={`dot ${status === 'failed' ? 'dot--err' : status === 'completed' ? 'dot--ok' : 'dot--live'}`} />
