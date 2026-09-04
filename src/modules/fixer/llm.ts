@@ -11,7 +11,7 @@
 import { z } from 'zod';
 
 import type { ComponentDefinition, ComponentRole, LibraryRequirement } from '@/types/component';
-import type { FixChange, FixChangeOp } from '@/types/generation';
+import type { FixChange, FixChangeOp, RerunStageChange } from '@/types/generation';
 import type { AgentEventLog } from '@/lib/logging/events';
 import type { LlmCallRecord, ProjectRequirements, ProjectState } from '@/types/project';
 import type { ArtifactKind, ValidationIssue, ValidationIssueCode } from '@/types/validation';
@@ -49,7 +49,7 @@ const OPS: FixChangeOp[] = [
 ];
 
 const STAGES = ['pins', 'wiring', 'diagram', 'instructions', 'libraries', 'code'] as const;
-const STAGE_ARTIFACT: Record<(typeof STAGES)[number], ArtifactKind> = {
+const STAGE_ARTIFACT: Record<(typeof STAGES)[number], RerunStageChange['artifact']> = {
   pins: 'pinAssignments',
   wiring: 'wiring',
   diagram: 'diagram',
@@ -469,9 +469,9 @@ export function normaliseModelChange(raw: unknown, ctx: ResolveContext): { chang
       const connectionRecord = asRecord(record.connection);
       const source = Object.keys(connectionRecord).length > 0 ? connectionRecord : record;
       const from = resolveInstance(ctx, source, 'from');
-      if (from.error) return { reject: `add_connection: ${from.error}` };
+      if (from.error || !from.endpoint) return { reject: `add_connection: ${from.error}` };
       const to = resolveInstance(ctx, source, 'to');
-      if (to.error) return { reject: `add_connection: ${to.error}` };
+      if (to.error || !to.endpoint) return { reject: `add_connection: ${to.error}` };
       const kind = pick(str(source, 'kind'), KINDS, 'signal') as ConnectionKind;
       const signal = pick(str(source, 'signal'), SIGNALS, kind === 'power' ? 'power' : kind === 'ground' ? 'ground' : 'digital') as SignalType;
       const connection: Omit<WiringConnection, 'id'> = {

@@ -611,7 +611,7 @@ function fixFloatingPin(ctx: Ctx, issue: ValidationIssue): boolean {
   }
 
   const direction: 'input' | 'output' = pin.direction === 'input' ? 'output' : 'input';
-  const signal: SignalType = pin.type === 'analog' ? 'analog' : pin.type === 'enable' ? 'enable' : 'digital';
+  const signal: SignalType = pin.type === 'analog' ? 'analog' : pin.type === 'pwm' ? 'pwm' : pin.type === 'enable' ? 'enable' : 'digital';
   const replacement = freePin(ctx, { direction, capabilities: capabilitiesFor(signal) });
   if (!replacement) {
     giveUp(ctx, issue, `No free ${direction} pin remains on ${ctx.profile.name} for ${entry.label} ${pinName}.`);
