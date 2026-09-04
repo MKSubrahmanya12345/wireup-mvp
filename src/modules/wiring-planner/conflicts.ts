@@ -7,7 +7,7 @@
  * output-to-output clashes, dangling references and floating required pins.
  */
 
-import type { ComponentDefinition, ComponentSelection, PowerBudget } from '@/types/component';
+import type { ComponentDefinition, ComponentInstance, ComponentSelection, PowerBudget } from '@/types/component';
 import type { PinAssignment, WiringConflict, WiringConnection, WiringConflictCode } from '@/types/wiring';
 import type { McuProfile } from '@/modules/pin-planner/mcu-profiles';
 import { createId } from '@/lib/validation/ids';
@@ -46,6 +46,7 @@ export interface InstanceIndexEntry {
   instanceId: string;
   componentId: string;
   selection: ComponentSelection;
+  instance: ComponentInstance;
   definition?: ComponentDefinition;
 }
 
@@ -54,7 +55,7 @@ export function indexInstances(selections: ComponentSelection[], catalog: Compon
   for (const selection of selections) {
     const definition = catalog.find((component) => component.id === selection.componentId);
     for (const instance of selection.instances) {
-      index.set(instance.instanceId, { instanceId: instance.instanceId, componentId: selection.componentId, selection, ...(definition ? { definition } : {}) });
+      index.set(instance.instanceId, { instanceId: instance.instanceId, componentId: selection.componentId, selection, instance, ...(definition ? { definition } : {}) });
     }
   }
   return index;
