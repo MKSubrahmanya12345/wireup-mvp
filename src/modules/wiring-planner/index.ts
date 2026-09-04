@@ -507,7 +507,8 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
           continue;
         }
 
-        const terminals = motorTerminalsOf(motor.definition);
+        const motorDefinition = motor.definition;
+        const terminals = motorTerminalsOf(motorDefinition);
         channel.outputs.forEach((outputPin, outputIndex) => {
           const terminal = terminals[outputIndex];
           if (!terminal) return;
@@ -520,7 +521,7 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
               signal: 'motor_drive',
               protocol: 'other',
               direction: 'unidirectional',
-              explanation: `${driverDefinition?.name ?? driver.name} channel ${channel.channel} output ${outputPin} drives ${motor.instance.label ?? motor.definition.name} terminal ${terminal}. The H-bridge reverses polarity across this pair to change direction.`,
+              explanation: `${driverDefinition?.name ?? driver.name} channel ${channel.channel} output ${outputPin} drives ${motor.instance.label ?? motorDefinition.name} terminal ${terminal}. The H-bridge reverses polarity across this pair to change direction.`,
               metadata: { channel: channel.channel, motor: motor.instance.instanceId },
             },
           );

@@ -67,7 +67,9 @@ export type WiringConflictCode =
   | 'unknown_pin'
   | 'incompatible_components'
   | 'duplicate_connection'
-  | 'floating_required_pin';
+  | 'floating_required_pin'
+  | 'dangling_reference'
+  | 'capability_mismatch';
 
 export interface WiringConflict {
   id: string;

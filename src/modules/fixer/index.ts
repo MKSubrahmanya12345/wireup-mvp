@@ -196,7 +196,7 @@ export async function fixProject(input: FixerInput): Promise<FixOutcome> {
     notes.push(`Stage "${stage}" was requested but no deterministic re-derivation is available in this run.`);
   }
   for (const issue of deterministic.unresolved) {
-    notes.push(`${issue.code}: ${issue.reason}`);
+    notes.push(`${issue.issue.code}: ${issue.reason}`);
   }
 
   const result: FixResult = {

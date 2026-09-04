@@ -572,7 +572,7 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
           code: 'code_unbalanced_braces',
           severity: 'error',
           domain: 'code',
-          message: `${entry.path} has unbalanced braces (${balance > 0 ? `${balance} unclosed` : `${-balance} extra closing`).`,
+          message: `${entry.path} has unbalanced braces (${balance > 0 ? `${balance} unclosed` : `${-balance} extra closing`}).`,
           fixHint: 'Repair the block structure or regenerate the file.',
           target: { artifact: 'code', filePath: entry.path },
         });

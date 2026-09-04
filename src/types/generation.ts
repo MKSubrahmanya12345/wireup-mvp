@@ -137,7 +137,6 @@ export interface ReplaceComponentChange extends BaseChange {
   selectionId: string;
   componentId?: string;
   quantity?: number;
-  reason?: string;
   role?: ComponentRole;
 }
 

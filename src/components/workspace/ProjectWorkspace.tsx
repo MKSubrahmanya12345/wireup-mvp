@@ -76,7 +76,7 @@ function useActivityHint(events: AgentEvent[]) {
 }
 
 export function ProjectWorkspace({ initial }: { initial: ProjectState }) {
-  const { project, events, stage, revision, terminal, polledAt, lastEventAt, error, refresh } = useProjectStream(initial);
+  const { project, events, stage, revision, terminal, polledAt, lastEventAt, error, refresh } = useProjectStream(initial.id, initial);
   const hint = useActivityHint(events);
   const [manual, setManual] = useState(0);
 
