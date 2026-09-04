@@ -14,7 +14,7 @@ import { z } from 'zod';
 import type { ProjectRequirements } from '@/types/project';
 import type { AgentEventLog } from '@/lib/logging/events';
 
-import { analyzePrompt, formatAnalysisForPrompt, type PromptAnalysis } from './heuristics';
+import { analyzePrompt, FEATURE_RULES, formatAnalysisForPrompt, type PromptAnalysis } from './heuristics';
 
 const FlexibleStringArray = z
   .array(z.union([z.string(), z.number(), z.boolean()]))
@@ -233,10 +233,23 @@ export function analyzeCoverage(input: CoverageInput): CoverageReport {
     ...input.requirements.communicationRequirements,
   ]);
 
+  /*
+   * A requirement token also counts as covered when the design matches the
+   * feature pattern that produced it: the word "sound" never appears in a bill
+   * of materials, but a buzzer does — and both halves of this heuristic share
+   * the FEATURE_RULES lexicon, so they should agree.
+   */
+  const featureEvidence = new Map(FEATURE_RULES.map((rule) => [rule.feature.toLowerCase(), rule.pattern]));
+  const tokenCovered = (token: string): boolean => {
+    if (corpus.includes(token)) return true;
+    const pattern = featureEvidence.get(token);
+    return pattern !== undefined && pattern.test(input.searchCorpus);
+  };
+
   for (const statement of statements) {
     const tokens = significantTokens(statement);
     if (tokens.length === 0) continue;
-    const matched = tokens.filter((token) => corpus.includes(token)).length;
+    const matched = tokens.filter(tokenCovered).length;
     const ratio = matched / tokens.length;
     details.push({ requirement: statement, matched, total: tokens.length, ratio });
     if (ratio >= threshold) covered.push(statement);

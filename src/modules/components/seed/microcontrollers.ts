@@ -73,6 +73,13 @@ export const MICROCONTROLLERS: ComponentDefinition[] = [
     metadata: {
       mcuProfileId: 'esp32-devkit-v1',
       logicVoltage: 3.3,
+      // The board carries its own USB-fed regulator: for a logic-rail-only
+      // design it *is* the power supply, so the planner must not report
+      // "no power source" and the validator must not demand a battery.
+      usbPowered: true,
+      usbVoltage: 5,
+      usbMaxCurrentMa: 500,
+      onboardRegulator: '3.3 V LDO (AMS1117-3.3), fed from USB/VIN',
       cores: 2,
       clockMhz: 240,
       flashMb: 4,
@@ -145,6 +152,10 @@ export const MICROCONTROLLERS: ComponentDefinition[] = [
     metadata: {
       mcuProfileId: 'arduino-uno-r3',
       logicVoltage: 5,
+      usbPowered: true,
+      usbVoltage: 5,
+      usbMaxCurrentMa: 500,
+      onboardRegulator: '5 V from USB, on-board regulator for VIN (7–12 V)',
       mcu: 'ATmega328P',
       clockMhz: 16,
       flashKb: 32,

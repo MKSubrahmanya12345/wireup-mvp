@@ -30,6 +30,9 @@ import { EventFlusher, persistFailure, persistLlmCall, persistState } from './pe
 import { runPipeline } from './pipeline';
 import { appendRevision, createRevision, summariseChanges } from './revisions';
 
+/** Cap on per-issue "could not repair" events emitted per fix pass. */
+const MAX_UNRESOLVED_EVENTS = 10;
+
 export class OrchestratorError extends Error {
   readonly code: string;
   readonly stage: GenerationStage;
@@ -221,6 +224,32 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
       });
 
       if (fix.llmCall) await persistLlmCall(projectId, fix.llmCall);
+
+      /*
+       * The fixer explains every issue it could not repair. Those reasons used
+       * to die inside the returned object — emit them so the console (and the
+       * event log) says *why* nothing changed instead of only that nothing did.
+       */
+      for (const entry of fix.unresolved.slice(0, MAX_UNRESOLVED_EVENTS)) {
+        events.emit('info', `${entry.issue.code}: not repaired — ${entry.reason}`, {
+          stage: 'fixing',
+          metadata: {
+            issueId: entry.issue.id,
+            code: entry.issue.code,
+            severity: entry.issue.severity,
+            domain: entry.issue.domain,
+            reason: entry.reason,
+            autoFixable: entry.issue.autoFixable,
+            iteration,
+          },
+        });
+      }
+      if (fix.unresolved.length > MAX_UNRESOLVED_EVENTS) {
+        events.emit('info', `${fix.unresolved.length - MAX_UNRESOLVED_EVENTS} further unrepaired issue(s) — see the VALIDATION card.`, {
+          stage: 'fixing',
+          metadata: { truncated: true, totalUnresolved: fix.unresolved.length, iteration },
+        });
+      }
       const fixedProject: ProjectState = fix.llmCall
         ? { ...fix.project, llm: { ...fix.project.llm, calls: [...fix.project.llm.calls, fix.llmCall] } }
         : fix.project;
@@ -293,13 +322,25 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
     /* ---------------- finalise ---------------- */
     const errors = validation?.summary.errors ?? 0;
     const warnings = validation?.summary.warnings ?? 0;
-    const status: ProjectState['status'] = errors > 0 || warnings > 0 ? 'completed_with_warnings' : 'completed';
+    const status: ProjectState['status'] =
+      errors > 0 ? 'completed_with_errors' : warnings > 0 ? 'completed_with_warnings' : 'completed';
 
     project = { ...project, status, stage: 'completed', completedAt: nowIso() };
 
-    events.emit('final_project_completed', `Project finalised — revision v${project.revision}, ${errors} blocking issue(s), ${warnings} warning(s).`, {
+    /* Pipeline caveats (model outage, missing catalog parts, …) were computed
+     * but never surfaced; emit them so the run explains its own compromises. */
+    for (const note of pipeline.notes.slice(0, MAX_UNRESOLVED_EVENTS)) {
+      events.emit('info', note, { stage: 'completed', metadata: { note: true } });
+    }
+
+    const finalMessage =
+      errors > 0
+        ? `Project finalised with ${errors} unresolved blocking issue(s) — revision v${project.revision}, ${warnings} warning(s). The design is usable but NOT validated clean.`
+        : `Project finalised — revision v${project.revision}, ${errors} blocking issue(s), ${warnings} warning(s).`;
+
+    events.emit('final_project_completed', finalMessage, {
       stage: 'completed',
-      status: 'completed',
+      status: errors > 0 ? 'failed' : 'completed',
       metadata: {
         revision: project.revision,
         revisions: project.revisions.length,
@@ -307,7 +348,9 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
         warnings,
         infos: validation?.summary.info ?? 0,
         passed: validation?.passed ?? false,
+        finalStatus: status,
         llmCalls: project.llm.calls.length,
+        llmCallsFailed: project.llm.calls.filter((call) => call.status === 'failed').length,
         events: events.currentSeq,
       },
     });
@@ -333,7 +376,15 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
     await flusher.stop();
     running.delete(projectId);
     logger.info(
-      { projectId, status, revision: project.revision, errors, warnings, llmCalls: project.llm.calls.length },
+      {
+        projectId,
+        status,
+        revision: project.revision,
+        errors,
+        warnings,
+        llmCalls: project.llm.calls.length,
+        llmCallsFailed: project.llm.calls.filter((call) => call.status === 'failed').length,
+      },
       'generation finished',
     );
     return project;

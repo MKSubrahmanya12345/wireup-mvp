@@ -84,7 +84,12 @@ export async function fetchDiagram(id: string, target: 'wireup' | 'wokwi'): Prom
   return unwrap<DiagramPayload>(response);
 }
 
-export const TERMINAL_STATUSES: ProjectState['status'][] = ['completed', 'completed_with_warnings', 'failed'];
+export const TERMINAL_STATUSES: ProjectState['status'][] = [
+  'completed',
+  'completed_with_warnings',
+  'completed_with_errors',
+  'failed',
+];
 
 export function isTerminal(status: ProjectState['status'] | undefined): boolean {
   return status !== undefined && TERMINAL_STATUSES.includes(status);

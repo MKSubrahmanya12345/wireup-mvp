@@ -22,7 +22,7 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-const TERMINAL_STATUSES = new Set(['completed', 'completed_with_warnings', 'failed']);
+const TERMINAL_STATUSES = new Set(['completed', 'completed_with_warnings', 'completed_with_errors', 'failed']);
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;

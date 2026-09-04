@@ -353,8 +353,21 @@ export function detectConflicts(input: ConflictInput): WiringConflict[] {
     if (!load) continue;
 
     const motor = load.motorRequirements;
-    const min = motor?.supplyVoltageMin ?? load.minVoltage;
-    const max = motor?.supplyVoltageMax ?? load.maxVoltage;
+    const partMin = motor?.supplyVoltageMin ?? load.minVoltage;
+    const partMax = motor?.supplyVoltageMax ?? load.maxVoltage;
+
+    /*
+     * A pin can be rated differently from the part it belongs to: an Arduino's
+     * VIN accepts 7–12 V while the same board's 5 V pin is rated 4.5–5.5 V.
+     * When the receiving pin declares its own voltage and it is clearly a
+     * high-side input, judge the rail against that pin rather than the part.
+     */
+    const receivingPin = load.pins.find((pin) => pin.name === connection.to.pin);
+    const pinVoltage = receivingPin?.voltage;
+    const pinIsHighSideInput =
+      pinVoltage !== undefined && pinVoltage >= 7 && (partMax === undefined || pinVoltage > partMax);
+    const min = pinIsHighSideInput ? Math.round(pinVoltage! * 0.7 * 10) / 10 : partMin;
+    const max = pinIsHighSideInput ? Math.round(pinVoltage! * 1.3 * 10) / 10 : partMax;
 
     if (min !== undefined && connection.voltage < min) {
       conflicts.push(

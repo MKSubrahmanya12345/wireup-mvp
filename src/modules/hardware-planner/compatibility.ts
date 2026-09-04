@@ -27,7 +27,8 @@ function definitionFor(selection: ComponentSelection, catalog: ComponentDefiniti
   return catalog.find((component) => component.id === selection.componentId);
 }
 
-function partLogicVoltage(definition: ComponentDefinition): number | undefined {
+/** The logic level a part expects: explicit metadata first, then its supply voltage. */
+export function partLogicVoltage(definition: ComponentDefinition): number | undefined {
   const explicit = definition.metadata.logicVoltage;
   if (typeof explicit === 'number') return explicit;
   return definition.voltage;
@@ -80,7 +81,29 @@ export function checkCompatibility(input: CompatibilityInput): CompatibilityResu
 
     // 2. Drive current.
     const maxCurrent = definition.currentRequirements?.maxMa;
-    const directlyDriven = !definition.motorRequirements?.requiresDriver && definition.category !== 'motor';
+    /*
+     * A bus-attached IC (I2C / SPI / UART / one-wire) with its own VCC pin draws
+     * that current from the supply rail, not from a GPIO. Comparing an SSD1306's
+     * 25 mA panel current against the MCU's 12 mA pin limit is a category error
+     * — only parts powered *through* the signal line actually sink GPIO current.
+     */
+    const busAttached = (definition.communicationProtocols ?? []).some((protocol) =>
+      ['i2c', 'spi', 'uart', 'one_wire'].includes(String(protocol).toLowerCase()),
+    );
+    const railFed = (definition.pins ?? []).some((pin) => pin.type === 'power');
+    const railPoweredIc = busAttached && railFed;
+    /*
+     * A motor driver is the buffer stage itself: its 3 A rating is what it
+     * delivers to the load, not what a GPIO sinks into it. Comparing that
+     * against the MCU pin limit would outlaw every driver in the catalog.
+     */
+    const isDriverStage = definition.category === 'motor_driver' || definition.motorRequirements?.requiresDriver === false;
+    const directlyDriven =
+      !definition.motorRequirements?.requiresDriver &&
+      definition.category !== 'motor' &&
+      definition.category !== 'motor_driver' &&
+      !isDriverStage &&
+      !railPoweredIc;
     if (
       maxCurrent !== undefined &&
       profile &&

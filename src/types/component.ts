@@ -219,5 +219,7 @@ export interface PowerBudget {
     outputVoltage?: number;
   };
   adequate: boolean;
+  /** The specific reasons `adequate` is false (empty when the budget is fine). */
+  shortfalls?: string[];
   notes: string[];
 }
