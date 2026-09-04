@@ -96,9 +96,33 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
 
   const supplySelection = selectSupply(selections, catalog);
   const supplyDefinition = supplySelection ? definitionFor(supplySelection, catalog) : undefined;
-  const supplyVoltage = supplyDefinition?.powerSourceRequirements?.outputVoltage ?? supplyDefinition?.voltage;
+
+  /*
+   * A dev board (ESP32 DevKit, Arduino Uno, …) carries an on-board regulator
+   * fed from USB. When the bill of materials holds no battery or bench supply,
+   * that board *is* the supply for the logic rail — reporting "no power source"
+   * there is wrong, and it used to raise two blocking validation errors on
+   * every USB-powered design.
+   */
+  const controllerDefinition = controller ? definitionFor(controller, catalog) : undefined;
+  const boardIsSupply =
+    !supplySelection && controllerDefinition?.category === 'microcontroller' && controllerDefinition.metadata.usbPowered === true;
+  const boardNumber = (key: string, fallback: number): number => {
+    const raw = controllerDefinition?.metadata[key];
+    return typeof raw === 'number' && Number.isFinite(raw) ? raw : fallback;
+  };
+
+  const supplyVoltage =
+    supplyDefinition?.powerSourceRequirements?.outputVoltage ??
+    supplyDefinition?.voltage ??
+    (boardIsSupply ? boardNumber('usbVoltage', 5) : undefined);
   const supplyMaxCurrent =
-    supplyDefinition?.powerSourceRequirements?.maxCurrentMa ?? supplyDefinition?.currentRequirements?.maxMa;
+    supplyDefinition?.powerSourceRequirements?.maxCurrentMa ??
+    supplyDefinition?.currentRequirements?.maxMa ??
+    (boardIsSupply ? boardNumber('usbMaxCurrentMa', 500) : undefined);
+  const supplyComponentId = supplySelection?.componentId ?? (boardIsSupply ? controllerDefinition?.id : undefined);
+  const supplyInstanceId =
+    supplySelection?.instances[0]?.instanceId ?? (boardIsSupply ? controller?.instances[0]?.instanceId : undefined);
 
   const mcuLogic = profile?.logicVoltage;
   const logicVoltage = mcuLogic;
@@ -152,7 +176,8 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
   });
   const driverWithRegulator = selections.find((selection) => {
     const definition = definitionFor(selection, catalog);
-    return typeof definition?.metadata.onboardRegulator === 'string';
+    // The controller's own USB regulator is handled by `boardIsSupply` above.
+    return definition?.category !== 'microcontroller' && typeof definition?.metadata.onboardRegulator === 'string';
   });
 
   if (regulatorSelection) {
@@ -184,27 +209,55 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
           : ''
       }.`,
     );
-  } else if (supplyVoltage !== undefined && mcuLogic !== undefined && supplyVoltage !== mcuLogic) {
+  } else if (!boardIsSupply && supplyVoltage !== undefined && mcuLogic !== undefined && supplyVoltage !== mcuLogic) {
     notes.push(
       `No explicit regulator in the bill of materials: the ${supplyVoltage} V supply must reach the MCU through its VIN/USB input (on-board regulator) or a regulator must be added.`,
     );
   }
 
+  /*
+   * Sustained vs transient load. A stalled motor keeps drawing its peak
+   * current, so it must be served continuously; an ESP32's ~500 mA is a
+   * ~2 ms Wi-Fi TX burst that bulk capacitance absorbs. Judging adequacy on
+   * the raw peak made every radio-equipped board "inadequate" on USB.
+   */
+  const sustainedPeakMa =
+    (motorRail.loads.length > 0 ? motorRail.peakMa : 0) + (logicRail.loads.length > 0 ? logicRail.typicalMa : 0);
+
   // Adequacy analysis.
   let adequate = true;
-  if (!supplySelection) {
+  const shortfalls: string[] = [];
+  if (!supplySelection && !boardIsSupply) {
     adequate = false;
-    notes.push('No power source is present in the bill of materials — the project cannot be powered as designed.');
-  } else if (supplyMaxCurrent !== undefined && totalPeakMa > 0) {
-    if (totalPeakMa > supplyMaxCurrent) {
+    const reason = 'No power source is present in the bill of materials — the project cannot be powered as designed.';
+    shortfalls.push(reason);
+    notes.push(reason);
+  } else if (boardIsSupply) {
+    notes.push(
+      `${controllerDefinition?.name ?? 'The controller'} is powered from USB and regulates its own logic rail ` +
+        `(${String(controllerDefinition?.metadata.onboardRegulator ?? 'on-board regulator')}, ~${supplyMaxCurrent ?? '?'} mA available) — ` +
+        'no external supply is needed for this load.',
+    );
+  }
+
+  if (supplyMaxCurrent !== undefined && sustainedPeakMa > 0) {
+    if (sustainedPeakMa > supplyMaxCurrent) {
       adequate = false;
-      notes.push(
-        `Peak load ${totalPeakMa} mA exceeds what ${supplyDefinition?.name ?? 'the selected supply'} can deliver (${supplyMaxCurrent} mA). Use a higher-current supply or reduce simultaneous loads.`,
-      );
+      const reason = `Sustained load ${sustainedPeakMa} mA exceeds what ${
+        supplyDefinition?.name ?? controllerDefinition?.name ?? 'the selected supply'
+      } can deliver (${supplyMaxCurrent} mA). Use a higher-current supply or reduce simultaneous loads.`;
+      shortfalls.push(reason);
+      notes.push(reason);
     } else {
-      const margin = Math.round(((supplyMaxCurrent - totalPeakMa) / supplyMaxCurrent) * 100);
-      notes.push(`Peak load ${totalPeakMa} mA against a ${supplyMaxCurrent} mA supply — ${margin}% headroom.`);
+      const margin = Math.round(((supplyMaxCurrent - sustainedPeakMa) / supplyMaxCurrent) * 100);
+      notes.push(`Sustained load ${sustainedPeakMa} mA against a ${supplyMaxCurrent} mA supply — ${margin}% headroom.`);
       if (margin < 20) notes.push('Headroom is under 20%: stalls or radio bursts could brown out the logic rail. Add bulk capacitance.');
+    }
+    if (totalPeakMa > supplyMaxCurrent) {
+      notes.push(
+        `Transient peak ${totalPeakMa} mA briefly exceeds the ${supplyMaxCurrent} mA supply (radio bursts / motor inrush). ` +
+          'That is survivable with bulk capacitance across the supply rail, but keep cables short and do not run every load at once.',
+      );
     }
   } else {
     notes.push('Supply current capability is unknown in the catalog — verify it against the measured load before building.');
@@ -266,13 +319,14 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
 
   return {
     ...(supplyVoltage !== undefined ? { supplyVoltage } : {}),
-    ...(supplySelection?.instances[0]?.instanceId ? { supplyInstanceId: supplySelection.instances[0].instanceId } : {}),
-    ...(supplySelection ? { supplyComponentId: supplySelection.componentId } : {}),
+    ...(supplyInstanceId ? { supplyInstanceId } : {}),
+    ...(supplyComponentId ? { supplyComponentId } : {}),
     totalTypicalMa: totalTypicalMa || undefined,
     totalPeakMa: totalPeakMa || undefined,
     rails,
     ...(regulator ? { regulator } : {}),
     adequate,
+    ...(shortfalls.length > 0 ? { shortfalls } : {}),
     notes,
   };
 }

@@ -30,6 +30,8 @@ export class BedrockError extends Error {
   readonly retryable: boolean;
   readonly statusCode?: number;
   readonly model: string;
+  /** How many round trips were made before giving up (set by `converse`). */
+  attempts: number;
 
   constructor(message: string, options: { code?: string; retryable?: boolean; statusCode?: number; model?: string } = {}) {
     super(message);
@@ -38,6 +40,7 @@ export class BedrockError extends Error {
     this.retryable = options.retryable ?? false;
     this.statusCode = options.statusCode;
     this.model = options.model ?? 'unknown';
+    this.attempts = 0;
   }
 }
 
@@ -118,13 +121,84 @@ function createTimeoutSignal(ms: number): { signal: AbortSignal; dispose: () => 
   };
 }
 
+interface ErrorFrame {
+  name?: string;
+  code?: string;
+  message: string;
+}
+
+/**
+ * Walk an error and its `cause` chain.
+ *
+ * Transport failures arrive wrapped: the AWS SDK hands us a bare `Error` named
+ * "Error" with `code: ERR_HTTP2_STREAM_CANCEL` whose *cause* carries the real
+ * `EAI_AGAIN` / `ETIMEDOUT` / ... code. Classifying only the outer frame is what
+ * made DNS outages look like permanent, non-retryable model errors.
+ */
+function errorFrames(error: unknown): ErrorFrame[] {
+  const frames: ErrorFrame[] = [];
+  let current: unknown = error;
+
+  for (let depth = 0; current && depth < 6; depth += 1) {
+    if (current instanceof Error) {
+      const code = (current as NodeJS.ErrnoException).code;
+      frames.push({
+        name: current.name,
+        ...(typeof code === 'string' ? { code } : {}),
+        message: current.message,
+      });
+      current = (current as { cause?: unknown }).cause;
+      continue;
+    }
+    frames.push({ message: describeError(current).message });
+    break;
+  }
+
+  return frames;
+}
+
+/**
+ * Codes that mean "we never received an answer" (DNS, TCP, TLS, socket).
+ * They are always worth retrying — the opposite of a Bedrock rejection.
+ */
+const NETWORK_ERROR_CODES = new Set([
+  'EAI_AGAIN',
+  'EAI_FAIL',
+  'EAI_NODATA',
+  'EAI_NONAME',
+  'ENOTFOUND',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ECONNABORTED',
+  'ETIMEDOUT',
+  'EPIPE',
+  'ENETUNREACH',
+  'ENETDOWN',
+  'EHOSTUNREACH',
+  'EADDRNOTAVAIL',
+  'ERR_HTTP2_STREAM_CANCEL',
+  'ERR_HTTP2_STREAM_ERROR',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_BODY_TIMEOUT',
+  'UND_ERR_SOCKET',
+]);
+
+const DNS_ERROR_CODES = new Set(['EAI_AGAIN', 'EAI_FAIL', 'EAI_NODATA', 'EAI_NONAME', 'ENOTFOUND']);
+
 function classifyError(error: unknown, model: string): BedrockError {
   const described = describeError(error);
-  const name = described.name ?? '';
+  const frames = errorFrames(error);
+  const name = frames[0]?.name ?? described.name ?? '';
   const statusCode =
     typeof (error as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode === 'number'
       ? ((error as { $metadata: { httpStatusCode: number } }).$metadata.httpStatusCode as number)
       : undefined;
+
+  /* Deepest network code wins: ERR_HTTP2_STREAM_CANCEL -> EAI_AGAIN. */
+  const codes = frames.map((frame) => frame.code).filter((code): code is string => typeof code === 'string');
+  const networkCode = [...codes].reverse().find((code) => NETWORK_ERROR_CODES.has(code));
+  const haystack = [name, ...codes, ...frames.map((frame) => frame.message)].join(' | ');
 
   const retryableNames = [
     'ThrottlingException',
@@ -140,12 +214,33 @@ function classifyError(error: unknown, model: string): BedrockError {
   ];
 
   const retryable =
-    retryableNames.some((candidate) => name.includes(candidate)) ||
-    described.message.includes('ECONNRESET') ||
-    described.message.includes('socket hang up') ||
+    networkCode !== undefined ||
+    retryableNames.some((candidate) => haystack.includes(candidate)) ||
+    haystack.includes('socket hang up') ||
     (statusCode !== undefined && (statusCode === 429 || statusCode >= 500));
 
-  const code = name || (statusCode ? `http_${statusCode}` : 'bedrock_error');
+  const code =
+    networkCode ??
+    (name && name !== 'Error' ? name : undefined) ??
+    (statusCode ? `http_${statusCode}` : undefined) ??
+    'bedrock_error';
+
+  /* Unreachable host: say so plainly, and name the host that was not reached. */
+  if (networkCode) {
+    const region = env().bedrock.region;
+    const host = `bedrock-runtime.${region}.amazonaws.com`;
+    const dnsFailure = DNS_ERROR_CODES.has(networkCode);
+    return new BedrockError(
+      dnsFailure
+        ? `Cannot reach Amazon Bedrock in ${region}: DNS lookup for ${host} failed (${networkCode}). ` +
+            'The request never left this machine, so credentials, model id and permissions were not evaluated. ' +
+            'Check the DNS resolver on the host running Wireup (VPN, Docker embedded DNS, firewall/AV) and retry - ' +
+            'EAI_AGAIN is a temporary resolver failure.'
+        : `Cannot reach Amazon Bedrock in ${region}: the connection to ${host} failed (${networkCode}). ` +
+            'The request never completed a round trip, so this is a network problem rather than a model or credentials problem.',
+      { code, retryable, statusCode, model },
+    );
+  }
 
   if (name === 'AccessDeniedException' || statusCode === 403) {
     return new BedrockError(
@@ -267,7 +362,11 @@ export async function converse(options: ConverseOptions): Promise<{
     }
   }
 
-  throw lastError ?? new BedrockError('Bedrock call failed for an unknown reason.', { model });
+  if (lastError) {
+    lastError.attempts = attempt;
+    throw lastError;
+  }
+  throw new BedrockError('Bedrock call failed for an unknown reason.', { model });
 }
 
 /** Non-throwing probe used by the API health endpoint. */

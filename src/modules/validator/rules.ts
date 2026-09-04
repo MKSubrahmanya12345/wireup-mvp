@@ -524,7 +524,9 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
         code: 'power_budget_exceeded',
         severity: 'error',
         domain: 'power',
-        message: `Power budget is not adequate: ${power.notes[power.notes.length - 1] ?? 'the supply cannot serve the calculated load.'}`,
+        message: `Power budget is not adequate: ${
+          power.shortfalls?.[0] ?? power.notes[0] ?? 'the supply cannot serve the calculated load.'
+        }`,
         details: power.notes.join(' '),
         fixHint: 'Increase supply capability or add regulation with headroom.',
         target: { artifact: 'hardwarePlan' },

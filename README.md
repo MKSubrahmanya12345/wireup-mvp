@@ -49,6 +49,7 @@ Requires Node ≥ 20.11, [pnpm](https://pnpm.io) ≥ 9 and a reachable MongoDB.
 ```bash
 pnpm install                 # install dependencies
 cp .env.example .env         # then fill in MONGODB_URI + Bedrock settings
+pnpm diagnose:bedrock        # env → DNS → TLS → a real Converse call, in that order
 pnpm seed                    # write the component catalog into MongoDB
 pnpm dev                     # http://localhost:3000
 ```
@@ -61,6 +62,8 @@ Other scripts:
 | `pnpm build` / `pnpm start` | Production build / serve |
 | `pnpm typecheck` | `tsc --noEmit` (strict) |
 | `pnpm seed` | Idempotent catalog upsert. `-- --dry-run` validates only, `-- --reset` wipes the collection first, `-- --force` seeds despite integrity problems |
+| `pnpm diagnose:bedrock` | Walks configuration → DNS → TLS → a real Bedrock `Converse` call and stops at the first failure with the exact thing to check. Exits 0 only when a round trip succeeds |
+| `pnpm verify:offline` | Runs the real pipeline, validator and fixer with `*.amazonaws.com` DNS forced to fail, and asserts the project is still complete and the outage is reported honestly. Needs no credentials, no MongoDB and no network |
 
 `WIREUP_AUTOSEED_COMPONENTS=true` (the default) also seeds the catalog on first
 use if the collection is empty, so the app is runnable before you ever call
@@ -339,6 +342,17 @@ console explains why it stopped. The UI therefore never polls forever.
   pipeline continues from the catalog and planners. Structured output is
   extracted leniently (fenced blocks, leading prose) and validated with zod;
   unparseable output degrades to the deterministic path rather than throwing.
+* **Bedrock unreachable** — `classifyError` walks the whole `cause` chain, so a
+  wrapped transport failure (`ERR_HTTP2_STREAM_CANCEL` caused by
+  `getaddrinfo EAI_AGAIN …`) is reported as `code: EAI_AGAIN`, marked retryable
+  and retried `BEDROCK_MAX_RETRIES` times with backoff. The message names the
+  host that could not be reached and says plainly that credentials and model
+  access were never evaluated. Run `pnpm diagnose:bedrock` to find out which
+  layer broke.
+* **Unresolved blocking issues** — a run that finishes with blocking validation
+  errors ends as `completed_with_errors` (a red badge and a `failed` final
+  event), not `completed_with_warnings`. Every issue the fixer could not repair
+  is emitted as a `not repaired — <reason>` console event.
 * **MongoDB** — connection failures raise a typed `MongoConnectionError`, are
   mapped to `503`/`retryable` API errors, and catalog reads fall back to the
   bundled seed.
