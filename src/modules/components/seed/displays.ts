@@ -38,13 +38,13 @@ export const DISPLAYS: ComponentDefinition[] = [
     category: 'display',
     description:
       '128x64 monochrome OLED driven by an SSD1306 over I2C. Works from 3.3 V or 5 V, draws ~20 mA, and needs only four wires. Default address 0x3C.',
-    voltage: 3.3,
+    voltage: 5,
     minVoltage: 3,
     maxVoltage: 5,
     currentRequirements: { typicalMa: 20, maxMa: 25 },
     communicationProtocols: ['i2c'],
     pins: [
-      pin('VCC', 'power', 'power', { required: true, voltage: 3.3, aliases: ['+', 'V+'] }),
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, minVoltage: 3, maxVoltage: 5.5, aliases: ['+', 'V+', 'VIN', 'VDD'] }),
       pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
       pin('SCL', 'i2c', 'input', { required: true, aliases: ['C', 'D0'] }),
       pin('SDA', 'i2c', 'bidirectional', { required: true, aliases: ['D', 'D1'] }),
@@ -56,7 +56,7 @@ export const DISPLAYS: ComponentDefinition[] = [
     ],
     keywords: ['oled', 'ssd1306', 'display', 'i2c display', 'graphics', 'screen'],
     aliases: ['ssd1306', 'oled display', '0.96 oled', 'i2c oled'],
-    simulator: { part: 'wokwi-ssd1306', supported: false, notes: 'Part id unverified — confirm before use.' },
-    metadata: { electrical: true, i2cAddress: '0x3C', resolution: '128x64', logicVoltage: 3.3 },
+    simulator: { part: 'wokwi-ssd1306', supported: true, attrs: { i2cAddress: '0x3C' }, notes: 'Wokwi pins: DATA (SDA), CLK (SCL), VIN, GND, 3V3.' },
+    metadata: { electrical: true, i2cAddress: '0x3C', resolution: '128x64', logicVoltage: 3.3, wideSupplyRange: true, fiveVoltTolerant: true },
   }),
 ];

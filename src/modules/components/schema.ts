@@ -31,6 +31,8 @@ export const ComponentPinSchema = z.object({
   description: z.string().optional(),
   aliases: z.array(z.string()).optional(),
   voltage: z.number().optional(),
+  minVoltage: z.number().optional(),
+  maxVoltage: z.number().optional(),
   requiresCapability: z.array(z.string()).optional(),
 });
 

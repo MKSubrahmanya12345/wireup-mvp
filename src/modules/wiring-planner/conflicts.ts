@@ -296,6 +296,9 @@ export function detectConflicts(input: ConflictInput): WiringConflict[] {
     for (const definitionPin of definition.pins) {
       if (!definitionPin.required) continue;
       if (definitionPin.type === 'other') continue;
+      // A board that sources a rail (the MCU's 3V3/5V output) is not "floating"
+      // when nothing draws from it; only inputs and signal pins can float.
+      if (definition.category === 'microcontroller' && definitionPin.type === 'power') continue;
       const connected = connections.some(
         (connection) =>
           (connection.from.instanceId === entry.instanceId && connection.from.pin === definitionPin.name) ||
@@ -366,8 +369,20 @@ export function detectConflicts(input: ConflictInput): WiringConflict[] {
     const pinVoltage = receivingPin?.voltage;
     const pinIsHighSideInput =
       pinVoltage !== undefined && pinVoltage >= 7 && (partMax === undefined || pinVoltage > partMax);
-    const min = pinIsHighSideInput ? Math.round(pinVoltage! * 0.7 * 10) / 10 : partMin;
-    const max = pinIsHighSideInput ? Math.round(pinVoltage! * 1.3 * 10) / 10 : partMax;
+    // A pin that declares its own window (an ESP32's VIN = 5 V input next to
+    // its 3.3 V logic, an OLED VCC rated 3–5.5 V) is judged by that window.
+    const pinHasOwnWindow = receivingPin?.minVoltage !== undefined || receivingPin?.maxVoltage !== undefined;
+    const pinNominalDiffers = pinVoltage !== undefined && partMax !== undefined && pinVoltage > partMax;
+    const min = pinIsHighSideInput
+      ? Math.round(pinVoltage! * 0.7 * 10) / 10
+      : pinHasOwnWindow || pinNominalDiffers
+        ? (receivingPin?.minVoltage ?? (pinVoltage !== undefined ? Math.round((pinVoltage - 0.3) * 10) / 10 : partMin))
+        : partMin;
+    const max = pinIsHighSideInput
+      ? Math.round(pinVoltage! * 1.3 * 10) / 10
+      : pinHasOwnWindow || pinNominalDiffers
+        ? (receivingPin?.maxVoltage ?? (pinVoltage !== undefined ? Math.round((pinVoltage + 0.6) * 10) / 10 : partMax))
+        : partMax;
 
     if (min !== undefined && connection.voltage < min) {
       conflicts.push(

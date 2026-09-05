@@ -217,6 +217,7 @@ export function generateSketch(ctx: SketchContext): string {
   const lcdActive = Boolean(lcd) && hasLibrary(libraries, 'LiquidCrystal_I2C.h');
   const oled = ctx.selections.find((selection) => /ssd1306/i.test(selection.componentId));
   const oledActive = Boolean(oled) && hasLibrary(libraries, 'Adafruit_SSD1306.h');
+  const oledAddress = normaliseI2cAddress(ctx.catalog.find((component) => component.id === oled?.componentId)?.metadata.i2cAddress, '0x3C');
   const relay = ctx.selections.find((selection) => /relay/i.test(selection.componentId));
 
   const analogAssignments = ctx.assignments.filter((assignment) => assignment.protocol === 'adc');
@@ -224,6 +225,18 @@ export function generateSketch(ctx: SketchContext): string {
     const selection = ctx.selections.find((candidate) => candidate.instances.some((instance) => instance.instanceId === assignment.targetInstanceId));
     return selection?.category === 'input_device' && /button/i.test(selection.componentId);
   });
+
+  const ledAssignments = leds.flatMap((selection) =>
+    selection.instances
+      .map((instance) => ctx.assignments.find((entry) => entry.targetInstanceId === instance.instanceId))
+      .filter((entry): entry is PinAssignment => entry !== undefined),
+  );
+  // Buttons are counted whenever the brief is about counting/pressing, or
+  // whenever there is nothing else (no motors, no remote commands) to drive.
+  const counterMode =
+    buttonAssignments.length > 0 &&
+    (/\b(count|counter|tally|press(?:es)?|increment|click)/i.test(`${ctx.projectName} ${ctx.projectSummary} ${ctx.requirements.goal} ${ctx.requirements.behaviors.join(' ')}`) ||
+      (channels.length === 0 && (ctx.softwarePlan.communication?.commandSet?.length ?? 0) === 0));
 
   const trigAssignment = ultrasonic?.instances[0] ? findAssignment(ctx.assignments, ultrasonic.instances[0].instanceId, 'TRIG') : undefined;
   const echoAssignment = ultrasonic?.instances[0] ? findAssignment(ctx.assignments, ultrasonic.instances[0].instanceId, 'ECHO') : undefined;
@@ -293,10 +306,11 @@ export function generateSketch(ctx: SketchContext): string {
     }
   }
   if (lcdActive) {
-    const address = String(ctx.catalog.find((component) => component.id === lcd?.componentId)?.metadata.i2cAddress ?? '0x27');
+    const address = normaliseI2cAddress(ctx.catalog.find((component) => component.id === lcd?.componentId)?.metadata.i2cAddress, '0x27');
     lines.push(`LiquidCrystal_I2C lcd(${address}, 16, 2);`);
   }
   if (oledActive) {
+    lines.push(`#define OLED_ADDRESS ${oledAddress}`);
     lines.push('Adafruit_SSD1306 oled(128, 64, &Wire, -1);');
     lines.push('bool oledReady = false;');
   }
@@ -349,6 +363,21 @@ export function generateSketch(ctx: SketchContext): string {
   lines.push('const uint32_t SENSOR_INTERVAL_MS = 200;');
   lines.push('const uint32_t TELEMETRY_INTERVAL_MS = 1000;');
   lines.push(`const bool REMOTE_CONTROLLED = ${commandSet.length > 0 ? 'true' : 'false'};`);
+  if (buttonAssignments.length > 0) {
+    lines.push('');
+    lines.push('// Button handling (active-low with the internal pull-up, debounced in software).');
+    lines.push('const uint32_t DEBOUNCE_MS = 30;');
+    for (const assignment of buttonAssignments) {
+      const id = buttonIdentifier(assignment);
+      lines.push(`bool ${id}Stable = HIGH;      // debounced level of ${assignment.targetInstanceId}`);
+      lines.push(`bool ${id}LastRaw = HIGH;     // last raw reading`);
+      lines.push(`uint32_t ${id}ChangedAt = 0;  // when the raw reading last changed`);
+    }
+    if (counterMode) {
+      lines.push('long pressCount = 0;');
+      lines.push('bool displayDirty = true;');
+    }
+  }
   lines.push('');
 
   /* Forward declarations ------------------------------------------------------ */
@@ -362,7 +391,25 @@ export function generateSketch(ctx: SketchContext): string {
   if (lcdActive) lines.push('void renderLcd();');
   if (oledActive) lines.push('void renderOled();');
   if (commandSet.length > 0) lines.push('bool handleCommand(char command);');
+  for (const assignment of buttonAssignments) lines.push(`bool ${buttonIdentifier(assignment)}Pressed();`);
   lines.push('');
+
+  /* Button helpers ------------------------------------------------------------ */
+  for (const assignment of buttonAssignments) {
+    const id = buttonIdentifier(assignment);
+    lines.push(`// Returns true exactly once per press of ${assignment.targetInstanceId} (falling edge after debounce).`);
+    lines.push(`bool ${id}Pressed() {`);
+    lines.push(`  bool raw = digitalRead(${constantName(assignment)});`);
+    lines.push(`  if (raw != ${id}LastRaw) {`);
+    lines.push(`    ${id}LastRaw = raw;`);
+    lines.push(`    ${id}ChangedAt = millis();`);
+    lines.push('  }');
+    lines.push(`  if (millis() - ${id}ChangedAt < DEBOUNCE_MS || raw == ${id}Stable) return false;`);
+    lines.push(`  ${id}Stable = raw;`);
+    lines.push(`  return ${id}Stable == LOW;`);
+    lines.push('}');
+    lines.push('');
+  }
 
   /* Motor helpers ------------------------------------------------------------ */
   if (channels.length > 0) {
@@ -455,9 +502,15 @@ export function generateSketch(ctx: SketchContext): string {
   if (lcdActive) {
     lines.push('void renderLcd() {');
     lines.push('  lcd.setCursor(0, 0);');
-    lines.push('  lcd.print("State:");');
-    lines.push('  lcd.print(stateName(currentState));');
-    lines.push('  lcd.print("   ");');
+    if (counterMode) {
+      lines.push('  lcd.print("Count:          ");');
+      lines.push('  lcd.setCursor(7, 0);');
+      lines.push('  lcd.print(pressCount);');
+    } else {
+      lines.push('  lcd.print("State:");');
+      lines.push('  lcd.print(stateName(currentState));');
+      lines.push('  lcd.print("   ");');
+    }
     lines.push('  lcd.setCursor(0, 1);');
     if (dhtActive) {
       lines.push('  lcd.print(temperatureC, 1);');
@@ -480,11 +533,21 @@ export function generateSketch(ctx: SketchContext): string {
     lines.push('  oled.setTextSize(1);');
     lines.push('  oled.setTextColor(SSD1306_WHITE);');
     lines.push('  oled.setCursor(0, 0);');
-    lines.push('  oled.print("State: ");');
-    lines.push('  oled.println(stateName(currentState));');
-    lines.push('  oled.print("Speed: ");');
-    lines.push('  oled.println(speedPercent);');
+    if (counterMode) {
+      lines.push('  oled.println("Button counter");');
+      lines.push('  oled.setTextSize(3);');
+      lines.push('  oled.setCursor(0, 24);');
+      lines.push('  oled.println(pressCount);');
+    } else {
+      lines.push('  oled.print("State: ");');
+      lines.push('  oled.println(stateName(currentState));');
+      if (channels.length > 0) {
+        lines.push('  oled.print("Speed: ");');
+        lines.push('  oled.println(speedPercent);');
+      }
+    }
     if (dhtActive) {
+      lines.push('  oled.setTextSize(1);');
       lines.push('  oled.print("Temp: ");');
       lines.push('  oled.println(temperatureC, 1);');
     }
@@ -502,6 +565,10 @@ export function generateSketch(ctx: SketchContext): string {
   lines.push('  controlLink.print(stateName(currentState));');
   lines.push('  controlLink.print("\\",\\"speed\\":");');
   lines.push('  controlLink.print(speedPercent);');
+  if (counterMode) {
+    lines.push('  controlLink.print(",\\"count\\":");');
+    lines.push('  controlLink.print(pressCount);');
+  }
   if (dhtActive) {
     lines.push('  controlLink.print(",\\"tempC\\":");');
     lines.push('  controlLink.print(temperatureC, 1);');
@@ -517,8 +584,9 @@ export function generateSketch(ctx: SketchContext): string {
     lines.push(`  controlLink.print(analogRead(${constantName(assignment)}));`);
   }
   lines.push('  controlLink.println("}");');
-  if (lcdActive) lines.push('  renderLcd();');
-  if (oledActive) lines.push('  renderOled();');
+  // In counter mode the display is redrawn on change (see loop), not on a timer.
+  if (lcdActive && !counterMode) lines.push('  renderLcd();');
+  if (oledActive && !counterMode) lines.push('  renderOled();');
   lines.push('}');
   lines.push('');
 
@@ -573,13 +641,18 @@ export function generateSketch(ctx: SketchContext): string {
   lines.push('  controlLink.begin(LINK_BAUD);');
   lines.push('');
   lines.push('  // Outputs first, and immediately driven to their safe state.');
-  for (const assignment of ctx.assignments.filter((entry) => entry.direction === 'output')) {
+  const gpioAssignments = ctx.assignments.filter((entry) => !isBusAssignment(entry));
+  for (const assignment of gpioAssignments.filter((entry) => entry.direction === 'output')) {
     lines.push(`  pinMode(${constantName(assignment)}, OUTPUT);`);
   }
-  for (const assignment of ctx.assignments.filter((entry) => entry.direction === 'input')) {
-    lines.push(`  pinMode(${constantName(assignment)}, ${isAnalogAssignment(assignment) ? 'INPUT' : 'INPUT_PULLUP'});`);
+  for (const assignment of gpioAssignments.filter((entry) => entry.direction === 'input')) {
+    const pullup = !isAnalogAssignment(assignment) && !isSensorOutput(ctx, assignment);
+    lines.push(`  pinMode(${constantName(assignment)}, ${pullup ? 'INPUT_PULLUP' : 'INPUT'});`);
   }
-  lines.push('  stopAllMotors();');
+  if (channels.length > 0) lines.push('  stopAllMotors();');
+  if (ctx.i2cBuses.length > 0 || lcdActive || oledActive) {
+    lines.push('  Wire.begin(); // I2C bus (SDA/SCL are owned by the Wire library, not pinMode)');
+  }
   lines.push('');
   if (servoActive) {
     servos.forEach((selection, selectionIndex) => {
@@ -598,9 +671,11 @@ export function generateSketch(ctx: SketchContext): string {
     lines.push('  lcd.backlight();');
   }
   if (oledActive) {
-    lines.push('  oledReady = oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);');
-    lines.push('  if (!oledReady) Serial.println("warn: SSD1306 not responding at 0x3C");');
+    lines.push('  oledReady = oled.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS);');
+    lines.push('  if (!oledReady) Serial.println("warn: SSD1306 not responding at OLED_ADDRESS");');
+    lines.push('  renderOled();');
   }
+  if (lcdActive) lines.push('  renderLcd();');
   for (const led of leds) {
     for (const instance of led.instances) {
       const assignment = ctx.assignments.find((entry) => entry.targetInstanceId === instance.instanceId);
@@ -663,17 +738,73 @@ export function generateSketch(ctx: SketchContext): string {
       lines.push('    (void)motionDetected;');
     }
   }
-  for (const assignment of buttonAssignments) {
-    lines.push(`    bool ${safeIdentifier(assignment.targetInstanceId)}Pressed = digitalRead(${constantName(assignment)}) == LOW; // internal pull-up`);
-    lines.push(`    (void)${safeIdentifier(assignment.targetInstanceId)}Pressed;`);
-  }
   lines.push('  }');
   lines.push('');
-  lines.push('  // 4. Telemetry.');
+  if (buttonAssignments.length > 0) {
+    lines.push('  // 4. Buttons: debounced, one event per press.');
+    buttonAssignments.forEach((assignment, buttonIndex) => {
+      const id = buttonIdentifier(assignment);
+      lines.push(`  if (${id}Pressed()) {`);
+      if (counterMode) {
+        lines.push('    pressCount++;');
+        lines.push('    displayDirty = true;');
+        lines.push('    Serial.print("count=");');
+        lines.push('    Serial.println(pressCount);');
+        const led = ledAssignments[buttonIndex] ?? ledAssignments[0];
+        if (led) {
+          lines.push(`    digitalWrite(${constantName(led)}, HIGH); // brief visual acknowledgement`);
+          lines.push('    delay(50);');
+          lines.push(`    digitalWrite(${constantName(led)}, LOW);`);
+        }
+      } else {
+        const led = ledAssignments[buttonIndex] ?? ledAssignments[0];
+        if (led) lines.push(`    digitalWrite(${constantName(led)}, !digitalRead(${constantName(led)})); // toggle on each press`);
+        else lines.push(`    Serial.println("${assignment.targetInstanceId} pressed");`);
+      }
+      lines.push('  }');
+    });
+    if (counterMode && (oledActive || lcdActive)) {
+      lines.push('  if (displayDirty) {');
+      lines.push('    displayDirty = false;');
+      if (oledActive) lines.push('    renderOled();');
+      if (lcdActive) lines.push('    renderLcd();');
+      lines.push('  }');
+    }
+    lines.push('');
+  }
+  lines.push('  // 5. Telemetry.');
   lines.push('  sendTelemetry(false);');
   lines.push('}');
 
   return `${lines.join('\n')}\n`;
+}
+
+function buttonIdentifier(assignment: PinAssignment): string {
+  const raw = safeIdentifier(assignment.targetInstanceId);
+  return raw.charAt(0).toLowerCase() + raw.slice(1).replace(/_(\w)/g, (_, char: string) => char.toUpperCase());
+}
+
+/** Shared-bus pins (I2C/SPI/UART) are configured by their library, not by pinMode(). */
+function isBusAssignment(assignment: PinAssignment): boolean {
+  return assignment.protocol === 'i2c' || assignment.protocol === 'spi' || assignment.protocol === 'uart';
+}
+
+/** A sensor/module output must be read without a pull-up (it is actively driven). */
+function isSensorOutput(ctx: SketchContext, assignment: PinAssignment): boolean {
+  const selection = ctx.selections.find((candidate) => candidate.instances.some((instance) => instance.instanceId === assignment.targetInstanceId));
+  return selection?.category === 'sensor' || selection?.category === 'communication';
+}
+
+/** Render an I2C address as a hex literal the compiler accepts (`0x3C`). */
+export function normaliseI2cAddress(value: unknown, fallback: string): string {
+  if (typeof value === 'number' && Number.isFinite(value)) return `0x${value.toString(16).toUpperCase().padStart(2, '0')}`;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^0x[0-9a-f]+$/i.test(trimmed)) return `0x${trimmed.slice(2).toUpperCase()}`;
+    if (/^[0-9a-f]{2}$/i.test(trimmed)) return `0x${trimmed.toUpperCase()}`;
+    if (/^\d+$/.test(trimmed)) return `0x${Number(trimmed).toString(16).toUpperCase().padStart(2, '0')}`;
+  }
+  return fallback;
 }
 
 function constantForPin(assignments: PinAssignment[], pin: string): string | undefined {
