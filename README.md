@@ -349,6 +349,17 @@ console explains why it stopped. The UI therefore never polls forever.
   host that could not be reached and says plainly that credentials and model
   access were never evaluated. Run `pnpm diagnose:bedrock` to find out which
   layer broke.
+* **Half-broken DNS (IPv6 `EAI_AGAIN`)** — Windows behind a VPN, WSL with a
+  generated `/etc/resolv.conf` and Docker's embedded resolver often answer the
+  A (IPv4) query but fail the AAAA (IPv6) one. Node's default `verbatim` order
+  turns that into a hard, retry-immune `EAI_AGAIN` against a perfectly healthy
+  endpoint. Wireup therefore defaults to `WIREUP_DNS_RESULT_ORDER=ipv4first`
+  and applies it before the first socket is opened, so the workaround survives
+  a new terminal and covers `next dev` as well as the scripts. Set `verbatim`
+  to restore Node's default or `ipv6first` where IPv6 is the healthy path; an
+  explicit `NODE_OPTIONS=--dns-result-order=…` always wins. `pnpm
+  diagnose:bedrock` prints the active order and flags an AAAA-only failure as
+  harmless.
 * **Unresolved blocking issues** — a run that finishes with blocking validation
   errors ends as `completed_with_errors` (a red badge and a `failed` final
   event), not `completed_with_warnings`. Every issue the fixer could not repair

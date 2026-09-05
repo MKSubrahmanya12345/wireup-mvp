@@ -7,6 +7,8 @@
 
 import { z } from 'zod';
 
+import { parseDnsResultOrder, type DnsResultOrder } from '@/lib/net/dns';
+
 const optionalString = z
   .string()
   .transform((value) => (value.trim().length === 0 ? undefined : value.trim()))
@@ -72,6 +74,9 @@ const ServerEnvSchema = z.object({
   WIREUP_MAX_REVISIONS: intFrom(12),
   WIREUP_MAX_EVENTS: intFrom(1500),
 
+  // --- Networking ---
+  WIREUP_DNS_RESULT_ORDER: optionalString,
+
   NODE_ENV: z.string().optional().transform((v) => v ?? 'development'),
 });
 
@@ -101,6 +106,9 @@ export interface ServerEnv {
     autoseedComponents: boolean;
     maxRevisions: number;
     maxEvents: number;
+  };
+  net: {
+    dnsResultOrder: DnsResultOrder;
   };
   nodeEnv: string;
 }
@@ -149,6 +157,9 @@ function read(): ServerEnv {
       autoseedComponents: parsed.WIREUP_AUTOSEED_COMPONENTS,
       maxRevisions: Math.max(1, parsed.WIREUP_MAX_REVISIONS),
       maxEvents: Math.max(50, parsed.WIREUP_MAX_EVENTS),
+    },
+    net: {
+      dnsResultOrder: parseDnsResultOrder(parsed.WIREUP_DNS_RESULT_ORDER),
     },
     nodeEnv: parsed.NODE_ENV ?? 'development',
   };
