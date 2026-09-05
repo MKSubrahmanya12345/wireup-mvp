@@ -8,9 +8,26 @@
 
 import { BedrockError, converse, type BedrockOp, type TokenUsage } from '@/lib/bedrock/client';
 import { createLogger } from '@/lib/logging/logger';
+import { env } from '@/lib/validation/env';
 import { parseJsonLoose, truncate } from '@/lib/validation/json';
 
 const logger = createLogger('bedrock:structured');
+
+/**
+ * Bedrock reports a completion cut short by the output budget as
+ * `stopReason: "max_tokens"`. The text that comes back is a valid *prefix* of
+ * the answer, so it can never parse: the JSON simply has no ending. Retrying
+ * the identical request with the identical budget reproduces it exactly.
+ *
+ * Treated as its own failure mode: the budget is raised for the next round
+ * (up to `BEDROCK_MAX_TOKENS_CEILING`) and the retry prompt says the response
+ * was cut off rather than malformed.
+ */
+const TRUNCATION_STOP_REASONS = new Set(['max_tokens', 'max_token', 'length']);
+
+function wasTruncated(stopReason: string | undefined): boolean {
+  return stopReason !== undefined && TRUNCATION_STOP_REASONS.has(stopReason.toLowerCase());
+}
 
 export interface StructuredCallOptions {
   op: BedrockOp;
@@ -52,7 +69,9 @@ function mergeUsage(total: TokenUsage, next: TokenUsage): TokenUsage {
 }
 
 export async function runStructuredCall(options: StructuredCallOptions): Promise<StructuredCallResult> {
-  const parseRetries = options.parseRetries ?? 1;
+  // Two extra rounds by default: one to recover from malformed JSON, one more
+  // so a budget raised after a truncated response is actually spent.
+  const parseRetries = options.parseRetries ?? 2;
   const startedAt = Date.now();
 
   let usage: TokenUsage = {};
@@ -62,11 +81,26 @@ export async function runStructuredCall(options: StructuredCallOptions): Promise
   let lastError = 'Unknown parse failure.';
   let stopReason: string | undefined;
   let repairedOverall = false;
+  let truncatedRound = false;
+
+  const config = env().bedrock;
+  const ceiling = Math.max(config.maxTokens, config.maxTokensCeiling);
+  let budget = options.maxTokens ?? config.maxTokens;
 
   for (let round = 0; round <= parseRetries; round += 1) {
     const userText =
       round === 0
         ? options.user
+        : truncatedRound
+        ? `${options.user}
+
+---
+YOUR PREVIOUS RESPONSE WAS CUT OFF because it exceeded the output token budget.
+It was not malformed - it simply had no ending, so it could not be parsed.
+
+You now have a larger budget (${budget} tokens). Return the COMPLETE JSON object,
+and keep it compact: no markdown fences, no commentary, minimal whitespace, and
+no prose inside string fields beyond what the schema requires.`
         : `${options.user}
 
 ---
@@ -85,7 +119,7 @@ Respond again with the COMPLETE corrected JSON object only. No markdown fences, 
         model: options.model,
         system: options.system,
         userText,
-        maxTokens: options.maxTokens,
+        maxTokens: budget,
         temperature: options.temperature,
         timeoutMs: options.timeoutMs,
       });
@@ -119,13 +153,43 @@ Respond again with the COMPLETE corrected JSON object only. No markdown fences, 
         };
       }
 
-      lastError = parsed.error ?? 'Unable to parse JSON.';
-      logger.warn('structured call produced unparseable JSON', {
-        op: options.op,
-        model,
-        round: round + 1,
-        error: lastError,
-      });
+      truncatedRound = wasTruncated(call.stopReason);
+      if (truncatedRound) {
+        const previous = budget;
+        budget = Math.min(ceiling, Math.max(budget * 2, budget + 1024));
+        lastError =
+          `The response was cut off at the ${previous}-token output budget ` +
+          `(stopReason "${call.stopReason}"), so the JSON has no ending.`;
+        logger.warn('structured call hit the output token budget', {
+          op: options.op,
+          model,
+          round: round + 1,
+          stopReason: call.stopReason,
+          characters: call.text.length,
+          outputTokens: call.usage.outputTokens,
+          previousBudget: previous,
+          nextBudget: budget,
+          raisedBudget: budget > previous,
+        });
+        if (budget === previous) {
+          // Already at the ceiling: another identical round would waste a call.
+          lastError =
+            `The response was cut off at the ${previous}-token output budget (stopReason "${call.stopReason}") ` +
+            `and BEDROCK_MAX_TOKENS_CEILING (${ceiling}) leaves no room to retry. ` +
+            'Raise BEDROCK_MAX_TOKENS_CEILING for this model, or reduce the size of the request.';
+          break;
+        }
+      } else {
+        lastError = parsed.error ?? 'Unable to parse JSON.';
+        logger.warn('structured call produced unparseable JSON', {
+          op: options.op,
+          model,
+          round: round + 1,
+          stopReason: call.stopReason,
+          characters: call.text.length,
+          error: lastError,
+        });
+      }
     } catch (error) {
       // Transport / model level failure: not retryable here (client already retried).
       const message = error instanceof Error ? error.message : String(error);
@@ -163,7 +227,8 @@ Respond again with the COMPLETE corrected JSON object only. No markdown fences, 
   return {
     ok: false,
     raw: lastRaw,
-    error: `Model output could not be parsed as JSON after ${parseRetries + 1} attempt(s). ${lastError}`,
+    error: `Model output could not be parsed as JSON after ${attempts} Bedrock call(s). ${lastError}`,
+    ...(stopReason ? { code: wasTruncated(stopReason) ? 'output_truncated' : 'unparseable_output' } : {}),
     repaired: repairedOverall,
     model,
     durationMs: Date.now() - startedAt,
