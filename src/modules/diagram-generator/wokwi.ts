@@ -125,6 +125,7 @@ const PIN_MAPS: Record<string, PinMapper> = {
   'wokwi-arduino-nano': arduinoAvrPins(true),
   'wokwi-arduino-mega': arduinoAvrPins(true),
   'wokwi-esp32-devkit-v1': esp32DevkitPins,
+  // Wokwi's SSD1306 part uses CLK/DATA/VIN/GND (not SCL/SDA/VCC).
   'wokwi-ssd1306': table({ VCC: 'VIN', VIN: 'VIN', GND: 'GND', SCL: 'CLK', SDA: 'DATA', '3V3': '3V3' }),
   'board-ssd1306': table({ VCC: 'VCC', GND: 'GND', SCL: 'SCL', SDA: 'SDA' }),
   'wokwi-lcd1602': table({ VCC: 'VCC', GND: 'GND', SDA: 'SDA', SCL: 'SCL' }),
@@ -246,6 +247,46 @@ function placeParts(components: DiagramComponent[]): Map<string, Placement> {
 /* Projection                                                                 */
 /* ------------------------------------------------------------------------- */
 
+/**
+ * Catalog metadata is deliberately simulator-neutral.  Normalize the small
+ * set of Wokwi attribute names here; leaking catalog names into diagram.json
+ * produces a file that parses but silently ignores the setting.
+ */
+function normalizeAttrs(part: string, attrs: Record<string, string>): Record<string, string> {
+  const result = { ...attrs };
+  if (part === 'wokwi-ssd1306' && result.i2cAddress !== undefined) {
+    result.address = result.i2cAddress;
+    delete result.i2cAddress;
+  }
+  return result;
+}
+
+/** Runtime guard for the actual Wokwi contract (useful at API boundaries). */
+export function checkWokwiDiagram(value: unknown): value is WokwiDiagram {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<WokwiDiagram>;
+  if (candidate.version !== 1 || candidate.editor !== 'wokwi' || !Array.isArray(candidate.parts) || !Array.isArray(candidate.connections)) {
+    return false;
+  }
+  return candidate.parts.every(
+    (part) =>
+      typeof part?.type === 'string' &&
+      typeof part.id === 'string' &&
+      Number.isFinite(part.top) &&
+      Number.isFinite(part.left) &&
+      !!part.attrs &&
+      typeof part.attrs === 'object',
+  ) && candidate.connections.every(
+    (connection) =>
+      Array.isArray(connection) &&
+      connection.length === 4 &&
+      typeof connection[0] === 'string' &&
+      typeof connection[1] === 'string' &&
+      typeof connection[2] === 'string' &&
+      Array.isArray(connection[3]),
+  );
+}
+
 export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
   const parts: WokwiPart[] = [];
   const skippedParts: WokwiProjection['skippedParts'] = [];
@@ -291,7 +332,7 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
       id: component.id,
       top: placement.top,
       left: placement.left,
-      attrs: { ...(DEFAULT_ATTRS[simulatorPart] ?? {}), ...(component.simulator?.attrs ?? {}) },
+      attrs: normalizeAttrs(simulatorPart, { ...(DEFAULT_ATTRS[simulatorPart] ?? {}), ...(component.simulator?.attrs ?? {}) }),
     });
     if (!PIN_MAPS[simulatorPart]) unmappedTypes.add(simulatorPart);
   }
