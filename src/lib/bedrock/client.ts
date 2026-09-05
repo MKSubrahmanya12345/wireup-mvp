@@ -13,6 +13,7 @@ import {
 } from '@aws-sdk/client-bedrock-runtime';
 
 import { createLogger, describeError } from '@/lib/logging/logger';
+import { applyDnsResultOrder } from '@/lib/net/dns';
 import { env, requireBedrockEnv } from '@/lib/validation/env';
 
 const logger = createLogger('bedrock');
@@ -60,6 +61,11 @@ globalThis.__wireupBedrock = cache;
 function buildClient(): { client: BedrockRuntimeClient; region: string } {
   const config = requireBedrockEnv();
 
+  // Applied before the first socket is opened: on hosts whose resolver fails
+  // the IPv6 half of a lookup, the default order turns a healthy endpoint into
+  // a hard EAI_AGAIN. See lib/net/dns.ts.
+  const dnsOrder = applyDnsResultOrder(env().net.dnsResultOrder);
+
   if (cache.client && cache.region === config.region) {
     return { client: cache.client, region: config.region };
   }
@@ -80,7 +86,7 @@ function buildClient(): { client: BedrockRuntimeClient; region: string } {
 
   cache.client = client;
   cache.region = config.region;
-  logger.info('client ready', { region: config.region });
+  logger.info('client ready', { region: config.region, dnsResultOrder: dnsOrder });
   return { client, region: config.region };
 }
 
