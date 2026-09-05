@@ -195,7 +195,7 @@ export function pruneIncludes(content: string, ctx: HygieneContext): { content: 
     }
     // A dependency header nobody in the plan depends on.
     const dependent = DEPENDENT_HEADERS.find((entry) => entry.header.test(header));
-    if (dependent && !planned.has(lower) && ![...planned].some((name) => dependent.requires.test(name))) {
+    if (dependent && ![...planned].some((name) => name !== lower && dependent.requires.test(name))) {
       removed.push(header);
       continue;
     }

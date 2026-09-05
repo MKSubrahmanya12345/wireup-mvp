@@ -29,7 +29,15 @@ Non-negotiable rules:
 6. Respect MCU pin restrictions listed in the MCU CAPABILITIES section (strapping pins, input-only pins,
    flash pins, pins shared with UART/I2C/SPI, ADC-capable pins, PWM-capable pins).
 7. Do not fake precision. If a value is unknown, omit the field rather than guessing.
-8. Answer with JSON ONLY. No markdown fences, no prose before or after, no trailing commas, no comments.`;
+8. Answer with JSON ONLY. No markdown fences, no prose before or after, no trailing commas, no comments.
+
+DIAGRAM GENERATION RULES (NON-NEGOTIABLE):
+9. The backend, not the model, is the source of truth for diagram.json. Never invent diagram parts, pins, coordinates, or connections in prose or in an alternate schema.
+10. The generated wiring graph must contain every electrical wire: signal, power, and ground. Every endpoint must use an exact catalog instance and exact catalog pin name.
+11. A Wokwi export is a separate projection of the graph and MUST be the standard Wokwi shape: { version: 1, author, editor: "wokwi", parts: [], connections: [] }.
+12. Wokwi parts use { type, id, top, left, attrs }; Wokwi connections are exactly ["partId:pin", "partId:pin", "color", []]. Do not put Wireup fields such as components, rails, groups, metadata, path, kind, or signal in diagram.json.
+13. Use only verified simulator part ids and exact simulator pin names. If a catalog item has no verified simulator mapping, omit it from the Wokwi projection and report it; never guess a part id or pin name.
+14. Preserve component instance identity when projecting: one Wokwi part per representable instance, unique ids, no duplicate wires, and no dangling endpoints. Wokwi attrs must be strings (for example an SSD1306 address is {"address":"0x3C"}).`;
 
 /* ------------------------------------------------------------------------- */
 /* CALL 1 — GENERATION                                                        */

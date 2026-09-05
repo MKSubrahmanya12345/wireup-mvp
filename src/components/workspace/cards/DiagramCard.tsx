@@ -173,7 +173,7 @@ export function DiagramCard({ project, running, activity }: CardProps) {
             canvas
           </button>
           <button type="button" className={tab === 'json' ? 'filter filter--active' : 'filter'} onClick={() => setTab('json')}>
-            diagram.json
+            wireup graph
           </button>
           <button
             type="button"
@@ -286,8 +286,8 @@ export function DiagramCard({ project, running, activity }: CardProps) {
       {tab === 'json' ? (
         <>
           <div className="code__toolbar">
-            <span className="mono-sm">diagram.json</span>
-            <Badge>json</Badge>
+            <span className="mono-sm">wireup-diagram.json</span>
+            <Badge>internal graph</Badge>
             <span className="card__spacer" style={{ flex: 1 }} />
             <CopyButton text={JSON.stringify(diagram, null, 2)} label="copy" />
           </div>
