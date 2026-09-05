@@ -1,9 +1,10 @@
 /**
  * GET /api/projects/[id]/diagram?target=wireup|wokwi
  *
- * `wireup` (default) returns the canonical machine-readable diagram.
- * `wokwi`   projects it into the Wokwi `diagram.json` shape, reporting exactly
- *           which parts/wires could not be represented instead of guessing.
+ * `wokwi` (default) returns the loadable Wokwi `diagram.json` shape.
+ * `wireup` returns the canonical internal machine-readable graph.
+ * The Wokwi projection reports exactly which parts/wires could not be
+ * represented instead of guessing.
  */
 
 import type { NextRequest } from 'next/server';
@@ -22,7 +23,9 @@ interface RouteContext {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  const target = (request.nextUrl.searchParams.get('target') ?? 'wireup').toLowerCase();
+  // A file called diagram.json must be loadable by Wokwi by default. Callers
+  // that need the richer internal graph must opt into target=wireup.
+  const target = (request.nextUrl.searchParams.get('target') ?? 'wokwi').toLowerCase();
 
   if (!id || id.trim().length === 0) {
     return jsonError(400, { code: 'bad_request', message: 'A project id is required.' });
