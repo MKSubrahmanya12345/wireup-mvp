@@ -62,6 +62,7 @@ Other scripts:
 | `pnpm build` / `pnpm start` | Production build / serve |
 | `pnpm typecheck` | `tsc --noEmit` (strict) |
 | `pnpm seed` | Idempotent catalog upsert. `-- --dry-run` validates only, `-- --reset` wipes the collection first, `-- --force` seeds despite integrity problems |
+| `pnpm dev:turbo` | Same dev server on Turbopack. Cold start and per-route compile are several times faster than the default webpack pass; use it unless you hit a Turbopack-specific problem |
 | `pnpm diagnose:bedrock` | Walks configuration → DNS → TLS → a real Bedrock `Converse` call and stops at the first failure with the exact thing to check. Exits 0 only when a round trip succeeds |
 | `pnpm verify:offline` | Runs the real pipeline, validator and fixer with `*.amazonaws.com` DNS forced to fail, and asserts the project is still complete and the outage is reported honestly. Needs no credentials, no MongoDB and no network |
 
@@ -349,6 +350,24 @@ console explains why it stopped. The UI therefore never polls forever.
   host that could not be reached and says plainly that credentials and model
   access were never evaluated. Run `pnpm diagnose:bedrock` to find out which
   layer broke.
+* **Half-broken DNS (IPv6 `EAI_AGAIN`)** — Windows behind a VPN, WSL with a
+  generated `/etc/resolv.conf` and Docker's embedded resolver often answer the
+  A (IPv4) query but fail the AAAA (IPv6) one. Node's default `verbatim` order
+  turns that into a hard, retry-immune `EAI_AGAIN` against a perfectly healthy
+  endpoint. Wireup therefore defaults to `WIREUP_DNS_RESULT_ORDER=ipv4first`
+  and applies it before the first socket is opened, so the workaround survives
+  a new terminal and covers `next dev` as well as the scripts. Set `verbatim`
+  to restore Node's default or `ipv6first` where IPv6 is the healthy path; an
+  explicit `NODE_OPTIONS=--dns-result-order=…` always wins. `pnpm
+  diagnose:bedrock` prints the active order and flags an AAAA-only failure as
+  harmless.
+* **Output cut off by the token budget** — Bedrock signals a completion clipped
+  by `maxTokens` with `stopReason: "max_tokens"`. The text is a valid *prefix*,
+  so it can never parse, and retrying with the same budget reproduces it byte
+  for byte. The structured caller detects that specific stop reason, doubles the
+  budget up to `BEDROCK_MAX_TOKENS_CEILING`, and tells the model it was cut off
+  rather than malformed. At the ceiling it stops instead of burning further
+  calls and reports `output_truncated` naming the budget to raise.
 * **Unresolved blocking issues** — a run that finishes with blocking validation
   errors ends as `completed_with_errors` (a red badge and a `failed` final
   event), not `completed_with_warnings`. Every issue the fixer could not repair

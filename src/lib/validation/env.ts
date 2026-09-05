@@ -7,6 +7,8 @@
 
 import { z } from 'zod';
 
+import { parseDnsResultOrder, type DnsResultOrder } from '@/lib/net/dns';
+
 const optionalString = z
   .string()
   .transform((value) => (value.trim().length === 0 ? undefined : value.trim()))
@@ -59,6 +61,9 @@ const ServerEnvSchema = z.object({
   BEDROCK_VALIDATION_MODEL_ID: optionalString,
   BEDROCK_FIXER_MODEL_ID: optionalString,
   BEDROCK_MAX_TOKENS: intFrom(8000),
+  // Upper bound the structured caller may raise maxTokens to after a response
+  // is cut short (stopReason "max_tokens"). Kimi K2.5 caps output at 16k.
+  BEDROCK_MAX_TOKENS_CEILING: intFrom(16_000),
   BEDROCK_TEMPERATURE: floatFrom(0.2),
   BEDROCK_TOP_P: floatFrom(0.9),
   BEDROCK_TIMEOUT_MS: intFrom(120_000),
@@ -71,6 +76,9 @@ const ServerEnvSchema = z.object({
   WIREUP_AUTOSEED_COMPONENTS: boolFrom(true),
   WIREUP_MAX_REVISIONS: intFrom(12),
   WIREUP_MAX_EVENTS: intFrom(1500),
+
+  // --- Networking ---
+  WIREUP_DNS_RESULT_ORDER: optionalString,
 
   NODE_ENV: z.string().optional().transform((v) => v ?? 'development'),
 });
@@ -89,6 +97,7 @@ export interface ServerEnv {
     validationModelId?: string;
     fixerModelId?: string;
     maxTokens: number;
+    maxTokensCeiling: number;
     temperature: number;
     topP: number;
     timeoutMs: number;
@@ -101,6 +110,9 @@ export interface ServerEnv {
     autoseedComponents: boolean;
     maxRevisions: number;
     maxEvents: number;
+  };
+  net: {
+    dnsResultOrder: DnsResultOrder;
   };
   nodeEnv: string;
 }
@@ -137,6 +149,7 @@ function read(): ServerEnv {
       validationModelId: parsed.BEDROCK_VALIDATION_MODEL_ID,
       fixerModelId: parsed.BEDROCK_FIXER_MODEL_ID,
       maxTokens: parsed.BEDROCK_MAX_TOKENS,
+      maxTokensCeiling: Math.max(parsed.BEDROCK_MAX_TOKENS, parsed.BEDROCK_MAX_TOKENS_CEILING),
       temperature: parsed.BEDROCK_TEMPERATURE,
       topP: parsed.BEDROCK_TOP_P,
       timeoutMs: parsed.BEDROCK_TIMEOUT_MS,
@@ -149,6 +162,9 @@ function read(): ServerEnv {
       autoseedComponents: parsed.WIREUP_AUTOSEED_COMPONENTS,
       maxRevisions: Math.max(1, parsed.WIREUP_MAX_REVISIONS),
       maxEvents: Math.max(50, parsed.WIREUP_MAX_EVENTS),
+    },
+    net: {
+      dnsResultOrder: parseDnsResultOrder(parsed.WIREUP_DNS_RESULT_ORDER),
     },
     nodeEnv: parsed.NODE_ENV ?? 'development',
   };

@@ -313,7 +313,14 @@ function parseMarkdown(source: string): MdBlock[] {
       blocks.push({ kind: 'quote', text: body.join(' ') });
       continue;
     }
-    if (/^\s*\|.*\|\s*$/.test(line) && index + 1 < lines.length && /^\s*\|[\s:-]+\|\s*$/.test(lines[index + 1] as string)) {
+    // The separator row is `|---|---|`, `| :-- | --: |`, etc. The character
+    // class must include the column pipes, or only a single-column table ever
+    // matches and every real table is rendered as flat paragraphs.
+    if (
+      /^\s*\|.*\|\s*$/.test(line) &&
+      index + 1 < lines.length &&
+      /^\s*\|[\s:|-]*-[\s:|-]*\|\s*$/.test(lines[index + 1] as string)
+    ) {
       const header = splitRow(line);
       index += 2;
       const rows: string[][] = [];
@@ -343,8 +350,20 @@ function parseMarkdown(source: string): MdBlock[] {
       continue;
     }
 
-    const paragraph: string[] = [];
-    while (index < lines.length && !/^\s*$/.test(lines[index] as string) && !/^(#{1,6}\s|```|\s*[-*+]\s|\s*\d+[.)]\s|\s*\|)/.test(lines[index] as string)) {
+    // A line can match the paragraph stop-list without matching any block
+    // branch above - a `|` row with no `|---|` separator under it is the
+    // common case. The paragraph loop then consumes nothing, `index` never
+    // advances, and the outer `while` spins forever pushing empty paragraphs
+    // until the blocks array exceeds the maximum array length. Seeding the
+    // paragraph with the current line guarantees forward progress on every
+    // iteration, whatever the line looks like.
+    const paragraph: string[] = [line];
+    index += 1;
+    while (
+      index < lines.length &&
+      !/^\s*$/.test(lines[index] as string) &&
+      !/^(#{1,6}\s|```|\s*[-*+]\s|\s*\d+[.)]\s|\s*\|)/.test(lines[index] as string)
+    ) {
       paragraph.push(lines[index] as string);
       index += 1;
     }

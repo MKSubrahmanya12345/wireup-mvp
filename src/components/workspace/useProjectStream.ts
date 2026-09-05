@@ -6,6 +6,12 @@
  * Polls `/api/projects/[id]/events?after=<seq>` while the agent runs and
  * refetches the full project whenever a new revision lands or the run reaches a
  * terminal status. Polling backs off on transport errors and stops by itself.
+ *
+ * A long model call produces no events for as long as it runs, so a fixed
+ * interval means hundreds of identical round trips that can never return
+ * anything. The idle interval therefore grows while nothing changes and snaps
+ * back to `BASE_POLL_MS` the moment the run produces an event, a new revision
+ * or a status change.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,6 +23,10 @@ import { fetchEvents, fetchProject, isTerminal, mergeEvents } from './api';
 
 const BASE_POLL_MS = 1100;
 const MAX_POLL_MS = 8000;
+/** Growth factor applied for every consecutive poll that changed nothing. */
+const IDLE_BACKOFF_FACTOR = 1.35;
+/** Quiet polls tolerated at full speed before backing off (~3.3s). */
+const IDLE_GRACE_POLLS = 3;
 
 export interface ProjectStream {
   project: ProjectState | null;
@@ -51,6 +61,9 @@ export function useProjectStream(projectId: string, initial: ProjectState | null
   const revisionRef = useRef<number>(initial?.revision ?? 1);
   const pollMsRef = useRef<number>(BASE_POLL_MS);
   const doneRef = useRef<boolean>(isTerminal(initial?.status));
+  const idlePollsRef = useRef<number>(0);
+  const statusRef = useRef<ProjectState['status'] | null>(initial?.status ?? null);
+  const stageRef = useRef<ProjectState['stage'] | null>(initial?.stage ?? null);
   const eventsRef = useRef<AgentEvent[]>(initial?.events ?? []);
 
   const loadFullProject = useCallback(async (): Promise<void> => {
@@ -70,7 +83,26 @@ export function useProjectStream(projectId: string, initial: ProjectState | null
       seqRef.current = Math.max(seqRef.current, payload.latestSeq);
       setPolledAt(Date.now());
       setError(null);
-      pollMsRef.current = BASE_POLL_MS;
+
+      // "Something happened" = a new event, a new revision, or a status/stage
+      // transition. Anything else is a poll that told us nothing.
+      const changed =
+        payload.events.length > 0 ||
+        payload.revision !== revisionRef.current ||
+        payload.status !== statusRef.current ||
+        payload.stage !== stageRef.current;
+      statusRef.current = payload.status;
+      stageRef.current = payload.stage;
+
+      if (changed) {
+        idlePollsRef.current = 0;
+        pollMsRef.current = BASE_POLL_MS;
+      } else {
+        idlePollsRef.current += 1;
+        if (idlePollsRef.current > IDLE_GRACE_POLLS) {
+          pollMsRef.current = Math.min(MAX_POLL_MS, Math.round(pollMsRef.current * IDLE_BACKOFF_FACTOR));
+        }
+      }
 
       if (payload.events.length > 0) {
         eventsRef.current = mergeEvents(eventsRef.current, payload.events);
@@ -125,6 +157,7 @@ export function useProjectStream(projectId: string, initial: ProjectState | null
   const refresh = useCallback(async (): Promise<void> => {
     doneRef.current = false;
     pollMsRef.current = BASE_POLL_MS;
+    idlePollsRef.current = 0;
     try {
       await loadFullProject();
       setError(null);

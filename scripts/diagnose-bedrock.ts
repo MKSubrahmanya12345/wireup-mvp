@@ -17,6 +17,7 @@ import tls from 'node:tls';
 import { loadDotEnv } from '@/lib/validation/dotenv';
 import { env, resetEnvCache, EnvError } from '@/lib/validation/env';
 import { describeError } from '@/lib/logging/logger';
+import { applyDnsResultOrder } from '@/lib/net/dns';
 import { converse, BedrockError } from '@/lib/bedrock/client';
 
 const TIMEOUT_MS = 10_000;
@@ -81,6 +82,7 @@ async function main(): Promise<number> {
   const loaded = loadDotEnv(process.cwd());
   resetEnvCache();
   const configuration = env().bedrock;
+  const dnsOrder = applyDnsResultOrder(env().net.dnsResultOrder);
   const host = `bedrock-runtime.${configuration.region}.amazonaws.com`;
 
   console.log('wireup · bedrock doctor');
@@ -94,6 +96,7 @@ async function main(): Promise<number> {
   console.log(`   fixer model       ${configuration.fixerModelId ?? '(falls back to BEDROCK_MODEL_ID)'}`);
   console.log(`   credentials       ${credentialSource()} — secret ${mask(configuration.secretAccessKey)}`);
   console.log(`   max retries       ${configuration.maxRetries}   timeout ${configuration.timeoutMs}ms`);
+  console.log(`   dns result order  ${dnsOrder}${dnsOrder === 'ipv4first' ? ' (IPv4 preferred — works around resolvers that fail AAAA lookups)' : ''}`);
 
   if (!configuration.modelId) {
     console.error('\n✕ BEDROCK_MODEL_ID is not set. Copy .env.example to .env and set it.');
@@ -104,18 +107,29 @@ async function main(): Promise<number> {
   console.log(`\n2. DNS — ${host}`);
   try {
     const v4 = await withTimeout(lookupAll(host, 4), TIMEOUT_MS, 'IPv4 lookup');
-    const v6 = await withTimeout(lookupAll(host, 6), TIMEOUT_MS, 'IPv6 lookup').catch(() => [] as string[]);
+    let v6Error: string | null = null;
+    const v6 = await withTimeout(lookupAll(host, 6), TIMEOUT_MS, 'IPv6 lookup').catch((error: unknown) => {
+      v6Error = (error as NodeJS.ErrnoException).code ?? describeError(error).message;
+      return [] as string[];
+    });
     const resolved = [...v4, ...v6];
     console.log(
       `   ✓ resolved ${resolved.length} address(es): ${resolved.slice(0, 4).join(', ')}${resolved.length > 4 ? ', …' : ''}`,
     );
+    if (v6Error) {
+      console.log(
+        `   · IPv6 (AAAA) lookup failed (${v6Error}) — harmless here because the result order is \`${dnsOrder}\`.`,
+      );
+      console.log('     Keep WIREUP_DNS_RESULT_ORDER=ipv4first on this host, or the failure comes back as EAI_AGAIN.');
+    }
   } catch (error) {
     const described = describeError(error);
     const code = (error as NodeJS.ErrnoException).code ?? 'unknown';
     console.error(`   ✕ lookup failed (${code}): ${described.message}`);
     console.error('\nThis is the failure in your logs: the request never left this machine, so');
     console.error('credentials, model id and permissions were never evaluated. Do this:');
-    console.error('   • retry — EAI_AGAIN is a temporary resolver failure and often clears by itself');
+    console.error('   • retry — EAI_AGAIN is often a transient resolver failure and clears by itself');
+    console.error('   • set WIREUP_DNS_RESULT_ORDER=ipv4first in .env if only the IPv6 (AAAA) half fails');
     console.error(`   • node -e "require('dns').lookup('${host}',console.log)"`);
     console.error(`   • dig ${host} +tries=1 +time=3   (compare with your browser)`);
     console.error('   • cat /etc/resolv.conf           (Docker? use --dns 1.1.1.1)');
