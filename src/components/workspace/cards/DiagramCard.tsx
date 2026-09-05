@@ -186,9 +186,9 @@ export function DiagramCard({ project, running, activity }: CardProps) {
             wokwi
           </button>
           {tab === 'json' ? (
-            <DownloadButton filename="diagram.json" content={JSON.stringify(diagram, null, 2)} label="download" />
+            <DownloadButton filename="wireup-diagram.json" content={JSON.stringify(diagram, null, 2)} label="download" />
           ) : null}
-          {tab === 'wokwi' && wokwiJson ? <DownloadButton filename="wokwi-diagram.json" content={wokwiJson} label="download" /> : null}
+          {tab === 'wokwi' && wokwiJson ? <DownloadButton filename="diagram.json" content={wokwiJson} label="download diagram.json" /> : null}
         </span>
       }
       footer={
@@ -297,6 +297,10 @@ export function DiagramCard({ project, running, activity }: CardProps) {
 
       {tab === 'wokwi' ? (
         <>
+          <p className="small muted" style={{ marginTop: 0 }}>
+            This is the file to load into the Wokwi simulator (save it as <span className="mono-sm">diagram.json</span> next to{' '}
+            <span className="mono-sm">sketch.ino</span>). The <em>diagram.json</em> tab is Wireup&apos;s own richer format and is not understood by Wokwi.
+          </p>
           <div className="row" style={{ marginBottom: 8 }}>
             <button type="button" className="btn btn--sm" onClick={() => void loadWokwi()} disabled={wokwiState === 'loading'}>
               {wokwiState === 'loading' ? 'projecting…' : wokwi ? 're-project' : 'project to wokwi diagram.json'}

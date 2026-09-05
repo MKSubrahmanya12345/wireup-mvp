@@ -90,6 +90,9 @@ function addConnection(
   to: WiringEndpoint,
   options: AddOptions,
 ): WiringConnection | null {
+  // A part can never be wired to itself — a self-loop is always a planner bug
+  // (e.g. grounding the MCU to its own GND pin), never a real wire.
+  if (from.instanceId === to.instanceId) return null;
   const key = keyFor(from, to);
   if (state.keys.has(key)) return null;
   state.keys.add(key);
@@ -570,7 +573,7 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
   const ground = groundEndpoint();
 
   const connectGround = (instanceId: string, definition: ComponentDefinition | undefined, why: string) => {
-    if (!ground) return;
+    if (!ground || ground.instanceId === instanceId) return;
     const entry = index.get(instanceId);
     if (!entry) return;
     const pin = negativePinOf(definition ?? entry.definition) ?? entry.definition?.groundPins[0];
@@ -647,6 +650,18 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
       /* Passive parts are wired by their dedicated rules below. */
       if (definition.category === 'passive') continue;
 
+      /*
+       * A USB-powered board that sources the logic rail is the reference for
+       * everything else; it must not be wired to its own 5V/GND pins.
+       */
+      if (
+        definition.category === 'microcontroller' &&
+        instance.instanceId === controllerInstanceId &&
+        (rails.logic?.instanceId === instance.instanceId || rails.supply?.instanceId === instance.instanceId)
+      ) {
+        continue;
+      }
+
       /* Motor drivers: supply rail on the power input, logic rail on VCC. */
       if (definition.category === 'motor_driver') {
         const supplyPin =
@@ -689,20 +704,27 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
       ].filter((rail): rail is RailSource => rail !== undefined && rail.instanceId !== instance.instanceId);
 
       const partMax = definition.motorRequirements?.supplyVoltageMax ?? definition.maxVoltage;
-      const pinAcceptsRail = (pinVoltage: number | undefined, rail: RailSource): boolean => {
+      const pinAcceptsRail = (pinVoltage: number | undefined, rail: RailSource, pinMaxVoltage?: number, pinMinVoltage?: number): boolean => {
         // VIN / RAW style input: a wide unregulated window declared by one number.
         if (pinVoltage !== undefined && pinVoltage >= 7 && (partMax === undefined || pinVoltage > partMax)) {
           return rail.voltage >= pinVoltage * 0.7 && rail.voltage <= pinVoltage * 1.3;
         }
-        // Everything else: the part's own voltage window decides, and the rail
-        // must not exceed what the pin is labelled for.
-        return fitsWindow(definition, rail.voltage) && (pinVoltage === undefined || rail.voltage <= pinVoltage + 0.6);
+        // A pin with its own declared voltage (a board's VIN = 5 V input next
+        // to its 3V3 output) is judged by that pin's window, not by the part's
+        // overall logic rating — otherwise a 3.3 V board could never be fed 5 V.
+        if (pinVoltage !== undefined) {
+          const floor = pinMinVoltage ?? pinVoltage - 0.3;
+          const ceiling = pinMaxVoltage ?? pinVoltage + 0.6;
+          return rail.voltage >= floor - 0.05 && rail.voltage <= ceiling + 0.05;
+        }
+        // Otherwise the part's own voltage window decides.
+        return fitsWindow(definition, rail.voltage);
       };
 
       let powerPin: string | undefined;
       let powerRail: RailSource | undefined;
       for (const candidate of powerPinCandidates) {
-        const rail = railOptions.find((option) => pinAcceptsRail(candidate.voltage, option));
+        const rail = railOptions.find((option) => pinAcceptsRail(candidate.voltage, option, candidate.maxVoltage, candidate.minVoltage));
         if (rail) {
           powerPin = candidate.name;
           powerRail = rail;

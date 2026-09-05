@@ -199,8 +199,17 @@ function buildDemands(selections: ComponentSelection[], catalog: ComponentDefini
 
         const signal = signalFor(definition, entry.pinName);
         // Peripheral input => MCU drives it (output). Peripheral output => MCU reads it (input).
-        const mcuDirection: 'input' | 'output' =
-          componentPin.direction === 'output' ? 'input' : componentPin.direction === 'input' ? 'output' : signal === 'analog' ? 'input' : 'output';
+        // Switches and other passive input devices are always *read* by the MCU.
+        const passiveInput = definition.category === 'input_device' && (definition.communicationProtocols?.length ?? 0) === 0;
+        const mcuDirection: 'input' | 'output' = passiveInput
+          ? 'input'
+          : componentPin.direction === 'output'
+            ? 'input'
+            : componentPin.direction === 'input'
+              ? 'output'
+              : signal === 'analog'
+                ? 'input'
+                : 'output';
 
         const base = {
           instance,

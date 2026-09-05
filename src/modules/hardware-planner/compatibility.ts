@@ -28,10 +28,45 @@ function definitionFor(selection: ComponentSelection, catalog: ComponentDefiniti
 }
 
 /** The logic level a part expects: explicit metadata first, then its supply voltage. */
+/** Categories whose nominal `voltage` describes a logic interface rather than a load. */
+const LOGIC_CATEGORIES = new Set(['microcontroller', 'sensor', 'display', 'communication', 'motor_driver']);
+
 export function partLogicVoltage(definition: ComponentDefinition): number | undefined {
   const explicit = definition.metadata.logicVoltage;
   if (typeof explicit === 'number') return explicit;
+  /*
+   * For an LED, buzzer, motor or resistor `voltage` is a forward/operating
+   * voltage of a *load*, not a logic threshold — a 2.1 V LED on a 5 V GPIO is
+   * exactly what the series resistor is for, not a level-shifting problem.
+   */
+  if (!LOGIC_CATEGORIES.has(definition.category)) return undefined;
+  if (definition.metadata.requiresSeriesResistor === true) return undefined;
   return definition.voltage;
+}
+
+/**
+ * True when a part's I/O is safe on an MCU of `mcuLogic` volts without a
+ * level shifter: it is explicitly 5 V tolerant, its rated supply range reaches
+ * the MCU logic voltage (breakout boards with an on-board regulator such as
+ * the common SSD1306 OLED modules), or it is a passive switch/input.
+ */
+export function logicLevelToleratesMcu(definition: ComponentDefinition, mcuLogic: number): boolean {
+  const meta = definition.metadata;
+  if (meta.fiveVoltTolerant === true || meta.fiveVoltTolerantPins === true) return true;
+  if (meta.levelShiftRequiredWith5vMcu === true) return false;
+  if (definition.category === 'input_device' && !(definition.communicationProtocols?.length)) return true;
+  const maxVoltage = definition.maxVoltage ?? Math.max(...(definition.pins ?? []).map((pin) => pin.maxVoltage ?? 0));
+  return typeof maxVoltage === 'number' && Number.isFinite(maxVoltage) && maxVoltage >= mcuLogic - 0.1;
+}
+
+/** Switches, buttons and other passive inputs never sink GPIO current. */
+export function isPassiveInput(definition: ComponentDefinition): boolean {
+  if (definition.category !== 'input_device') return false;
+  if (definition.communicationProtocols?.length) return false;
+  return (
+    definition.metadata.momentary === true ||
+    /button|switch|potentiometer|encoder|joystick|keypad/i.test(`${definition.name} ${definition.id}`)
+  );
 }
 
 function hasMitigation(selections: ComponentSelection[], catalog: ComponentDefinition[], kind: 'driver' | 'level_shifter' | 'regulator'): boolean {
@@ -91,7 +126,10 @@ export function checkCompatibility(input: CompatibilityInput): CompatibilityResu
       ['i2c', 'spi', 'uart', 'one_wire'].includes(String(protocol).toLowerCase()),
     );
     const railFed = (definition.pins ?? []).some((pin) => pin.type === 'power');
-    const railPoweredIc = busAttached && railFed;
+    // Any module with its own VCC pin (sensor, display, radio) is rail-fed; the
+    // GPIO only sees its logic input, never the module's supply current.
+    const moduleWithSupply = railFed && ['sensor', 'display', 'communication', 'input_device'].includes(definition.category);
+    const railPoweredIc = (busAttached && railFed) || moduleWithSupply;
     /*
      * A motor driver is the buffer stage itself: its 3 A rating is what it
      * delivers to the load, not what a GPIO sinks into it. Comparing that
@@ -103,7 +141,8 @@ export function checkCompatibility(input: CompatibilityInput): CompatibilityResu
       definition.category !== 'motor' &&
       definition.category !== 'motor_driver' &&
       !isDriverStage &&
-      !railPoweredIc;
+      !railPoweredIc &&
+      !isPassiveInput(definition);
     if (
       maxCurrent !== undefined &&
       profile &&
@@ -124,7 +163,12 @@ export function checkCompatibility(input: CompatibilityInput): CompatibilityResu
 
     // 3. Logic level.
     const partLogic = partLogicVoltage(definition);
-    if (mcuLogic !== undefined && partLogic !== undefined && Math.abs(partLogic - mcuLogic) > 0.4) {
+    if (
+      mcuLogic !== undefined &&
+      partLogic !== undefined &&
+      Math.abs(partLogic - mcuLogic) > 0.4 &&
+      !(partLogic < mcuLogic && logicLevelToleratesMcu(definition, mcuLogic))
+    ) {
       const shifterPresent = hasMitigation(selections, catalog, 'level_shifter');
       const tolerant = definition.metadata.fiveVoltTolerantPins === true;
       const dividerHint = definition.metadata.levelShiftRequiredWith5vMcu === true || definition.metadata.levelShiftFrom3v3 === true;

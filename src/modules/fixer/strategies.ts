@@ -942,6 +942,15 @@ function planForIssue(ctx: Ctx, issue: ValidationIssue): void {
       return;
     }
 
+    case 'code_i2c_address_invalid':
+    case 'code_missing_bus_init':
+    case 'code_stray_include': {
+      // Repaired by the deterministic firmware hygiene pass in the applier.
+      ctx.handled.add(issue.id);
+      ctx.notes.push(`${issue.code}: firmware hygiene pass will repair ${issue.target?.filePath ?? 'sketch.ino'}.`);
+      return;
+    }
+
     case 'code_missing_include': {
       const needle = issue.target?.library ?? '';
       const library = findLibrary(ctx, needle);

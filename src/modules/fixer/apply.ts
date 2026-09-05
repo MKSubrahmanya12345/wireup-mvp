@@ -23,7 +23,7 @@ import type {
 import type { ArtifactKind } from '@/types/validation';
 import type { Diagram } from '@/types/diagram';
 import type { PinAssignment, WiringConnection, WiringPlan } from '@/types/wiring';
-import type { McuProfile } from '@/modules/pin-planner/mcu-profiles';
+import { pinSpec, type McuProfile } from '@/modules/pin-planner/mcu-profiles';
 
 import { logger } from '@/lib/logging/logger';
 import {
@@ -36,6 +36,7 @@ import { nowIso } from '@/lib/validation/time';
 import { expandSelections, ROLE_BY_CATEGORY } from '@/modules/hardware-planner';
 import type { DraftSelection } from '@/modules/hardware-planner/types';
 import { syncPinConstants } from '@/modules/code-generator';
+import { applyFirmwareHygiene } from '@/modules/code-generator/hygiene';
 import {
   buildPinMapBlock,
   INCLUDES_END,
@@ -419,10 +420,18 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
               id: existing.id,
               source: 'fixer',
             };
+            // The Arduino literal (D7 → 7) is derived from the pin name; a
+            // stale pinNumber would silently re-point the sketch at the old pin.
+            if (patch.pin !== undefined && patch.pin !== before && patch.pinNumber === undefined) {
+              const number = input.profile ? pinSpec(input.profile, patch.pin)?.number : undefined;
+              if (number !== undefined) merged.pinNumber = number;
+              else delete merged.pinNumber;
+            }
             const position = working.pinAssignments.findIndex((assignment) => assignment.id === existing.id);
             working.pinAssignments[position] = merged;
             pinsChanged = true;
             wiringChanged = true;
+            if (before !== merged.pin) requestedStages.add('wiring');
             record(change, `${merged.targetInstanceId}.${merged.targetPin} moved ${before} → ${merged.pin}`);
           } else {
             const mcuInstanceId = patch.mcuInstanceId ?? controllerId ?? '';
@@ -430,12 +439,13 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
               refuse(change, 'no controller instance is known, so a new assignment cannot be created');
               break;
             }
+            const derivedNumber = patch.pinNumber ?? (input.profile ? pinSpec(input.profile, patch.pin)?.number : undefined);
             const created: PinAssignment = {
               id: newAssignmentId(),
               mcuInstanceId,
               mcuComponentId: patch.mcuComponentId ?? controllerComponentId ?? '',
               pin: patch.pin,
-              ...(patch.pinNumber !== undefined ? { pinNumber: patch.pinNumber } : {}),
+              ...(derivedNumber !== undefined ? { pinNumber: derivedNumber } : {}),
               targetInstanceId: patch.targetInstanceId,
               targetComponentId: patch.targetComponentId ?? targetInstance.componentId,
               targetPin: patch.targetPin,
@@ -450,6 +460,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
             working.pinAssignments.push(created);
             pinsChanged = true;
             wiringChanged = true;
+            requestedStages.add('wiring');
             record(change, `new assignment ${created.id}: ${mcuInstanceId}.${created.pin} → ${created.targetInstanceId}.${created.targetPin}`);
           }
           break;
@@ -792,7 +803,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
   /* --------------------------------------------------------------------- */
 
   if (pinsChanged || librariesChanged || input.syncFirmware === true) {
-    const synced = syncFirmware(working, input.profile, controllerComponentId, executedChanges);
+    const synced = syncFirmware(working, input.profile, controllerComponentId, executedChanges, catalog);
     for (const entry of synced) {
       codeChanged = true;
       applied.push(entry.applied);
@@ -825,12 +836,40 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
     }
   }
 
+  /*
+   * Downstream artifacts are derived from upstream ones, so a re-run of an
+   * early stage implies the later ones: a moved pin changes the wiring graph,
+   * which changes diagram.json and the assembly instructions, and the sketch
+   * must be re-synchronised with the final pin plan. Without this cascade a
+   * pin fix left the diagram showing the old pin and the firmware the new one.
+   */
+  const cascade = (from: RerunStage, to: RerunStage[]) => {
+    if (!requestedStages.has(from)) return;
+    for (const stage of to) if (input.refresh?.[stage]) requestedStages.add(stage);
+  };
+  if (pinsChanged || wiringChanged || componentsChanged) {
+    for (const stage of ['diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[stage]) requestedStages.add(stage);
+  }
+  cascade('pins', ['wiring', 'diagram', 'instructions']);
+  cascade('wiring', ['diagram', 'instructions']);
+
+  let pinsRederived = false;
   for (const stage of stageOrder) {
     if (!requestedStages.has(stage)) continue;
     const refresher = input.refresh?.[stage];
     if (!refresher) {
       pending.push(stage);
       continue;
+    }
+    // Re-sync the sketch with the final pin plan before code/diagram are rebuilt.
+    if ((stage === 'code' || stage === 'diagram') && pinsRederived) {
+      const synced = syncFirmware(working, input.profile, controllerComponentId, executedChanges, catalog);
+      for (const entry of synced) {
+        codeChanged = true;
+        applied.push(entry.applied);
+        touched.add('code');
+      }
+      pinsRederived = false;
     }
     const outcome = runRefresh(refresher, snapshot(working, input.project), stage);
     if (!outcome) {
@@ -840,12 +879,27 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
     adopt(working, outcome.project);
     for (const note of outcome.notes ?? []) notes.push(note);
     notes.push(`${stage} re-derived deterministically from the patched project state.`);
-    if (stage === 'pins') pinsChanged = true;
-    if (stage === 'wiring') wiringChanged = true;
+    if (stage === 'pins') {
+      pinsChanged = true;
+      pinsRederived = true;
+      for (const next of ['wiring', 'diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[next]) requestedStages.add(next);
+    }
+    if (stage === 'wiring') {
+      wiringChanged = true;
+      for (const next of ['diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[next]) requestedStages.add(next);
+    }
     if (stage === 'diagram') touched.add('diagram');
     if (stage === 'instructions') touched.add('instructions');
     if (stage === 'libraries') touched.add('libraries');
     if (stage === 'code') touched.add('code');
+  }
+  if (pinsRederived) {
+    const synced = syncFirmware(working, input.profile, controllerComponentId, executedChanges, catalog);
+    for (const entry of synced) {
+      codeChanged = true;
+      applied.push(entry.applied);
+      touched.add('code');
+    }
   }
 
   if (componentsChanged) touched.add('components');
@@ -937,6 +991,7 @@ function syncFirmware(
   profile: McuProfile | undefined,
   controllerComponentId: string | undefined,
   executedChanges: FixChange[],
+  catalog: ComponentDefinition[],
 ): { applied: AppliedChange; change: FixChange }[] {
   if (!working.code) return [];
   const assignments = working.pinAssignments;
@@ -1000,6 +1055,13 @@ function syncFirmware(
         content = lineEnd === -1 ? `${content.trimEnd()}\n\n${includeBlock}\n` : `${content.slice(0, lineEnd + 1)}${includeBlock}\n${content.slice(lineEnd + 1)}`;
       }
       details.push(`added include(s): ${missingIncludes.join(', ')}`);
+    }
+
+    /* 4. Hygiene: hex I2C addresses, Wire.begin(), stray includes ---------- */
+    const hygiene = applyFirmwareHygiene(content, { selections: working.components, catalog, libraries });
+    if (hygiene.content !== content) {
+      content = hygiene.content;
+      details.push(...hygiene.notes);
     }
 
     if (content === original) continue;

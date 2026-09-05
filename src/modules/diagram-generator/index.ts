@@ -14,6 +14,8 @@ import type { PinAssignment, WiringPlan } from '@/types/wiring';
 import type { AgentEventLog } from '@/lib/logging/events';
 import { nowIso } from '@/lib/validation/time';
 
+import { resolvePinName } from '@/modules/wiring-planner/conflicts';
+
 import { layoutComponents, GRID_SIZE, type LayoutInput } from './layout';
 
 export const DIAGRAM_GENERATOR = 'wireup-diagram-generator/1.0';
@@ -57,21 +59,18 @@ export function generateDiagram(input: DiagramGeneratorInput): Diagram {
   const componentsById = new Map(layout.components.map((component) => [component.id, component]));
 
   // Annotate pins with their MCU binding and connectivity.
+  // `assignedTo` records the MCU binding; `connected` is only set from the
+  // wiring graph below so a pin is never shown as wired without a wire.
   for (const assignment of input.assignments) {
     const target = componentsById.get(assignment.targetInstanceId);
-    const targetPin = target?.pins.find((pin) => pin.name.toLowerCase() === assignment.targetPin.toLowerCase());
-    if (targetPin) {
-      targetPin.assignedTo = assignment.pin;
-      targetPin.connected = true;
-    }
-    const mcu = componentsById.get(assignment.mcuInstanceId);
-    const mcuPin = mcu?.pins.find((pin) => pin.name.toLowerCase() === assignment.pin.toLowerCase());
-    if (mcuPin) mcuPin.connected = true;
+    const targetPin = target ? findDiagramPin(target, assignment.targetPin, input.catalog) : undefined;
+    if (targetPin) targetPin.assignedTo = assignment.pin;
   }
 
   const connections: DiagramConnection[] = [];
   const skipped: string[] = [];
 
+  const seenConnectionKeys = new Set<string>();
   for (const connection of input.wiring?.connections ?? []) {
     const fromComponent = componentsById.get(connection.from.instanceId);
     const toComponent = componentsById.get(connection.to.instanceId);
@@ -79,9 +78,23 @@ export function generateDiagram(input: DiagramGeneratorInput): Diagram {
       skipped.push(`${connection.id} (${connection.from.instanceId} → ${connection.to.instanceId})`);
       continue;
     }
+    // A part wired to itself is never a real wire — drop it rather than draw it.
+    if (connection.from.instanceId === connection.to.instanceId) {
+      skipped.push(`${connection.id} (self-connection on ${connection.from.instanceId})`);
+      continue;
+    }
+    const key = [`${connection.from.instanceId}:${connection.from.pin}`, `${connection.to.instanceId}:${connection.to.pin}`]
+      .map((part) => part.toLowerCase())
+      .sort()
+      .join('|');
+    if (seenConnectionKeys.has(key)) {
+      skipped.push(`${connection.id} (duplicate wire)`);
+      continue;
+    }
+    seenConnectionKeys.add(key);
 
-    const fromPin = fromComponent.pins.find((pin) => pin.name.toLowerCase() === connection.from.pin.toLowerCase());
-    const toPin = toComponent.pins.find((pin) => pin.name.toLowerCase() === connection.to.pin.toLowerCase());
+    const fromPin = findDiagramPin(fromComponent, connection.from.pin, input.catalog);
+    const toPin = findDiagramPin(toComponent, connection.to.pin, input.catalog);
     if (fromPin) fromPin.connected = true;
     if (toPin) toPin.connected = true;
 
@@ -113,8 +126,8 @@ export function generateDiagram(input: DiagramGeneratorInput): Diagram {
   const groups: DiagramGroup[] = (input.hardwarePlan?.subsystems ?? [])
     .map((subsystem) => ({
       id: subsystem.id,
-      name: subsystem.name,
-      description: subsystem.description,
+      name: unescapeHtml(subsystem.name),
+      description: unescapeHtml(subsystem.description),
       memberIds: subsystem.instanceIds.filter((instanceId) => componentsById.has(instanceId)),
     }))
     .filter((group) => group.memberIds.length > 0);
@@ -156,6 +169,26 @@ export function generateDiagram(input: DiagramGeneratorInput): Diagram {
   );
 
   return diagram;
+}
+
+/** Locate a diagram pin by name, falling back to the catalog aliases. */
+function findDiagramPin(component: DiagramComponent, pinName: string, catalog: ComponentDefinition[]) {
+  const direct = component.pins.find((pin) => pin.name.toLowerCase() === pinName.toLowerCase());
+  if (direct) return direct;
+  const definition = catalog.find((entry) => entry.id === component.ref);
+  const canonical = definition ? resolvePinName(definition, pinName) : undefined;
+  if (!canonical) return undefined;
+  return component.pins.find((pin) => pin.name.toLowerCase() === canonical.toLowerCase());
+}
+
+/** Text that reached the plan through an LLM may carry HTML entities. */
+function unescapeHtml(value: string): string {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'");
 }
 
 function routeBetween(x1?: number, y1?: number, x2?: number, y2?: number): { x: number; y: number }[] | undefined {

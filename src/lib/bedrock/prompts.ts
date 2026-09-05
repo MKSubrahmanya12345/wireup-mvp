@@ -139,9 +139,15 @@ export const GENERATION_JSON_CONTRACT = `Return a single JSON object with EXACTL
     ]
   },
   Code rules: complete and compilable, no placeholders, no TODOs, no pseudo-code.
-  Declare every pin as a "const int"/"#define" block at the top using the EXACT mcuPin names from pinAssignments.
-  Include every library you listed. Implement setup() and loop(). Implement the full behaviour,
-  including a communication failsafe that stops the motors when no command arrives.
+  Declare every pin as a "const int"/"#define" block at the top using the EXACT mcuPin names from pinAssignments
+  (D4 -> 4, A4 -> A4, GPIO25 -> 25). The pin plan is the single source of truth: never hardcode a different pin.
+  Include every library you listed and ONLY those libraries — no extra headers (e.g. do not include
+  Adafruit_Sensor.h for an SSD1306 display). Write I2C addresses as hex literals taken from the catalog
+  ("#define OLED_ADDRESS 0x3C", never a decimal). Call Wire.begin() in setup() before initialising any I2C
+  device, and do not pinMode() the SDA/SCL pins. Buttons use INPUT_PULLUP (pressed == LOW) with software
+  debounce. Refresh a display after every state change (and once at the end of setup()).
+  Implement setup() and loop(). Implement the full behaviour, including a communication failsafe that stops
+  the motors when no command arrives (only when the build has motors and a control link).
 
   "libraries": [{ "name": "...", "import": "...", "purpose": "...", "manager": "arduino", "version": "", "repository": "", "builtIn": false }],
 
@@ -218,6 +224,9 @@ export const ISSUE_CODE_LIST: ValidationIssueCode[] = [
   'diagram_missing_connection',
   'code_pin_mismatch',
   'code_missing_include',
+  'code_stray_include',
+  'code_i2c_address_invalid',
+  'code_missing_bus_init',
   'code_missing_setup_loop',
   'code_unbalanced_braces',
   'library_missing',
@@ -265,7 +274,9 @@ Review standards:
 - Only report an issue if you can point at concrete evidence in the supplied project.
 - "error" means the build is broken or unsafe. "warning" means risky or suboptimal. "info" is advisory.
 - Do NOT report style preferences, do NOT invent issues to look thorough, and do NOT restate the design.
-- Check especially: GPIO conflicts, reserved/strapping/input-only pins, motors driven from GPIO,
+- Check especially: hand-written pin constants that disagree with pinAssignments, I2C addresses that are
+  not hex literals or differ from the catalog, Wire.begin() missing when an I2C device is used, includes for
+  libraries that are not in the plan, GPIO conflicts, reserved/strapping/input-only pins, motors driven from GPIO,
   missing ground or power connections, voltage mismatches between logic and drive rails,
   power budget versus supply capability, code pin numbers versus pinAssignments,
   missing #include for every used library, diagram references that do not exist,

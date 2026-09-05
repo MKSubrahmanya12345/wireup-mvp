@@ -55,6 +55,9 @@ export interface ComponentPin {
   aliases?: string[];
   /** Operating/logic voltage of this pin when known. */
   voltage?: number;
+  /** Acceptable supply window for a power pin (e.g. a 3–5.5 V regulated input). */
+  minVoltage?: number;
+  maxVoltage?: number;
   /** For pins that must be tied to a specific MCU capability. */
   requiresCapability?: string[];
 }
