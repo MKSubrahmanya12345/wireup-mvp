@@ -729,3 +729,14 @@ export function reassignPin(input: ReassignInput): ReassignResult {
 
   return { assignments: next, moves, notes };
 }
+
+export {
+  buildResolvedPinMap,
+  bindingFor,
+  formatResolvedPinMapForPrompt,
+  lookupPinLiteral,
+  pinMapKey,
+  type ResolvedPinBinding,
+  type ResolvedPinMap,
+  type ControllerRef,
+} from './resolved-map';

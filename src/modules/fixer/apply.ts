@@ -35,7 +35,8 @@ import {
 import { nowIso } from '@/lib/validation/time';
 import { expandSelections, ROLE_BY_CATEGORY } from '@/modules/hardware-planner';
 import type { DraftSelection } from '@/modules/hardware-planner/types';
-import { syncPinConstants } from '@/modules/code-generator';
+import { auditFirmwareAgainstPinMap, pinAuditErrors, syncPinConstants } from '@/modules/code-generator';
+import { buildResolvedPinMap } from '@/modules/pin-planner/resolved-map';
 import { applyFirmwareHygiene } from '@/modules/code-generator/hygiene';
 import {
   buildPinMapBlock,
@@ -1032,6 +1033,28 @@ function syncFirmware(
           .slice(0, 4)
           .map((entry) => `${entry.name} ${entry.from}→${entry.to}`)
           .join(', ')}`,
+      );
+    }
+
+    /* 2b. Raw pin literals canonicalised to the resolved map's constants ---- */
+    const pinMap = buildResolvedPinMap({ assignments: [...assignments] });
+    const audit = auditFirmwareAgainstPinMap(content, pinMap, { legacyLiterals: constantSync.legacyLiterals });
+    if (audit.rewrites.length > 0) {
+      content = audit.content;
+      details.push(
+        `${audit.rewrites.length} raw pin literal(s) replaced by map constants: ${audit.rewrites
+          .slice(0, 4)
+          .map((entry) => `${entry.api}(${entry.token})→${entry.constant}`)
+          .join(', ')}`,
+      );
+    }
+    const remainingErrors = pinAuditErrors(audit);
+    if (remainingErrors.length > 0) {
+      details.push(
+        `BLOCKED: ${remainingErrors.length} pin reference(s) could not be traced to the pin map (${remainingErrors
+          .slice(0, 3)
+          .map((entry) => `${entry.api}(${entry.token})`)
+          .join(', ')}) — validation will flag these`,
       );
     }
 

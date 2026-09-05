@@ -10,8 +10,11 @@ complete, validated, simulator-ready build:
 * real components selected **only** from a seeded catalog (the model may not
   invent hardware),
 * a hardware plan with power budget and compatibility reasoning,
-* a pin map and a wiring graph,
-* `sketch.ino` firmware whose pin constants are generated from the pin map,
+* a resolved pin map — the single source of truth — plus the wiring graph
+  projected from it,
+* `sketch.ino` firmware written *against that map* (a separate call that is
+  forbidden from choosing pins) and statically audited so every pin it touches
+  traces back to the pin plan,
 * `libraries.json`, `diagram.json` (machine readable, Wokwi-adaptable) and a
   step-by-step `instructions.md`,
 * deterministic + model validation, and a **targeted** fix loop that patches the
@@ -88,11 +91,12 @@ hardcoded. `.env.example` documents each variable; the validated shape lives in
 | `AWS_REGION` | Bedrock region |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | Optional static credentials; otherwise the AWS SDK default credential chain is used (IAM role, profile, …) |
 | `BEDROCK_MODEL_ID` | Model for generation (base model id or inference-profile ARN) |
-| `BEDROCK_VALIDATION_MODEL_ID`, `BEDROCK_FIXER_MODEL_ID` | Optional per-role overrides, otherwise the main model is reused |
+| `BEDROCK_VALIDATION_MODEL_ID`, `BEDROCK_FIXER_MODEL_ID`, `BEDROCK_FIRMWARE_MODEL_ID` | Optional per-role overrides, otherwise the main model is reused |
 | `BEDROCK_MAX_TOKENS`, `BEDROCK_TEMPERATURE`, `BEDROCK_TOP_P`, `BEDROCK_TIMEOUT_MS`, `BEDROCK_MAX_RETRIES` | Inference configuration for the shared client |
 | `WIREUP_MAX_FIX_ITERATIONS` | Cap on validate → fix → re-validate loops (default 3) |
 | `WIREUP_ENABLE_LLM_FIXER` | Allow the model to propose a changeset when deterministic fixes are not enough |
 | `WIREUP_ENABLE_LLM_VALIDATION` | Run the critical model review in addition to the rule engine |
+| `WIREUP_ENABLE_LLM_FIRMWARE` | Let the model author firmware against the resolved pin map (otherwise the deterministic template sketch is used; either way the output is pin-audited) |
 | `WIREUP_AUTOSEED_COMPONENTS` | Seed the catalog into MongoDB when the collection is empty |
 | `WIREUP_MAX_REVISIONS`, `WIREUP_MAX_EVENTS` | Storage caps per project document |
 | `WIREUP_LOG_LEVEL` | Structured server log verbosity |
@@ -110,25 +114,52 @@ USER PROMPT
    │                            database; unknown parts are rejected, not invented
    ├─ hardware-planner      ── architecture blocks, subsystems, signal flow,
    │                            compatibility checks, power budget, risks
-   ├─ pin-planner           ── MCU-profile aware pin map (capabilities,
-   │                            reservations, conflicts)
-   ├─ wiring-planner        ── connection graph: power, ground, signal edges,
-   │                            wire colours, explanations, conflict report
-   ├─ software-planner      ── modules, control states, sensor/actuator logic,
-   │                            communication command set, safety, loop strategy
-   ├─ code-generator        ── sketch.ino (+ extra files) with a pin-constant
-   │                            block derived from the pin plan
-   ├─ libraries-generator   ── libraries.json + install commands
-   ├─ diagram-generator     ── diagram.json (layout, pin anchors, routed wires)
-   ├─ instructions-generator── instructions.md + bill of materials
+   ├─ pin-planner           ── MCU-profile aware assignment (capabilities,
+   │   │                      reservations, conflicts); the planner owns pins
+   │   ▼
+   │  RESOLVED PIN MAP      ── THE single source of truth. Frozen once from the
+   │   │                      pin plan ("pushbutton-6mm-1:1" → "D4", plus the PIN_*
+   │   │                      constant and C++ literal for each binding).
+   │   │                      Everything below reads THIS object; nothing
+   │   │                      downstream may decide a pin again.
+   │   ├───────────────┬─────────────────────┐
+   │   ▼               ▼                     ▼
+   ├─ wiring-planner  code-generator      diagram-generator
+   │  (graph from     (firmware call sees  (pin bindings rendered
+   │   the map)        only the map and is  from the same object)
+   │                  forbidden from
+   │                  choosing pins; the
+   │                  output is statically
+   │                  audited against the
+   │                  map, raw literals are
+   │                  rewritten to PIN_*
+   │                  constants, and an
+   │                  untraceable pin
+   │                  reference rejects the
+   │                  sketch in favour of the
+   │                  deterministic template)
+   ├─ software-planner ── modules, control states, logic, command set, safety
+   ├─ libraries-generator ── libraries.json + install commands
+   ├─ instructions-generator ── instructions.md + bill of materials
    │
-   ├─ validator ──────────── deterministic rule engine (+ optional model review)
-   │        │  issues with stable codes, targets and fix hints
+   ├─ validator ───────── deterministic rule engine (+ optional model review)
+   │        │  cross-checks the map three ways: firmware pins == plan pins,
+   │        │  diagram bindings == plan pins, no pin outside the map is used
    │        ▼
-   └─ fixer ──────────────── typed changeset applied to the EXISTING project,
-            │                dependent artifacts re-derived, revision frozen
+   └─ fixer ───────────── typed changeset applied to the EXISTING project,
+            │             pins/wiring changed only through the planner
+            │             (rerun_stage), firmware/diagram re-derived from
+            │             the refreshed map, revision frozen
             └── loop until passed or WIREUP_MAX_FIX_ITERATIONS is reached
 ```
+
+The pin-map discipline exists because the expensive class of bug is a *second
+decision*: the planner says `Pushbutton → D4` while the sketch declares
+`BUTTON_PIN = 2`. Pipeline v2 architects that away — the design call and the
+firmware call are separated by the pin planner, both artifact generators read
+one frozen `ResolvedPinMap`, and the validator gate makes any firmware ↔ map ↔
+diagram disagreement a blocking error. `pnpm verify:pinmap` runs the replayed
+scenario.
 
 Project status moves `pending → running → validating ⇄ fixing →
 completed | completed_with_warnings | failed`, and the stage field tracks the
@@ -150,10 +181,10 @@ exact diffs instead of "something changed".
 | `src/modules/project-understanding/` | Prompt → structured requirements. Heuristic extraction (quantities, features, platform hints) plus the model call; `formatAnalysisForPrompt` feeds the generation prompt |
 | `src/modules/components/` | The component database: `catalog.ts` (bundled seed + integrity check), `schema.ts` (zod definition schema), `service.ts` (retrieval, strict matching, MCU profiles, catalog cache), `context.ts` (catalog text for prompts), `seed/*` (51 parts) |
 | `src/modules/hardware-planner/` | Architecture, subsystems, signal flow, `compatibility.ts`, `power.ts` (rail/load budget), `defaults.ts`, plus `refreshHardwarePlan` for fix-driven re-planning |
-| `src/modules/pin-planner/` | `mcu-profiles.ts` (pin capabilities, reserved/input-only/ADC/PWM pins) and assignment with rationale |
+| `src/modules/pin-planner/` | `mcu-profiles.ts` (pin capabilities, reserved/input-only/ADC/PWM pins), assignment with rationale, `resolved-map.ts` (the frozen single source of truth both artifact generators and the validator read) |
 | `src/modules/wiring-planner/` | Connection graph generation, `conflicts.ts` detection, `extendWiringPlan` for fixes |
 | `src/modules/software-planner/` | Firmware architecture: modules, control states, logic, communication command set, safety, loop strategy, file plan |
-| `src/modules/code-generator/` | `templates.ts` (deterministic firmware skeleton) and `index.ts` (model output normalisation, pin-map/include marker blocks, entry point selection) |
+| `src/modules/code-generator/` | `templates.ts` (deterministic firmware skeleton), `pin-audit.ts` (static audit: every GPIO call site must trace to the resolved pin map; raw literals are rewritten to PIN_* constants; untraceable pins reject the file), `index.ts` (model firmware normalisation, pin-map/include marker blocks, audit gate) |
 | `src/modules/libraries-generator/` | `libraries.json` + per-manager install commands |
 | `src/modules/diagram-generator/` | `layout.ts` (grid layout, pin anchors, wire routing), `index.ts` (`diagram.json`), `wokwi.ts` (projection to the Wokwi format with honest skip reporting) |
 | `src/modules/instructions-generator/` | `instructions.md`, sections and bill of materials |

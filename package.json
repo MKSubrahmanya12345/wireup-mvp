@@ -17,7 +17,8 @@
     "seed": "tsx scripts/seed-components.ts",
     "seed:components": "tsx scripts/seed-components.ts",
     "diagnose:bedrock": "tsx scripts/diagnose-bedrock.ts",
-    "verify:offline": "tsx scripts/verify-offline-fallback.ts"
+    "verify:offline": "tsx scripts/verify-offline-fallback.ts",
+    "verify:pinmap": "tsx scripts/verify-pin-map.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.699.0",

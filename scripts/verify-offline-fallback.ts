@@ -44,7 +44,9 @@ import { nowIso } from '@/lib/validation/time';
 import type { ProjectState } from '@/types/project';
 
 import { runPipeline } from '@/modules/orchestrator/pipeline';
-import { buildRefreshers, controllerInfo, refreshSoftware } from '@/modules/orchestrator/context';
+import { buildRefreshers, controllerInfo, refreshSoftware, resolvedPinMapFor } from '@/modules/orchestrator/context';
+import { auditFirmwareAgainstPinMap, pinAuditErrors } from '@/modules/code-generator';
+import { getMcuProfile, usablePins } from '@/modules/pin-planner/mcu-profiles';
 import { validateProject } from '@/modules/validator';
 import { fixProject } from '@/modules/fixer';
 
@@ -126,6 +128,17 @@ async function main(): Promise<number> {
   );
   const attemptLines = events.list().filter((event) => event.type === 'llm_call_failed');
   check('failure surfaced as an event', attemptLines.length > 0, `${attemptLines.length} llm_call_failed event(s)`);
+
+  /* The firmware call (CALL 2) is a separate op in the same run — in an
+   * offline environment it must fail honestly too, and the deterministic
+   * sketch must carry the project instead. */
+  const firmwareCall = pipeline.llmCalls.find((call) => call.op === 'firmware');
+  check('firmware call recorded as its own op', Boolean(firmwareCall), firmwareCall ? `${firmwareCall.op}/${firmwareCall.status}` : 'missing');
+  check(
+    'firmware call failed honestly and the deterministic sketch shipped',
+    firmwareCall?.status === 'failed' && (project.artifacts.code?.files.length ?? 0) > 0,
+    firmwareCall?.error?.slice(0, 80) ?? '',
+  );
 
   /* --- 3. Validation degrades to the rule engine -------------------------- */
   console.log('\n3. validation degrades to the deterministic engine');
@@ -240,6 +253,70 @@ async function main(): Promise<number> {
     );
   } else {
     console.log('  · no peripheral ground wire to delete — scenario skipped');
+  }
+
+  /* --- 6. The pin map is the single source of truth ------------------------ */
+  console.log('\n6. firmware, diagram and the pin plan are projections of one resolved pin map');
+  const pinMap = resolvedPinMapFor(project, catalog);
+  check('pin map froze every planner row', pinMap.bindings.length === project.pinAssignments.length, `${pinMap.bindings.length} binding(s)`);
+
+  const codeText = (project.artifacts.code?.files ?? [])
+    .filter((file) => /\.(ino|cpp|c|h|hpp)$/i.test(file.path))
+    .map((file) => file.content)
+    .join('\n');
+  const firmwareAudit = codeText ? auditFirmwareAgainstPinMap(codeText, pinMap) : { violations: [], rewrites: [], ambiguous: [], content: '' };
+  check(
+    'firmware references only pins from the resolved map',
+    pinAuditErrors(firmwareAudit).length === 0,
+    pinAuditErrors(firmwareAudit).map((violation) => violation.message).join(' | ') || 'no violations',
+  );
+
+  const diagram = project.artifacts.diagram;
+  const driftedBindings = pinMap.bindings.filter((binding) => {
+    const component = diagram?.components.find((candidate) => candidate.id === binding.instanceId);
+    const pin = component?.pins.find((candidate) => candidate.name.toLowerCase() === binding.targetPin.toLowerCase());
+    // Integrated/absent parts are allowed to skip annotation; a present pin must agree.
+    return pin !== undefined && pin.assignedTo !== undefined && pin.assignedTo !== binding.mcuPin;
+  });
+  check('every diagram binding equals the resolved pin map', driftedBindings.length === 0, driftedBindings.map((binding) => `${binding.key}→?`).join(', ') || 'no drift');
+
+  /* Sabotage: move ONE assignment and prove the cross-checks catch firmware
+   * and diagram disagreeing with the plan — reconciliation must be detected,
+   * never hand-reconciled. */
+  const drifted = structuredClone(project);
+  const movable = drifted.pinAssignments.find((assignment) => assignment.protocol === 'gpio' || assignment.protocol === 'adc');
+  const driftProfile = getMcuProfile(drifted.pinAssignments[0]?.mcuComponentId ?? '');
+  if (movable && driftProfile) {
+    const used = new Set(drifted.pinAssignments.map((assignment) => assignment.pin));
+    const target = usablePins(driftProfile, { exclude: used, direction: movable.direction, allowStrapping: true })[0];
+    if (target && target.name !== movable.pin) {
+      const from = movable.pin;
+      movable.pin = target.name;
+      movable.pinNumber = target.number;
+      drifted.revision = project.revision + 1;
+
+      const driftCheck = await validateProject({
+        project: drifted,
+        catalog,
+        catalogContext: pipeline.context.fullCatalogContext,
+        mcuContext: pipeline.context.mcuContext,
+        ...(controller.profile ? { profile: controller.profile } : {}),
+        iteration: 0,
+        events,
+        enableModelReview: false,
+      });
+      const codes = new Set(driftCheck.result.issues.map((issue) => issue.code));
+      check(
+        `moving ${movable.targetInstanceId}.${movable.targetPin} ${from} → ${target.name} trips firmware check`,
+        codes.has('code_pin_mismatch'),
+        [...codes].slice(0, 6).join(', '),
+      );
+      check('the same move trips the diagram check', codes.has('diagram_out_of_sync'));
+    } else {
+      console.log('  · no free GPIO to move — sabotage scenario skipped');
+    }
+  } else {
+    console.log('  · no movable GPIO assignment — sabotage scenario skipped');
   }
 
   console.log(`\n${failures === 0 ? '✓ all checks passed' : `✕ ${failures} check(s) failed`}`);

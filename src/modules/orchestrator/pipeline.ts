@@ -4,8 +4,16 @@
  * Runs the stages in dependency order, one event + one persistence hook per
  * stage, so the UI always sees real progress:
  *
- *   understand → catalog → generation call → requirements → hardware →
- *   pins → wiring → software → code → libraries → diagram → instructions
+ *   understand → catalog → design call → requirements → hardware →
+ *   pins → wiring → software → firmware call → code → libraries →
+ *   diagram → instructions
+ *
+ * The circuit mapping is a SINGLE SOURCE OF TRUTH: the pin planner freezes it
+ * into a ResolvedPinMap, and both the firmware generator and the diagram
+ * generator receive that same object. The model never designs the circuit and
+ * writes firmware for it in one step — the firmware call happens only after
+ * the pin plan is final, sees nothing but the map, and its output is statically
+ * audited against the map.
  *
  * Every stage has a deterministic fallback: if Bedrock is unavailable (or its
  * JSON is unusable) the planners still produce a complete, wired project from
@@ -18,16 +26,18 @@ import type { GenerationStage } from '@/types/project';
 import type { ProjectPatch } from '@/lib/mongodb/projects';
 import type { PromptAnalysis } from '@/modules/project-understanding/heuristics';
 
-import { describeBedrockConfig, generateProjectSpec } from '@/lib/bedrock';
+import { describeBedrockConfig, generateFirmwareSpec, generateProjectSpec } from '@/lib/bedrock';
 import { createId } from '@/lib/validation/ids';
 import { asRecord, truncate } from '@/lib/validation/json';
 import { describeError, logger } from '@/lib/logging/logger';
 import { nowIso } from '@/lib/validation/time';
+import { env } from '@/lib/validation/env';
 
 import { normalizeRequirements, understandPrompt } from '@/modules/project-understanding';
 import { formatAnalysisForPrompt } from '@/modules/project-understanding/heuristics';
 import { planHardware } from '@/modules/hardware-planner';
 import { planPins } from '@/modules/pin-planner';
+import { buildResolvedPinMap, formatResolvedPinMapForPrompt, type ResolvedPinMap } from '@/modules/pin-planner/resolved-map';
 import { planWiring } from '@/modules/wiring-planner';
 import { planSoftware } from '@/modules/software-planner';
 import { generateCode } from '@/modules/code-generator';
@@ -129,7 +139,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   notes.push(...context.notes);
   await stage({}, 'catalog');
 
-  /* --- 3. Generation call (CALL 1) ---------------------------------------- */
+  /* --- 3. Design call (CALL 1 — parts, plans, wiring intent; no firmware) -- */
   const bedrock = await describeBedrockConfig();
   let modelPayload: Record<string, unknown> = {};
 
@@ -253,6 +263,20 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   }
   await stage({ pinAssignments: assignments }, 'pins');
 
+  /*
+   * The single source of truth every downstream artifact is projected from.
+   * Built ONCE from the pin planner's output; the firmware call + generator
+   * and the diagram generator all receive this exact object.
+   */
+  const pinMap: ResolvedPinMap = buildResolvedPinMap({
+    assignments,
+    controller: {
+      ...(controller.componentId ? { componentId: controller.componentId } : {}),
+      ...(controller.instanceId ? { instanceId: controller.instanceId } : {}),
+      name: controller.name,
+    },
+  });
+
   /* --- 7. Wiring ---------------------------------------------------------- */
   const wiring = planWiring({
     selections,
@@ -283,28 +307,115 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   });
   await stage({ softwarePlan }, 'software');
 
-  /* --- 9. Firmware -------------------------------------------------------- */
+  /* --- 9. Firmware call (CALL 2 — against the resolved pin map) ------------
+   *
+   * Deliberately a SEPARATE call after the pin planner has run: the model is
+   * handed the resolved pin map and forbidden from choosing pins, so it can
+   * never author firmware against pin decisions the planner overrode (the
+   * "pin planner says D4, sketch says 2" class of bug). If the firmware call
+   * is unavailable, the design call's code section (older agents) still gets
+   * a chance — but only after the same canonicalisation + audit gate.
+   */
+  let firmwarePayload: unknown;
+  const firmwareEnabled = bedrock.configured && env().agent.enableLlmFirmware;
+  if (firmwareEnabled) {
+    const startedAt = Date.now();
+    const call: LlmCallRecord = {
+      id: createId('llm'),
+      op: 'firmware',
+      model: bedrock.firmwareModel ?? bedrock.model ?? 'unknown',
+      startedAt: nowIso(),
+      status: 'failed',
+      iteration: 0,
+    };
+    const handle = events.start('llm_call_started', `Calling ${call.model} to write firmware against the resolved pin map...`, {
+      stage: 'code',
+      metadata: { op: 'firmware', model: call.model, pinsLocked: pinMap.bindings.length },
+    });
+
+    try {
+      const response = await generateFirmwareSpec({
+        prompt: base.prompt,
+        projectName,
+        controllerName: controller.name,
+        requirements: formatRequirementsForFirmware(requirements),
+        softwarePlan: truncate(JSON.stringify(softwarePlan, null, 2), 6000),
+        resolvedPinMap: formatResolvedPinMapForPrompt(pinMap),
+        serialLinks: formatSerialLinks(pinPlan.serialLinks),
+        i2cBuses: formatI2cBuses(pinPlan.i2cBuses),
+        libraries: formatLibraryManifest(softwarePlan.libraries),
+      });
+
+      call.model = response.model;
+      call.finishedAt = nowIso();
+      call.durationMs = Date.now() - startedAt;
+      call.inputTokens = response.usage.inputTokens;
+      call.outputTokens = response.usage.outputTokens;
+
+      if (response.ok && response.payload !== undefined) {
+        call.status = 'ok';
+        firmwarePayload = response.payload;
+        handle.complete(`Model firmware received (${response.raw.length} characters of JSON${response.repaired ? ', repaired' : ''}).`, {
+          op: 'firmware',
+          model: response.model,
+          repaired: response.repaired,
+          attempts: response.attempts,
+          inputTokens: response.usage.inputTokens ?? 0,
+          outputTokens: response.usage.outputTokens ?? 0,
+        });
+      } else {
+        call.error = response.error ?? 'unparsable payload';
+        handle.fail(
+          `Model firmware unavailable (${call.error}) — the deterministic sketch from the pin plan will be used instead.`,
+          response.error,
+          { op: 'firmware', model: response.model },
+        );
+        notes.push(`Firmware model call failed (${call.error}); the firmware was generated deterministically from the pin plan.`);
+      }
+    } catch (error) {
+      const described = describeError(error);
+      call.error = described.message;
+      call.finishedAt = nowIso();
+      call.durationMs = Date.now() - startedAt;
+      handle.fail(`Firmware model call threw: ${described.message} — falling back to the deterministic sketch.`, described.message, {
+        op: 'firmware',
+      });
+      notes.push(`Firmware model call threw (${described.message}); the firmware was generated deterministically from the pin plan.`);
+    }
+
+    llmCalls.push(call);
+    await stage({ llm: { ...(bedrock.model ? { model: bedrock.model } : {}), calls: llmCalls } }, 'code');
+  } else if (bedrock.configured) {
+    events.emit('info', 'LLM firmware authoring is disabled (WIREUP_ENABLE_LLM_FIRMWARE=false) — the deterministic sketch from the pin plan will be used.', {
+      stage: 'code',
+      metadata: { reason: 'disabled' },
+    });
+  }
+
+  /* --- 10. Firmware artifact ---------------------------------------------- */
   const code = generateCode({
     projectName,
     projectSummary: requirements.summary,
     requirements,
     selections,
     catalog,
-    assignments,
+    pinMap,
     serialLinks: pinPlan.serialLinks,
     i2cBuses: pinPlan.i2cBuses,
     softwarePlan,
     controllerName: controller.name,
     ...(profile ? { profile } : {}),
     revision: 1,
-    modelCode: modelPayload.code,
+    // The design call no longer authors firmware, but honour its `code` block
+    // if the model sent one anyway — as INPUT to the same map-audited path.
+    modelCode: firmwarePayload ?? modelPayload.code,
     events,
   });
   artifacts = { ...artifacts, code };
   notes.push(...code.notes);
   await stage({ artifacts }, 'code');
 
-  /* --- 10. Libraries ------------------------------------------------------ */
+  /* --- 11. Libraries ------------------------------------------------------ */
   const libraries = generateLibraries({
     softwarePlan,
     selections,
@@ -316,7 +427,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   notes.push(...libraries.notes);
   await stage({ artifacts }, 'libraries');
 
-  /* --- 11. Diagram -------------------------------------------------------- */
+  /* --- 12. Diagram (projected from the SAME resolved pin map) -------------- */
   const diagram = generateDiagram({
     projectId: base.id,
     revision: 1,
@@ -325,7 +436,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     requirements,
     selections,
     catalog,
-    assignments,
+    pinMap,
     wiring,
     hardwarePlan,
     events,
@@ -333,7 +444,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   artifacts = { ...artifacts, diagram };
   await stage({ artifacts }, 'diagram');
 
-  /* --- 12. Instructions --------------------------------------------------- */
+  /* --- 13. Instructions --------------------------------------------------- */
   const instructions = generateInstructions({
     projectName,
     projectSummary: requirements.summary,
@@ -397,6 +508,44 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   );
 
   return { project: state, context, analysis, llmCalls, notes: [...new Set(notes)] };
+}
+
+/** Compact requirements view for the firmware call. */
+function formatRequirementsForFirmware(requirements: ProjectState['requirements']): string {
+  if (!requirements) return '(no requirements extracted)';
+  const lines: string[] = [];
+  lines.push(`goal: ${requirements.goal}`);
+  if (requirements.summary) lines.push(`summary: ${requirements.summary}`);
+  if (requirements.behaviors.length > 0) lines.push(`behaviours: ${requirements.behaviors.join(' | ')}`);
+  if (requirements.inputs.length > 0) lines.push(`inputs: ${requirements.inputs.join(' | ')}`);
+  if (requirements.outputs.length > 0) lines.push(`outputs: ${requirements.outputs.join(' | ')}`);
+  if (requirements.constraints.length > 0) lines.push(`constraints: ${requirements.constraints.join(' | ')}`);
+  return truncate(lines.join('\n'), 2500);
+}
+
+function formatSerialLinks(links: { id: string; kind: string; mcuTxPin: string; mcuRxPin: string; baud?: number; note: string }[]): string {
+  if (links.length === 0) return '(none — no UART peripherals; use Serial for logging)';
+  return links
+    .map(
+      (link) =>
+        `${link.id} (${link.kind === 'hardware' ? 'hardware UART' : 'SoftwareSerial'}): MCU TX=${link.mcuTxPin || '(integrated)'} RX=${link.mcuRxPin || '(integrated)'}${link.baud ? ` @ ${link.baud} baud` : ''} — ${link.note}`,
+    )
+    .join('\n');
+}
+
+function formatI2cBuses(buses: { id: string; sdaPin: string; sclPin: string; devices: { instanceId: string; address?: string }[] }[]): string {
+  if (buses.length === 0) return '(no I2C devices in this build)';
+  return buses
+    .map(
+      (bus) =>
+        `${bus.id}: SDA=${bus.sdaPin} SCL=${bus.sclPin}; devices: ${bus.devices.map((device) => `${device.instanceId}${device.address ? ` (${device.address})` : ''}`).join(', ')}`,
+    )
+    .join('\n');
+}
+
+function formatLibraryManifest(libraries: { name: string; import: string; purpose: string }[]): string {
+  if (libraries.length === 0) return '(none — Arduino core headers only)';
+  return libraries.map((library) => `${library.name} → #include <${library.import}> — ${library.purpose}`).join('\n');
 }
 
 /** The model may name the project; otherwise derive one from the goal. */

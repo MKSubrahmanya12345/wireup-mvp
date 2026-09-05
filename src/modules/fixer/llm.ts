@@ -20,6 +20,7 @@ import type { ConnectionKind, ConnectionProtocol, PinAssignment, SignalType, Wir
 import { proposeFixChanges } from '@/lib/bedrock';
 import type { FixPromptInput } from '@/lib/bedrock/prompts';
 import { describeError, logger } from '@/lib/logging/logger';
+import { buildResolvedPinMap } from '@/modules/pin-planner/resolved-map';
 import { changeId, createId } from '@/lib/validation/ids';
 import { asArray, asRecord, truncate } from '@/lib/validation/json';
 import { nowIso } from '@/lib/validation/time';
@@ -175,6 +176,14 @@ function projectContext(project: ProjectState): string {
           targetPin: assignment.targetPin,
           direction: assignment.direction,
           signal: assignment.signal,
+        })),
+        // The resolved pin map is the single source of truth: firmware may
+        // only reference these constants, and no fix may move a pin without
+        // going through the pin planner (`rerun_stage: "pins"`).
+        resolvedPinMap: buildResolvedPinMap({ assignments: project.pinAssignments }).bindings.map((binding) => ({
+          target: `${binding.instanceId}:${binding.targetPin}`,
+          mcuPin: binding.mcuPin,
+          constant: binding.constant,
         })),
         connections: (project.wiring?.connections ?? []).map((connection) => ({
           id: connection.id,

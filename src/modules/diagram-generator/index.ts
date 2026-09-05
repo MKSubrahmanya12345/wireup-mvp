@@ -1,24 +1,32 @@
 /**
  * Diagram generator — produces `diagram.json`.
  *
- * The diagram is derived from the structured project (component instances, pin
- * assignments and the wiring graph), never written by hand and never hardcoded
- * for a specific build. Keeping it in its own module means the output format can
- * be swapped (see `wokwi.ts`) without touching any planner.
+ * Data flow (single source of truth — see pin-planner/resolved-map.ts):
+ *
+ *     pin planner → ResolvedPinMap → THIS generator
+ *
+ * The diagram is *projected* from the structured project: component instances
+ * and the wiring graph decide what is drawn, and the resolved pin map decides
+ * the MCU binding (`assignedTo`) shown on every component pin — the exact same
+ * object the firmware is built from, so the sketch and the diagram can never
+ * disagree about where a wire lands. Nothing here is hand-written or hardcoded
+ * for a specific build. Keeping the projection in its own module means the
+ * output format can be swapped (see `wokwi.ts`) without touching any planner.
  */
 
 import type { ComponentDefinition, ComponentSelection } from '@/types/component';
 import type { Diagram, DiagramComponent, DiagramConnection, DiagramGroup, DiagramRail } from '@/types/diagram';
 import type { HardwarePlan, ProjectRequirements } from '@/types/project';
-import type { PinAssignment, WiringPlan } from '@/types/wiring';
+import type { WiringPlan } from '@/types/wiring';
 import type { AgentEventLog } from '@/lib/logging/events';
 import { nowIso } from '@/lib/validation/time';
 
+import type { ResolvedPinMap } from '@/modules/pin-planner/resolved-map';
 import { resolvePinName } from '@/modules/wiring-planner/conflicts';
 
 import { layoutComponents, GRID_SIZE, type LayoutInput } from './layout';
 
-export const DIAGRAM_GENERATOR = 'wireup-diagram-generator/1.0';
+export const DIAGRAM_GENERATOR = 'wireup-diagram-generator/1.1';
 
 export interface DiagramGeneratorInput {
   projectId: string;
@@ -28,7 +36,8 @@ export interface DiagramGeneratorInput {
   requirements: ProjectRequirements;
   selections: ComponentSelection[];
   catalog: ComponentDefinition[];
-  assignments: PinAssignment[];
+  /** Authoritative pin map — the same object the firmware generator received. */
+  pinMap: ResolvedPinMap;
   wiring: WiringPlan | null;
   hardwarePlan: HardwarePlan | null;
   events?: AgentEventLog;
@@ -59,12 +68,13 @@ export function generateDiagram(input: DiagramGeneratorInput): Diagram {
   const componentsById = new Map(layout.components.map((component) => [component.id, component]));
 
   // Annotate pins with their MCU binding and connectivity.
-  // `assignedTo` records the MCU binding; `connected` is only set from the
-  // wiring graph below so a pin is never shown as wired without a wire.
-  for (const assignment of input.assignments) {
-    const target = componentsById.get(assignment.targetInstanceId);
-    const targetPin = target ? findDiagramPin(target, assignment.targetPin, input.catalog) : undefined;
-    if (targetPin) targetPin.assignedTo = assignment.pin;
+  // `assignedTo` records the MCU binding and comes from the shared resolved
+  // pin map — never re-derived here. `connected` is only set from the wiring
+  // graph below so a pin is never shown as wired without a wire.
+  for (const binding of input.pinMap.bindings) {
+    const target = componentsById.get(binding.instanceId);
+    const targetPin = target ? findDiagramPin(target, binding.targetPin, input.catalog) : undefined;
+    if (targetPin) targetPin.assignedTo = binding.mcuPin;
   }
 
   const connections: DiagramConnection[] = [];

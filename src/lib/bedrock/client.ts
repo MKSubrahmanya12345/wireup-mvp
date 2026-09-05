@@ -18,7 +18,7 @@ import { env, requireBedrockEnv } from '@/lib/validation/env';
 
 const logger = createLogger('bedrock');
 
-export type BedrockOp = 'generation' | 'validation' | 'fix';
+export type BedrockOp = 'generation' | 'firmware' | 'validation' | 'fix';
 
 export interface TokenUsage {
   inputTokens?: number;
@@ -96,6 +96,7 @@ export function resolveModel(op: BedrockOp): string {
   const model =
     (op === 'validation' ? config.validationModelId : undefined) ??
     (op === 'fix' ? config.fixerModelId : undefined) ??
+    (op === 'firmware' ? config.firmwareModelId : undefined) ??
     config.modelId;
 
   if (!model) {
@@ -382,6 +383,7 @@ export async function describeBedrockConfig(): Promise<{
   model?: string;
   validationModel?: string;
   fixerModel?: string;
+  firmwareModel?: string;
   maxTokens: number;
   temperature: number;
   problem?: string;
@@ -395,6 +397,7 @@ export async function describeBedrockConfig(): Promise<{
       model: config.modelId,
       validationModel: config.validationModelId || config.modelId,
       fixerModel: config.fixerModelId || config.modelId,
+      firmwareModel: config.firmwareModelId || config.modelId,
       maxTokens: config.maxTokens,
       temperature: config.temperature,
     };

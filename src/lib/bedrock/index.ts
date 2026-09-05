@@ -12,6 +12,7 @@ export {
 } from './client';
 
 export {
+  generateFirmwareSpec,
   generateProjectSpec,
   proposeFixChanges,
   reviewProject,
@@ -19,13 +20,17 @@ export {
 } from './operations';
 
 export {
+  buildFirmwareUserPrompt,
   buildFixUserPrompt,
   buildGenerationUserPrompt,
   buildValidationUserPrompt,
   ENGINEER_PERSONA,
+  FIRMWARE_JSON_CONTRACT,
+  FIRMWARE_PERSONA,
   GENERATION_JSON_CONTRACT,
   ISSUE_CODE_LIST,
   VALIDATION_JSON_CONTRACT,
+  type FirmwarePromptInput,
   type FixPromptInput,
   type GenerationPromptInput,
   type ValidationPromptInput,

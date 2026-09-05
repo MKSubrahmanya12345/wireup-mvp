@@ -936,9 +936,28 @@ function planForIssue(ctx: Ctx, issue: ValidationIssue): void {
     }
 
     case 'code_pin_mismatch': {
-      // Handled by the firmware pin-map re-sync performed by the applier.
+      /*
+       * Two distinct shapes behind one code:
+       *  - wrong constant value / raw literal spelling a mapped pin → the
+       *    applier's pin-map re-sync + literal canonicalisation repairs it;
+       *  - a pin reference that exists NOWHERE in the resolved pin map → only
+       *    a firmware rebuild from the map fixes it (the model chose a pin on
+       *    its own, so its firmware is untrusted on pins).
+       */
+      /*
+       * Message markers that mean "the firmware authored a pin decision the
+       * plan never made" — a bad declaration can be re-pointed in place, but
+       * a call site that hallucinates a pin or hand-drives a shared bus pin
+       * can only disappear with a rebuild.
+       */
+      const outsideMap = /resolved pin map never assigns|not (one of )?the resolved pin map|shared (I2C|SPI) bus pin|does not match the wired circuit/i.test(issue.message);
       ctx.handled.add(issue.id);
-      ctx.notes.push(`Firmware pin constants will be re-synchronised with the pin plan (${issue.target?.filePath ?? 'sketch.ino'}).`);
+      if (outsideMap) {
+        rerun(ctx, issue, 'code', `${issue.target?.filePath ?? 'The sketch'} references a pin the resolved pin map does not contain — firmware is rebuilt deterministically from the map.`);
+        ctx.notes.push(`Firmware references a pin outside the resolved pin map (${issue.target?.filePath ?? 'sketch.ino'}) — the sketch will be rebuilt from the map.`);
+      } else {
+        ctx.notes.push(`Firmware pin constants will be re-synchronised with the pin plan (${issue.target?.filePath ?? 'sketch.ino'}).`);
+      }
       return;
     }
 

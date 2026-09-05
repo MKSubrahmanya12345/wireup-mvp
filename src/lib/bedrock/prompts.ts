@@ -111,6 +111,9 @@ export const GENERATION_JSON_CONTRACT = `Return a single JSON object with EXACTL
       "required": true
     }
   ],
+  These are SUGGESTIONS. The deterministic pin planner validates every one against the MCU
+  capability profile and overrides anything illegal. The pin planner's output — not this list —
+  is the single source of truth that wiring, diagram.json and firmware are all built from.
 
   "wiring": [
     {
@@ -139,23 +142,10 @@ export const GENERATION_JSON_CONTRACT = `Return a single JSON object with EXACTL
     "loopStrategy": "<non-blocking millis based loop description>",
     "files": [{ "path": "sketch.ino", "purpose": "..." }]
   },
-
-  "code": {
-    "entryPoint": "sketch.ino",
-    "files": [
-      { "path": "sketch.ino", "language": "arduino", "purpose": "...", "content": "<complete, compilable source>" }
-    ]
-  },
-  Code rules: complete and compilable, no placeholders, no TODOs, no pseudo-code.
-  Declare every pin as a "const int"/"#define" block at the top using the EXACT mcuPin names from pinAssignments
-  (D4 -> 4, A4 -> A4, GPIO25 -> 25). The pin plan is the single source of truth: never hardcode a different pin.
-  Include every library you listed and ONLY those libraries — no extra headers (e.g. do not include
-  Adafruit_Sensor.h for an SSD1306 display). Write I2C addresses as hex literals taken from the catalog
-  ("#define OLED_ADDRESS 0x3C", never a decimal). Call Wire.begin() in setup() before initialising any I2C
-  device, and do not pinMode() the SDA/SCL pins. Buttons use INPUT_PULLUP (pressed == LOW) with software
-  debounce. Refresh a display after every state change (and once at the end of setup()).
-  Implement setup() and loop(). Implement the full behaviour, including a communication failsafe that stops
-  the motors when no command arrives (only when the build has motors and a control link).
+  Do NOT write firmware source in this call. Firmware is produced by a separate, later step that
+  receives the authoritative pin plan resolved by the backend. Your job here is the DESIGN:
+  parts, requirements, software architecture. The softwarePlan must describe behaviour well
+  enough that firmware can be written from it plus the pin map alone.
 
   "libraries": [{ "name": "...", "import": "...", "purpose": "...", "manager": "arduino", "version": "", "repository": "", "builtIn": false }],
 
@@ -205,7 +195,98 @@ Design the complete project now. Reply with the JSON object only.`;
 }
 
 /* ------------------------------------------------------------------------- */
-/* CALL 2 — VALIDATION                                                        */
+/* CALL 2 — FIRMWARE (against the resolved pin map, never its own pins)       */
+/* ------------------------------------------------------------------------- */
+
+export const FIRMWARE_PERSONA = `FIRMWARE AUTHORING LAW (NON-NEGOTIABLE):
+F1. The RESOLVED PIN MAP supplied to you is the single source of truth for every GPIO.
+    Do NOT select, infer, modify, re-number or optimize pins. Not one.
+F2. Reference pins ONLY through the PIN_* constants listed in the map
+    (e.g. pinMode(PIN_LED_5MM_1_A, OUTPUT); digitalWrite(PIN_LED_5MM_1_A, HIGH);).
+    Never write a bare pin number or a bare A<n> literal as a pin argument,
+    and never redeclare or redefine a PIN_* constant — the build injects them.
+F3. If you want a friendly alias, define it IN TERMS OF the map constant:
+    const int BUTTON_PIN = PIN_PUSHBUTTON_6MM_1_1;  — never a literal.
+F4. Shared bus pins (I2C SDA/SCL, SPI) are owned by their library: call Wire.begin()
+    in setup() before any I2C init, and never pinMode()/digitalWrite() those pins.
+F5. If a behaviour seems to need a pin that is not in the map, do NOT invent one.
+    Implement what the map allows and add a "notes" entry describing the gap.`;
+
+export const FIRMWARE_JSON_CONTRACT = `Return a single JSON object with EXACTLY this shape:
+
+{
+  "files": [
+    { "path": "sketch.ino", "language": "arduino", "purpose": "<one line>", "content": "<complete, compilable source>" }
+  ],
+  "notes": ["<anything the reviewer should know, including map gaps>"]
+}
+
+Firmware rules: complete and compilable, no placeholders, no TODOs, no pseudo-code.
+Implement setup() and loop() and the FULL behaviour described by the software plan,
+including the communication failsafe when the build has motors and a control link.
+Include ONLY the libraries listed below — no extra headers (e.g. do not include
+Adafruit_Sensor.h for an SSD1306 display). Write I2C addresses as hex literals taken
+from the component data (#define OLED_ADDRESS 0x3C, never a decimal). Buttons use
+INPUT_PULLUP (pressed == LOW) with software debounce. Refresh a display after every
+state change and once at the end of setup(). Prefer a non-blocking millis() loop.`;
+
+export interface FirmwarePromptInput {
+  /** Original user request. */
+  prompt: string;
+  /** Normalised requirements (goal, behaviours, safety) as formatted text. */
+  requirements: string;
+  /** The software plan produced from the design call, as formatted text. */
+  softwarePlan: string;
+  /**
+   * The authoritative pin map rendered by `formatResolvedPinMapForPrompt`.
+   * This is the ONLY pin information the model may act on.
+   */
+  resolvedPinMap: string;
+  /** Serial links (id, pins, baud) the pin planner reserved, as formatted text. */
+  serialLinks: string;
+  /** I2C buses (SDA/SCL, devices @ addresses) as formatted text. */
+  i2cBuses: string;
+  /** Library manifest entries as formatted text (name + header + purpose). */
+  libraries: string;
+  controllerName: string;
+  projectName: string;
+}
+
+export function buildFirmwareUserPrompt(input: FirmwarePromptInput): string {
+  return `PROJECT: ${input.projectName}
+CONTROLLER: ${input.controllerName}
+
+ORIGINAL USER REQUEST:
+"""
+${input.prompt}
+"""
+
+REQUIREMENTS:
+${input.requirements}
+
+SOFTWARE PLAN (implement exactly this behaviour):
+${input.softwarePlan}
+
+RESOLVED PIN MAP — AUTHORITATIVE. Every GPIO the firmware touches MUST come from this map.
+The constants below are declared for you in the final sketch; reference them by name:
+${input.resolvedPinMap}
+
+SERIAL LINKS RESERVED BY THE PIN PLANNER (use these exact ids/pins):
+${input.serialLinks}
+
+I2C BUS(ES) (shared; addresses are fixed — call Wire.begin() first, never pinMode SDA/SCL):
+${input.i2cBuses}
+
+LIBRARIES AVAILABLE (the ONLY headers you may include):
+${input.libraries}
+
+${FIRMWARE_JSON_CONTRACT}
+
+Write the complete firmware now. Reply with the JSON object only.`;
+}
+
+/* ------------------------------------------------------------------------- */
+/* CALL 3 — VALIDATION                                                        */
 /* ------------------------------------------------------------------------- */
 
 export const ISSUE_CODE_LIST: ValidationIssueCode[] = [
@@ -363,7 +444,7 @@ Reply with the JSON object only.`;
 }
 
 /* ------------------------------------------------------------------------- */
-/* TARGETED FIX                                                               */
+/* CALL 4 — TARGETED FIX                                                      */
 /* ------------------------------------------------------------------------- */
 
 export const FIX_JSON_CONTRACT = `Return a single JSON object with EXACTLY this shape:
@@ -410,7 +491,10 @@ Hard rules for fixing:
 4. Use exact catalog component ids and exact pin names from the supplied data.
 5. Prefer "rerun_stage" when an artifact is merely out of sync with an upstream artifact
    (e.g. diagram after a pin change) instead of hand-editing it.
-6. After a pin change, also patch the firmware pin constants so code and wiring agree.`;
+6. The pin plan is the single source of truth and is OWNED by the backend. NEVER patch
+   firmware to introduce, move or renumber a GPIO pin yourself — code patches must reference
+   the PIN_* constants declared in the supplied pin map. After any pin change the backend
+   re-synchronises firmware, wiring and diagram automatically; your job is the upstream fix.`;
 
 export interface FixPromptInput {
   prompt: string;

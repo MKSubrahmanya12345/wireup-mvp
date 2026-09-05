@@ -204,7 +204,8 @@ export interface GenerationError {
 
 export interface LlmCallRecord {
   id: string;
-  op: 'generation' | 'validation' | 'fix';
+  /** `generation` designs the project; `firmware` writes code against the resolved pin map and may never choose pins. */
+  op: 'generation' | 'firmware' | 'validation' | 'fix';
   model: string;
   startedAt: string;
   finishedAt?: string;

@@ -25,9 +25,10 @@ import {
 } from '@/modules/components';
 import { getMcuProfile } from '@/modules/pin-planner/mcu-profiles';
 import { planPins } from '@/modules/pin-planner';
+import { buildResolvedPinMap, type ResolvedPinMap } from '@/modules/pin-planner/resolved-map';
 import { extendWiringPlan, planWiring } from '@/modules/wiring-planner';
 import { planSoftware } from '@/modules/software-planner';
-import { ensureIncludesBlock, ensurePinMap, generateCode, syncPinConstants } from '@/modules/code-generator';
+import { auditFirmwareAgainstPinMap, ensureIncludesBlock, ensurePinMap, generateCode, pinAuditErrors, syncPinConstants } from '@/modules/code-generator';
 import { generateLibraries } from '@/modules/libraries-generator';
 import { generateDiagram } from '@/modules/diagram-generator';
 import { generateInstructions } from '@/modules/instructions-generator';
@@ -233,6 +234,25 @@ function withProject(project: ProjectState, patch: Partial<ProjectState>): Proje
   return { ...project, ...patch };
 }
 
+/**
+ * Re-freeze the authoritative pin map from a project's CURRENT assignments.
+ * Pure function of the planner rows + controller identity, so a fix-pass
+ * patch (which may have moved pins) automatically produces the map every
+ * downstream consumer must agree with. Both generateCode and generateDiagram
+ * receive this same object — the single source of truth.
+ */
+export function resolvedPinMapFor(project: ProjectState, catalog: ComponentDefinition[]): ResolvedPinMap {
+  const controller = controllerInfo(project, catalog);
+  return buildResolvedPinMap({
+    assignments: [...project.pinAssignments],
+    controller: {
+      ...(controller.componentId ? { componentId: controller.componentId } : {}),
+      ...(controller.instanceId ? { instanceId: controller.instanceId } : {}),
+      name: controller.name,
+    },
+  });
+}
+
 function artifactsPatch(project: ProjectState, patch: Partial<ProjectState['artifacts']>): ProjectState {
   return { ...project, artifacts: { ...project.artifacts, ...patch } };
 }
@@ -326,6 +346,7 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
 
     code: (project) => {
       const controller = controllerInfo(project, catalog);
+      const pinMap = resolvedPinMapFor(project, catalog);
       const entry = project.artifacts.code?.files.find((file) => file.path === project.artifacts.code?.entryPoint);
       const broken =
         !entry ||
@@ -333,23 +354,28 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
         !/void\s+loop\s*\(/.test(entry.content) ||
         (entry.content.match(/\{/g) ?? []).length !== (entry.content.match(/\}/g) ?? []).length;
 
-      /* Conservative: only rebuild the sketch when it is structurally broken.
-         Otherwise re-sync the machine-managed blocks in place. */
-      if (!broken && project.artifacts.code) {
+      /* Conservative: only rebuild the sketch when it is structurally broken
+         or references pins outside the resolved map. Otherwise re-sync the
+         machine-managed blocks in place and canonicalise raw pin literals. */
+      const audit = entry ? auditFirmwareAgainstPinMap(entry.content, pinMap) : undefined;
+      const violatesMap = audit !== undefined && pinAuditErrors(audit).length > 0;
+
+      if (!broken && !violatesMap && project.artifacts.code) {
         let changed = 0;
         const files = project.artifacts.code.files.map((file) => {
           if (!/\.(ino|cpp|c|h|hpp)$/i.test(file.path)) return file;
           const esp32 = /esp32/i.test(controller.componentId ?? '') || /esp32/i.test(controller.profile?.componentId ?? '');
-          const withMap = ensurePinMap(file.content, project.pinAssignments, controller.profile);
-          const synced = syncPinConstants(withMap, project.pinAssignments);
-          const withIncludes = ensureIncludesBlock(synced.content, project.artifacts.libraries?.libraries ?? [], esp32);
+          const withMap = ensurePinMap(file.content, [...project.pinAssignments], controller.profile);
+          const synced = syncPinConstants(withMap, pinMap);
+          const canonical = auditFirmwareAgainstPinMap(synced.content, pinMap, { legacyLiterals: synced.legacyLiterals });
+          const withIncludes = ensureIncludesBlock(canonical.content, project.artifacts.libraries?.libraries ?? [], esp32);
           if (withIncludes === file.content) return file;
           changed += 1;
           return { ...file, content: withIncludes, generatedBy: 'fixer' as const };
         });
         return {
           project: artifactsPatch(project, { code: { ...project.artifacts.code, files, pinsSynchronised: true } }),
-          notes: [`Firmware re-synchronised in place (${changed} file(s) touched).`],
+          notes: [`Firmware re-synchronised in place against the resolved pin map (${changed} file(s) touched).`],
         };
       }
 
@@ -364,7 +390,7 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
         requirements: project.requirements,
         selections: project.components,
         catalog,
-        assignments: project.pinAssignments,
+        pinMap,
         serialLinks: links.serialLinks,
         i2cBuses: links.i2cBuses,
         softwarePlan: project.softwarePlan,
@@ -375,7 +401,14 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
       });
       return {
         project: artifactsPatch(project, { code }),
-        notes: [`Firmware rebuilt from the software plan (${code.files.length} file(s)): the previous sketch was structurally broken.`],
+        notes: [
+          violatesMap
+            ? `Firmware rebuilt from the resolved pin map (${code.files.length} file(s)): the previous sketch referenced pins outside the map (${pinAuditErrors(audit ?? { content: '', rewrites: [], violations: [], ambiguous: [] })
+                .slice(0, 3)
+                .map((violation) => `${violation.api}(${violation.token})`)
+                .join(', ')}).`
+            : `Firmware rebuilt from the software plan (${code.files.length} file(s)): the previous sketch was structurally broken.`,
+        ],
       };
     },
 
@@ -405,14 +438,14 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
         requirements: project.requirements,
         selections: project.components,
         catalog,
-        assignments: project.pinAssignments,
+        pinMap: resolvedPinMapFor(project, catalog),
         wiring: project.wiring,
         hardwarePlan: project.hardwarePlan,
         ...(events ? { events } : {}),
       });
       return {
         project: artifactsPatch(project, { diagram }),
-        notes: [`diagram.json re-derived: ${diagram.stats.components} component(s), ${diagram.stats.connections} wire(s).`],
+        notes: [`diagram.json re-derived from the resolved pin map: ${diagram.stats.components} component(s), ${diagram.stats.connections} wire(s).`],
       };
     },
 

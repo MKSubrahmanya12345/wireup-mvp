@@ -1,13 +1,19 @@
 /**
  * Code generator.
  *
- * The model writes the firmware, but the pin map, the include list and the pin
- * constants are re-derived here from the authoritative pin plan. That way the
- * sketch can never disagree with the wiring graph or `diagram.json`, and a pin
- * fix later only needs to re-run this synchronisation step.
+ * Data flow (single source of truth — see pin-planner/resolved-map.ts):
  *
- * If the model returns no usable code, a complete sketch is generated from the
- * structured project instead — the artifact always exists.
+ *     pin planner → ResolvedPinMap → THIS generator
+ *
+ * The firmware-authoring model receives the resolved pin map and is forbidden
+ * from choosing pins. Its output is still treated as untrusted: the machine-
+ * managed pin-map/include blocks are re-derived from the map, hand-written pin
+ * constants are re-pointed at the map, raw pin literals at GPIO call sites are
+ * rewritten to the map's `PIN_*` constants, and a final static audit rejects
+ * any sketch that still references a pin the map does not contain. A rejected
+ * model sketch is replaced by the deterministic template — the artifact always
+ * exists and always agrees with `diagram.json`, because both are projections
+ * of the same ResolvedPinMap.
  */
 
 import type { ComponentDefinition, ComponentSelection, LibraryRequirement } from '@/types/component';
@@ -15,6 +21,7 @@ import type { CodeArtifact, GeneratedCodeFile, ProjectRequirements, SoftwarePlan
 import type { PinAssignment } from '@/types/wiring';
 import type { AgentEventLog } from '@/lib/logging/events';
 import type { I2CBus, SerialLink } from '@/modules/pin-planner';
+import type { ResolvedPinMap } from '@/modules/pin-planner/resolved-map';
 import type { McuProfile } from '@/modules/pin-planner/mcu-profiles';
 
 import {
@@ -31,6 +38,7 @@ import {
   type SketchContext,
 } from './templates';
 import { applyFirmwareHygiene } from './hygiene';
+import { auditFirmwareAgainstPinMap, pinAuditErrors, type FirmwarePinAudit } from './pin-audit';
 
 export interface CodeGeneratorInput {
   projectName: string;
@@ -38,7 +46,8 @@ export interface CodeGeneratorInput {
   requirements: ProjectRequirements;
   selections: ComponentSelection[];
   catalog: ComponentDefinition[];
-  assignments: PinAssignment[];
+  /** The authoritative pin map — the single source of truth for every GPIO. */
+  pinMap: ResolvedPinMap;
   serialLinks: SerialLink[];
   i2cBuses: I2CBus[];
   softwarePlan: SoftwarePlan;
@@ -253,13 +262,33 @@ function roleWordFor(assignment: PinAssignment): string | undefined {
  * Re-point every pin constant in the source at the value from the pin plan.
  * Handles both the generated constant names and model-invented names that can
  * be matched unambiguously to an assignment.
+ *
+ * Declaration forms covered: `const int X = …`, `int X = …` (non-const — the
+ * exact shape of the "BUTTON_PIN = 2 next to an authoritative D4" bug),
+ * `constexpr`/`static`/`volatile` qualifiers, `byte`/`uintN_t` typedefs and
+ * `#define X …`. Aliases written in terms of a `PIN_*` constant from the map
+ * (`const int BUTTON_PIN = PIN_PUSHBUTTON_6MM_1_1;`) are sanctioned — the
+ * firmware prompt explicitly allows them — and are left alone.
  */
 export function syncPinConstants(
   content: string,
-  assignments: PinAssignment[],
-): { content: string; synced: { name: string; from: string; to: string }[]; unresolved: string[] } {
+  assignments: PinAssignment[] | ResolvedPinMap,
+): {
+  content: string;
+  synced: { name: string; from: string; to: string }[];
+  unresolved: string[];
+  /**
+   * raw literal (uppercase) → canonical PIN_* constant, for every constant the
+   * model declared and we re-pointed. Lets the call-site audit treat a raw
+   * `digitalWrite(3, …)` as "the pin the model thought the LED was on" and
+   * rewrite it to the LED's real constant instead of flagging it untraceable.
+   */
+  legacyLiterals: Map<string, string>;
+} {
+  const rows: readonly PinAssignment[] = Array.isArray(assignments) ? assignments : assignments.assignments;
   const synced: { name: string; from: string; to: string }[] = [];
   const unresolved: string[] = [];
+  const legacyLiterals = new Map<string, string>();
 
   const blockStart = content.indexOf(PIN_MAP_START);
   const blockEnd = content.indexOf(PIN_MAP_END);
@@ -268,13 +297,23 @@ export function syncPinConstants(
   const inProtectedRange = (index: number) => protectedRanges.some(([start, end]) => index >= start && index <= end);
 
   const expected = new Map<string, string>();
-  for (const assignment of assignments) expected.set(constantName(assignment), pinLiteral(assignment));
+  for (const assignment of rows) expected.set(constantName(assignment), pinLiteral(assignment));
+  const canonicalFor = new Map<string, string>();
+  for (const assignment of rows) canonicalFor.set(pinLiteral(assignment), constantName(assignment));
 
   const byNormalised = new Map<string, string>();
-  for (const [name, literal] of expected) byNormalised.set(normalizeConstantName(name), literal);
+  const canonicalByNormalised = new Map<string, string>();
+  for (const [name, literal] of expected) {
+    byNormalised.set(normalizeConstantName(name), literal);
+    canonicalByNormalised.set(normalizeConstantName(name), name);
+  }
 
-  // const int NAME = VALUE;  |  const uint8_t NAME = VALUE;  |  #define NAME VALUE
-  const definitionPattern = /(?:const\s+(?:unsigned\s+)?(?:int|uint8_t|uint16_t|int8_t|byte)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);|#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z0-9_"]+))/g;
+  /*
+   * const/constexpr/static int NAME = VALUE;  |  int NAME = VALUE;  |
+   * const uint8_t NAME = VALUE;  |  #define NAME VALUE
+   */
+  const definitionPattern =
+    /(?:(?:static\s+|constexpr\s+|const\s+|volatile\s+)*(?:unsigned\s+)?(?:int|uint8_t|uint16_t|uint32_t|int8_t|int16_t|int32_t|byte|pin_size_t)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);|#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z0-9_"]+))/g;
 
   let result = content;
   let match: RegExpExecArray | null;
@@ -286,7 +325,15 @@ export function syncPinConstants(
     const value = (match[2] ?? match[4] ?? '').trim();
     if (!name) continue;
 
+    /*
+     * A declaration in terms of the authoritative constants (`const int
+     * BUTTON_PIN = PIN_PUSHBUTTON_6MM_1_1;`) is a sanctioned alias, not a
+     * second pin decision — leave it untouched.
+     */
+    if (byNormalised.has(normalizeConstantName(value))) continue;
+
     let literal = byNormalised.get(normalizeConstantName(name));
+    let constantForValue = canonicalByNormalised.get(normalizeConstantName(name));
 
     if (literal === undefined) {
       /*
@@ -305,7 +352,7 @@ export function syncPinConstants(
         const parts = token.split('_').filter(Boolean);
         return parts.length > 0 && parts.every((part) => words.has(part));
       };
-      const candidates = assignments.filter((assignment) => {
+      const candidates = rows.filter((assignment) => {
         const pinToken = normalizeConstantName(assignment.targetPin);
         const instanceToken = normalizeConstantName(assignment.targetInstanceId);
         const instanceStem = instanceToken.replace(/_\d+$/, '');
@@ -328,11 +375,28 @@ export function syncPinConstants(
       const best = Math.max(0, ...scored.map((entry) => entry.score));
       const narrowed = scored.filter((entry) => entry.score === best).map((entry) => entry.assignment);
       const uniqueLiterals = new Set(narrowed.map((candidate) => pinLiteral(candidate)));
-      if (narrowed.length > 0 && uniqueLiterals.size === 1) literal = [...uniqueLiterals][0];
-      else if (narrowed.length > 1) unresolved.push(name);
+      if (narrowed.length > 0 && uniqueLiterals.size === 1) {
+        literal = [...uniqueLiterals][0];
+        constantForValue = canonicalFor.get(literal);
+      } else if (narrowed.length > 1) unresolved.push(name);
     }
 
     if (literal === undefined) continue;
+
+    /*
+     * Remember the model's OWN spelling of this pin (`BUTTON_PIN = 2` ⇒ `2`
+     * used to mean the button) so the call-site audit can translate raw
+     * literals that still carry the model's pre-correction meaning. If two
+     * model constants claimed the same number, the literal is ambiguous and
+     * poisoned — a bare `2` can no longer be trusted to mean either one.
+     */
+    if (constantForValue && value !== literal && /^(?:\d{1,2}|A\d{1,2}|D\d{1,2})$/i.test(value)) {
+      const key = value.toUpperCase();
+      const previous = legacyLiterals.get(key);
+      if (previous === undefined) legacyLiterals.set(key, constantForValue);
+      else if (previous !== constantForValue) legacyLiterals.set(key, '' /* poisoned */);
+    }
+
     if (value === literal) continue;
 
     const isDefine = match[3] !== undefined;
@@ -347,7 +411,11 @@ export function syncPinConstants(
     result = result.slice(0, replacement.start) + replacement.text + result.slice(replacement.end);
   }
 
-  return { content: result, synced, unresolved: [...new Set(unresolved)] };
+  for (const [key, value] of [...legacyLiterals.entries()]) {
+    if (value === '') legacyLiterals.delete(key);
+  }
+
+  return { content: result, synced, unresolved: [...new Set(unresolved)], legacyLiterals };
 }
 
 /** Ensure the sketch declares every library the plan resolved. */
@@ -373,9 +441,10 @@ export function ensureLibraryIncludes(
 
 /** Produce the code artifact. */
 export function generateCode(input: CodeGeneratorInput): CodeArtifact {
-  const handle = input.events?.start('code_generation_started', 'Generating firmware...', {
+  const assignments = [...input.pinMap.assignments];
+  const handle = input.events?.start('code_generation_started', 'Generating firmware from the resolved pin map...', {
     stage: 'code',
-    metadata: { assignments: input.assignments.length },
+    metadata: { assignments: assignments.length },
   });
 
   const notes: string[] = [];
@@ -385,7 +454,7 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
     requirements: input.requirements,
     selections: input.selections,
     catalog: input.catalog,
-    assignments: input.assignments,
+    assignments,
     serialLinks: input.serialLinks,
     i2cBuses: input.i2cBuses,
     softwarePlan: input.softwarePlan,
@@ -402,11 +471,11 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
     modelFiles[0];
 
   let entryContent = entryCandidate?.content ?? '';
-  let generatedFromTemplate = false;
+  let generatedFromTemplate = entryCandidate === undefined;
+  let pinAudit: FirmwarePinAudit = { content: '', rewrites: [], violations: [], ambiguous: [] };
 
-  if (!entryCandidate) {
+  if (entryCandidate === undefined) {
     entryContent = generateSketch(sketchContext);
-    generatedFromTemplate = true;
     notes.push('The model returned no source file; the firmware was generated deterministically from the pin plan and software plan.');
   } else {
     const quality = assessCodeQuality(entryContent);
@@ -427,19 +496,19 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
         notes.push(`Model source was unusable (${quality.reasons.join('; ')}) and was replaced by the deterministic sketch.`);
       }
     } else {
-      notes.push('Model-authored firmware was used as the base and synchronised with the pin plan.');
+      notes.push('Model-authored firmware was used as the base and synchronised with the resolved pin map.');
     }
   }
 
-  // Deterministic synchronisation passes.
+  // Deterministic synchronisation passes against the resolved pin map.
   const withIncludes = ensureIncludesBlock(entryContent, input.softwarePlan.libraries, platformIsEsp32);
   const includeResult = ensureLibraryIncludes(withIncludes, input.softwarePlan.libraries, platformIsEsp32);
   if (includeResult.added.length > 0) {
     notes.push(`Added missing include(s): ${includeResult.added.join(', ')}.`);
   }
 
-  const withPinMap = ensurePinMap(includeResult.content, input.assignments, input.profile);
-  const preSync = syncPinConstants(withPinMap, input.assignments);
+  const withPinMap = ensurePinMap(includeResult.content, assignments, input.profile);
+  const preSync = syncPinConstants(withPinMap, input.pinMap);
   const hygiene = applyFirmwareHygiene(preSync.content, {
     selections: input.selections,
     catalog: input.catalog,
@@ -460,25 +529,94 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
     );
   }
 
+  /*
+   * Final gate: the firmware may only reference pins through the resolved pin
+   * map. Raw literals that provably spell a mapped pin are rewritten to the
+   * map's constant; a sketch that still references pins outside the map is
+   * rejected wholesale — reconciliation by regex can never be allowed to
+   * "almost work", because a wrong pin ships a broken circuit.
+   */
+  if (!generatedFromTemplate) {
+    pinAudit = auditFirmwareAgainstPinMap(syncResult.content, input.pinMap, { legacyLiterals: syncResult.legacyLiterals });
+    if (pinAudit.rewrites.length > 0) {
+      notes.push(
+        `Canonicalised ${pinAudit.rewrites.length} raw pin literal(s) to the pin map constants: ${pinAudit.rewrites
+          .slice(0, 6)
+          .map((entry) => `${entry.api}(${entry.token}) → ${entry.constant}`)
+          .join(', ')}${pinAudit.rewrites.length > 6 ? ', …' : ''}.`,
+      );
+    }
+    for (const entry of pinAudit.ambiguous) {
+      notes.push(
+        `Ambiguous raw pin literal ${entry.api}(${entry.token}) on line ${entry.line} could be ${entry.candidates.join(' or ')} — left as-is; verify manually.`,
+      );
+    }
+    const errors = pinAuditErrors(pinAudit);
+    if (errors.length > 0) {
+      notes.push(
+        `Model firmware referenced pin(s) outside the resolved pin map (${errors
+          .slice(0, 4)
+          .map((entry) => `${entry.api}(${entry.token}) line ${entry.line}`)
+          .join('; ')}${errors.length > 4 ? ', …' : ''}) — the sketch was replaced by the deterministic template so firmware and diagram cannot disagree.`,
+      );
+      entryContent = generateSketch(sketchContext);
+      generatedFromTemplate = true;
+      const rebuiltSync = { content: entryContent, synced: [], unresolved: [] };
+      return finishArtifact({ input, content: rebuiltSync.content, modelFiles, entryCandidate, generatedFromTemplate, notes, handle, pinAudit });
+    }
+  }
+
+  return finishArtifact({
+    input,
+    content: generatedFromTemplate ? entryContent : pinAudit.content,
+    modelFiles,
+    entryCandidate,
+    generatedFromTemplate,
+    notes,
+    handle,
+    pinAudit,
+  });
+}
+
+interface FinishArtifactInput {
+  input: CodeGeneratorInput;
+  content: string;
+  modelFiles: ModelFile[];
+  entryCandidate: ModelFile | undefined;
+  generatedFromTemplate: boolean;
+  notes: string[];
+  handle: ReturnType<AgentEventLog['start']> | undefined;
+  pinAudit: FirmwarePinAudit;
+}
+
+function finishArtifact(args: FinishArtifactInput): CodeArtifact {
+  const { input, content, modelFiles, entryCandidate, generatedFromTemplate, notes, handle, pinAudit } = args;
+
   const files: GeneratedCodeFile[] = [
     {
       path: 'sketch.ino',
       language: 'arduino',
-      content: syncResult.content,
+      content,
       purpose: generatedFromTemplate
-        ? 'Complete firmware generated from the pin plan, wiring graph and software plan.'
-        : 'Complete firmware for the project (model authored, pin-synchronised by Wireup).',
+        ? 'Complete firmware generated from the resolved pin map, wiring graph and software plan.'
+        : 'Complete firmware for the project (model authored against the resolved pin map, canonicalised by Wireup).',
       generatedBy: generatedFromTemplate ? 'planner' : 'model',
     },
   ];
 
   for (const file of modelFiles) {
     if (file === entryCandidate) continue;
+    // Non-entry files get the same treatment: re-inject nothing, but reject
+    // pin references that contradict the pin map by auditing for violations.
+    const audit = auditFirmwareAgainstPinMap(file.content, input.pinMap);
     files.push({
       path: file.path,
       language: file.language || languageForPath(file.path),
-      content: file.content,
-      purpose: file.purpose,
+      content: audit.content,
+      purpose:
+        pinAuditErrors(audit).length > 0
+          ? `${file.purpose} (WARNING: references pins outside the resolved pin map — flagged by validation)`
+          : file.purpose,
       generatedBy: 'model',
     });
   }
@@ -492,8 +630,24 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
 
   handle?.complete(
     `Firmware generated — ${files.length} file(s), ${files[0]?.content.split('\n').length ?? 0} lines in sketch.ino${generatedFromTemplate ? ' (deterministic template)' : ''}`,
-    { files: files.length, lines: files[0]?.content.split('\n').length ?? 0, generatedFromTemplate, syncedConstants: syncResult.synced.length },
+    {
+      files: files.length,
+      lines: files[0]?.content.split('\n').length ?? 0,
+      generatedFromTemplate,
+      pinRewrites: pinAudit.rewrites.length,
+      pinsRejected: pinAudit.violations.length,
+    },
   );
 
   return artifact;
 }
+
+export {
+  auditFirmwareAgainstPinMap,
+  maskCommentsAndStrings,
+  pinAuditErrors,
+  type AmbiguousPinLiteral,
+  type FirmwarePinAudit,
+  type FirmwarePinViolation,
+  type PinRewrite,
+} from './pin-audit';

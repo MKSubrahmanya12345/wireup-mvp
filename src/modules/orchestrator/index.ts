@@ -427,6 +427,6 @@ export function startGeneration(projectId: string): void {
 }
 
 export { runPipeline } from './pipeline';
-export { buildGenerationContext, buildRefreshers, controllerInfo, deriveLinks } from './context';
+export { buildGenerationContext, buildRefreshers, controllerInfo, deriveLinks, resolvedPinMapFor } from './context';
 export { EventFlusher, PersistenceError, persistFailure, persistLlmCall, persistState } from './persistence';
 export { appendRevision, createRevision, snapshotOf, summariseChanges } from './revisions';

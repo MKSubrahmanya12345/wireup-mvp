@@ -29,9 +29,10 @@ import { analyzeCoverage } from '@/modules/project-understanding';
 import { braceBalance } from '@/modules/code-generator';
 import { constantName, pinLiteral } from '@/modules/code-generator/templates';
 import { checkDiagramIntegrity, findMissingDiagramComponents } from '@/modules/diagram-generator';
-import { detectConflicts } from '@/modules/wiring-planner/conflicts';
+import { detectConflicts, resolvePinName } from '@/modules/wiring-planner/conflicts';
 import { includeStatement } from '@/modules/code-generator/templates';
-import { syncPinConstants } from '@/modules/code-generator';
+import { auditFirmwareAgainstPinMap, pinAuditErrors, syncPinConstants } from '@/modules/code-generator';
+import { buildResolvedPinMap } from '@/modules/pin-planner/resolved-map';
 import { ensureWireBegin, fixI2cAddressLiterals, pruneIncludes } from '@/modules/code-generator/hygiene';
 
 /** Issue codes the deterministic fixer knows how to repair. */
@@ -599,7 +600,13 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
         });
       }
 
-      // Pin constants must agree with the pin plan.
+      /*
+       * The resolved pin map is the single source of truth. The firmware must
+       * agree with it three ways: every assignment's constant exists with the
+       * right value; no hand-written constant contradicts it; and no GPIO call
+       * site touches a pin the map does not contain.
+       */
+      const pinMap = buildResolvedPinMap({ assignments: [...project.pinAssignments] });
       for (const assignment of project.pinAssignments) {
         const name = constantName(assignment);
         const literal = pinLiteral(assignment);
@@ -641,6 +648,47 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
           fixHint: `Set ${stray.name} to ${stray.to} or reference the generated PIN_* constant.`,
           target: { artifact: 'code', filePath: entry.path },
         });
+      }
+
+      /*
+       * Call-site rule: firmware pin == plan pin, everywhere. Any GPIO call
+       * (pinMode/digitalWrite/analogRead/Servo.attach/DHT constructor/…) whose
+       * pin argument cannot be traced to the resolved pin map is an error —
+       * the firmware chose a pin on its own, which the architecture forbids.
+       */
+      for (const file of code.files) {
+        if (!/\.(ino|cpp|c|h|hpp)$/i.test(file.path)) continue;
+        const firmwareAudit = auditFirmwareAgainstPinMap(file.content, pinMap);
+        for (const violation of pinAuditErrors(firmwareAudit)) {
+          add('code', {
+            code: 'code_pin_mismatch',
+            severity: 'error',
+            domain: 'code',
+            message: `${file.path}:${violation.line} ${violation.message}`,
+            fixHint:
+              violation.kind === 'unknown_pin_constant'
+                ? `Remove ${violation.token} or derive it from a PIN_* constant in the pin map block.`
+                : violation.kind === 'bus_pin_driven'
+                  ? `Drop the manual ${violation.api}() call — the Wire/SPI library owns ${violation.token} once ${violation.api === 'pinmode' ? 'the bus begins' : 'the bus is active'}.`
+                  : `Use the PIN_* constant for the peripheral on ${violation.token === '' ? 'that pin' : `pin ${violation.token}`} — see the pin map block.`,
+            target: { artifact: 'code', filePath: file.path },
+          });
+        }
+        // Pin references we could not prove right or wrong are surfaced as
+        // warnings so the reviewer sees exactly what was left unverified.
+        for (const unclear of firmwareAudit.ambiguous.slice(0, 5)) {
+          add('code', {
+            code: 'code_pin_mismatch',
+            severity: 'warning',
+            domain: 'code',
+            message:
+              unclear.candidates.length > 0
+                ? `${file.path}:${unclear.line} ${unclear.api}(${unclear.token}) is ambiguous — could be ${unclear.candidates.join(' or ')}.`
+                : `${file.path}:${unclear.line} ${unclear.api}(${unclear.token}) references a pin-shaped identifier nothing declares — cannot be traced to the pin map.`,
+            fixHint: 'Name the PIN_* constant from the pin map block explicitly.',
+            target: { artifact: 'code', filePath: file.path },
+          });
+        }
       }
 
       // I2C hygiene: hex addresses that match the catalog, and a started bus.
@@ -791,6 +839,37 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
         target: { artifact: 'diagram', componentInstanceId: missing },
       });
     }
+
+    /*
+     * Diagram pin bindings must equal the resolved pin map — the same object
+     * the firmware was audited against. Any drift means the picture and the
+     * circuit disagree about where a wire lands.
+     */
+    const diagramPinMap = buildResolvedPinMap({ assignments: [...project.pinAssignments] });
+    for (const binding of diagramPinMap.bindings) {
+      const component = diagram.components.find((candidate) => candidate.id === binding.instanceId);
+      if (!component) continue; // missing-from-diagram is reported above
+      const pin =
+        component.pins.find((candidate) => candidate.name.toLowerCase() === binding.targetPin.toLowerCase()) ??
+        (() => {
+          // Alias-aware lookup, same tolerance the generator uses.
+          const definition = catalog.find((entry) => entry.id === component.ref);
+          const canonical = definition ? resolvePinName(definition, binding.targetPin) : undefined;
+          return canonical ? component.pins.find((candidate) => candidate.name.toLowerCase() === canonical.toLowerCase()) : undefined;
+        })();
+      if (!pin) continue; // unknown pin names are reported by the pins/wiring checks
+      if (pin.assignedTo !== binding.mcuPin) {
+        add('diagram', {
+          code: 'diagram_out_of_sync',
+          severity: 'error',
+          domain: 'diagram',
+          message: `diagram.json binds ${binding.instanceId}.${binding.targetPin} to ${pin.assignedTo ?? '(nothing)'} but the resolved pin map says ${binding.mcuPin}.`,
+          fixHint: 'Regenerate diagram.json from the resolved pin map (rerun the diagram stage).',
+          target: { artifact: 'diagram', componentInstanceId: binding.instanceId, pin: binding.mcuPin },
+        });
+      }
+    }
+
     for (const connection of project.wiring?.connections ?? []) {
       const present = diagram.connections.some((entry) => entry.id === connection.id);
       if (!present) {
