@@ -103,10 +103,18 @@ export function includeStatement(library: LibraryRequirement): string | null {
   return `#include ${path}`;
 }
 
+function isDependentHeaderRequired(importName: string, libraries: LibraryRequirement[]): boolean {
+  if (!/^Adafruit_Sensor\.h$/i.test(importName)) return true;
+  // Adafruit_Sensor.h is a dependency of sensor drivers, not of displays
+  // such as SSD1306. Keeping it for every project makes clean builds fail.
+  return libraries.some((library) => /^(Adafruit_(MPU6050|BME280|BMP280|BNO055|TSL2561|LSM|ADXL|HTU|SHT)|DHT)\S*\.h$/i.test(library.import));
+}
+
 export function buildIncludesBlock(libraries: LibraryRequirement[], platformIsEsp32: boolean): string {
   const statements: string[] = [];
 
   for (const library of libraries) {
+    if (!isDependentHeaderRequired(library.import, libraries)) continue;
     const statement = includeStatement(library);
     if (!statement) continue;
     // Radio headers only exist in the ESP32 core.
