@@ -7,6 +7,7 @@
  * number while generation is still in flight.
  */
 
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
@@ -21,10 +22,18 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Next.js calls `generateMetadata` and the page component for the same request.
+ * Both need the project, and an uncached read meant two full document fetches
+ * (a project with a long event log is not a small document) per navigation.
+ * `cache()` dedupes them into one round trip for the lifetime of the request.
+ */
+const loadProject = cache(async (id: string) => getProjectState(id));
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   try {
-    const project = await getProjectState(id.trim());
+    const project = await loadProject(id.trim());
     if (!project) return { title: 'Project not found — Wireup' };
     return { title: `${project.name} — Wireup` };
   } catch {
@@ -34,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProjectPage({ params }: PageProps) {
   const { id } = await params;
-  const project = await getProjectState(id.trim());
+  const project = await loadProject(id.trim());
 
   if (!project) notFound();
 

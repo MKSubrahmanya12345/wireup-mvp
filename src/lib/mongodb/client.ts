@@ -37,6 +37,17 @@ export async function connectMongo(): Promise<typeof mongoose> {
         dbName,
         serverSelectionTimeoutMS: 10_000,
         maxPoolSize: 10,
+        // Keep warm sockets ready so a request never pays TCP+TLS+auth to
+        // Atlas again after an idle spell (the usual cause of a slow first
+        // page load once the dev server has been sitting untouched).
+        minPoolSize: 1,
+        maxIdleTimeMS: 0,
+        // Skip the ~1 RTT legacy handshake probe on connect.
+        serverApi: { version: '1' as const, strict: false, deprecationErrors: false },
+        // Fail fast instead of hanging a page render on a dead network path.
+        connectTimeoutMS: 10_000,
+        socketTimeoutMS: 45_000,
+        compressors: ['zlib'],
       })
       .then((instance) => {
         logger.info('connected', { dbName });
