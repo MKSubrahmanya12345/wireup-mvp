@@ -61,8 +61,14 @@ function snap(value: number): number {
   return Math.round(value / GRID_SIZE) * GRID_SIZE;
 }
 
-function pinSide(name: string, direction: string, type: string): 'left' | 'right' {
+function pinSide(name: string, direction: string, type: string, category?: string): 'left' | 'right' {
   const upper = name.toUpperCase();
+  // Dev boards: digital header on the left, analog + power header on the right
+  // (mirrors the physical Nano/Uno layout and halves the body height).
+  if (category === 'microcontroller') {
+    if (type === 'power' || type === 'ground' || type === 'analog' || type === 'i2c' || /^A\d/.test(upper) || /^(VIN|RESET|RST|EN|3V3|5V|GND)/.test(upper)) return 'right';
+    return 'left';
+  }
   if (type === 'power' || direction === 'power') return 'left';
   if (type === 'ground' || direction === 'ground') return 'right';
   if (direction === 'output') return 'right';
@@ -70,18 +76,36 @@ function pinSide(name: string, direction: string, type: string): 'left' | 'right
   return 'left';
 }
 
-function buildPins(definition: ComponentDefinition, x: number, y: number, width: number, height: number): DiagramPin[] {
+/** Vertical distance between neighbouring pin anchors on one edge. */
+const PIN_PITCH = GRID_SIZE;
+const PIN_EDGE_MARGIN = 20;
+
+function splitPins(definition: ComponentDefinition | undefined): { left: ComponentDefinition['pins']; right: ComponentDefinition['pins'] } {
   const left: ComponentDefinition['pins'] = [];
   const right: ComponentDefinition['pins'] = [];
-
-  for (const entry of definition.pins) {
-    if (pinSide(entry.name, entry.direction, entry.type) === 'left') left.push(entry);
+  for (const entry of definition?.pins ?? []) {
+    if (pinSide(entry.name, entry.direction, entry.type, definition?.category) === 'left') left.push(entry);
     else right.push(entry);
   }
+  return { left, right };
+}
+
+/** Body height that gives every pin on the busier edge its own grid row. */
+function bodyHeightFor(definition: ComponentDefinition | undefined): number {
+  const { left, right } = splitPins(definition);
+  const rows = Math.max(left.length, right.length, 2);
+  return Math.max(60, snap(PIN_EDGE_MARGIN * 2 + (rows - 1) * PIN_PITCH));
+}
+
+function buildPins(definition: ComponentDefinition, x: number, y: number, width: number, height: number): DiagramPin[] {
+  const { left, right } = splitPins(definition);
 
   const pins: DiagramPin[] = [];
   const place = (list: ComponentDefinition['pins'], edgeX: number) => {
-    const spacing = list.length > 1 ? (height - 24) / (list.length - 1) : 0;
+    // One grid row per pin, centred on the body: anchors are unique by
+    // construction instead of being snapped onto each other afterwards.
+    const span = (list.length - 1) * PIN_PITCH;
+    const start = snap(y + (height - span) / 2);
     list.forEach((entry, entryIndex) => {
       pins.push({
         name: entry.name,
@@ -89,7 +113,7 @@ function buildPins(definition: ComponentDefinition, x: number, y: number, width:
         type: entry.type,
         direction: entry.direction,
         x: edgeX,
-        y: snap(y + 12 + (list.length > 1 ? entryIndex * spacing : (height - 24) / 2)),
+        y: start + entryIndex * PIN_PITCH,
         connected: false,
       });
     });
@@ -119,9 +143,8 @@ export function layoutComponents(entries: LayoutInput[]): LayoutResult {
     const category = entry.definition?.category ?? 'other';
     const columnIndex = COLUMN_BY_CATEGORY[category] ?? 4;
     const column = columns.get(columnIndex) ?? { y: TOP_MARGIN };
-    const pinCount = entry.definition?.pins.length ?? 2;
     const width = WIDTH_BY_CATEGORY[category] ?? 130;
-    const height = Math.max(60, snap(28 + pinCount * 16));
+    const height = bodyHeightFor(entry.definition);
 
     const x = COLUMN_X[columnIndex] ?? 40;
     const y = column.y;

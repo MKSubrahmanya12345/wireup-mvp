@@ -30,6 +30,7 @@ import {
   pinLiteral,
   type SketchContext,
 } from './templates';
+import { applyFirmwareHygiene } from './hygiene';
 
 export interface CodeGeneratorInput {
   projectName: string;
@@ -218,6 +219,37 @@ function normalizeConstantName(name: string): string {
 }
 
 /**
+ * Does `NAME = VALUE` plausibly declare an MCU pin? Pin constants carry a
+ * pin-ish word (PIN, GPIO, SDA, SCL, …) and hold a pin literal (`7`, `A4`,
+ * `D7`), never an address (`0x3C`), a size (`128`) or a rate (`9600`).
+ */
+function looksLikePinConstant(name: string, value: string): boolean {
+  const upper = normalizeConstantName(name);
+  const words = upper.split('_').filter(Boolean);
+  const pinWords = new Set(['PIN', 'GPIO', 'IO', 'SDA', 'SCL', 'MOSI', 'MISO', 'SCK', 'CS', 'SS', 'TX', 'RX', 'TRIG', 'ECHO', 'DIN', 'DOUT', 'DATA', 'SIG', 'SIGNAL', 'IN1', 'IN2', 'IN3', 'IN4', 'ENA', 'ENB']);
+  if (!words.some((word) => pinWords.has(word))) return false;
+  if (/ADDR|ADDRESS|WIDTH|HEIGHT|BAUD|COUNT|SIZE|DELAY|TIMEOUT|INTERVAL|MS$|HZ$|RATE/i.test(upper)) return false;
+  return /^(?:\d{1,2}|A\d{1,2}|D\d{1,2}|GPIO\d{1,2}|LED_BUILTIN)$/i.test(value.trim());
+}
+
+/** A generic role word models use for a peripheral (`LED_PIN`, `BUTTON_PIN`, `BUZZER_PIN`). */
+function roleWordFor(assignment: PinAssignment): string | undefined {
+  const id = assignment.targetInstanceId.toLowerCase();
+  if (/oled|ssd1306|lcd/.test(id)) return 'OLED';
+  if (/button|switch/.test(id)) return 'BUTTON';
+  if (/rgb/.test(id)) return 'RGB';
+  if (/(^|[^o])led/.test(id)) return 'LED';
+  if (/buzzer/.test(id)) return 'BUZZER';
+  if (/servo/.test(id)) return 'SERVO';
+  if (/relay/.test(id)) return 'RELAY';
+  if (/pir/.test(id)) return 'PIR';
+  if (/dht/.test(id)) return 'DHT';
+  if (/pot/.test(id)) return 'POT';
+  if (/ldr|photo/.test(id)) return 'LDR';
+  return undefined;
+}
+
+/**
  * Re-point every pin constant in the source at the value from the pin plan.
  * Handles both the generated constant names and model-invented names that can
  * be matched unambiguously to an assignment.
@@ -257,16 +289,47 @@ export function syncPinConstants(
     let literal = byNormalised.get(normalizeConstantName(name));
 
     if (literal === undefined) {
-      // Fuzzy match: unique assignment whose target pin name appears in the constant name.
+      /*
+       * Fuzzy match: a model-invented pin constant (BUTTON_PIN, LED_PIN,
+       * PIN_OLED_SDA, …) that maps to exactly one assignment.
+       *
+       * Only constants that *look* like pin declarations qualify, and tokens
+       * are compared as whole `_`-separated words — a substring test used to
+       * turn `OLED_ADDRESS 0x3C` into `OLED_ADDRESS 4` because the LED's pin
+       * is called `A`.
+       */
+      if (!looksLikePinConstant(name, value)) continue;
       const upper = normalizeConstantName(name);
+      const words = new Set(upper.split('_').filter(Boolean));
+      const hasWord = (token: string) => {
+        const parts = token.split('_').filter(Boolean);
+        return parts.length > 0 && parts.every((part) => words.has(part));
+      };
       const candidates = assignments.filter((assignment) => {
         const pinToken = normalizeConstantName(assignment.targetPin);
         const instanceToken = normalizeConstantName(assignment.targetInstanceId);
-        return pinToken.length > 0 && (upper.includes(pinToken) || upper.endsWith(`_${pinToken}`) || upper.includes(instanceToken));
+        const instanceStem = instanceToken.replace(/_\d+$/, '');
+        const componentWords = instanceStem.split('_').filter((part) => part.length >= 3 && !/^\d+$/.test(part));
+        const roleWord = roleWordFor(assignment);
+        const mentionsComponent =
+          hasWord(instanceToken) ||
+          hasWord(instanceStem) ||
+          componentWords.some((word) => words.has(word)) ||
+          (roleWord !== undefined && words.has(roleWord));
+        const mentionsPin = pinToken.length >= 2 && hasWord(pinToken);
+        return mentionsComponent || mentionsPin;
       });
-      const uniqueLiterals = new Set(candidates.map((candidate) => pinLiteral(candidate)));
-      if (candidates.length > 0 && uniqueLiterals.size === 1) literal = [...uniqueLiterals][0];
-      else if (candidates.length > 1) unresolved.push(name);
+      // `OLED_SDA_PIN` matches both OLED assignments by component; the one
+      // that also names the pin wins.
+      const scored = candidates.map((assignment) => ({
+        assignment,
+        score: (normalizeConstantName(assignment.targetPin).length >= 2 && hasWord(normalizeConstantName(assignment.targetPin)) ? 1 : 0) as number,
+      }));
+      const best = Math.max(0, ...scored.map((entry) => entry.score));
+      const narrowed = scored.filter((entry) => entry.score === best).map((entry) => entry.assignment);
+      const uniqueLiterals = new Set(narrowed.map((candidate) => pinLiteral(candidate)));
+      if (narrowed.length > 0 && uniqueLiterals.size === 1) literal = [...uniqueLiterals][0];
+      else if (narrowed.length > 1) unresolved.push(name);
     }
 
     if (literal === undefined) continue;
@@ -376,7 +439,14 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
   }
 
   const withPinMap = ensurePinMap(includeResult.content, input.assignments, input.profile);
-  const syncResult = syncPinConstants(withPinMap, input.assignments);
+  const preSync = syncPinConstants(withPinMap, input.assignments);
+  const hygiene = applyFirmwareHygiene(preSync.content, {
+    selections: input.selections,
+    catalog: input.catalog,
+    libraries: input.softwarePlan.libraries,
+  });
+  notes.push(...hygiene.notes);
+  const syncResult = { ...preSync, content: hygiene.content };
   if (syncResult.synced.length > 0) {
     notes.push(
       `Re-synchronised ${syncResult.synced.length} pin constant(s) with the pin plan: ${syncResult.synced
