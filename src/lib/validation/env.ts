@@ -61,6 +61,9 @@ const ServerEnvSchema = z.object({
   BEDROCK_VALIDATION_MODEL_ID: optionalString,
   BEDROCK_FIXER_MODEL_ID: optionalString,
   BEDROCK_MAX_TOKENS: intFrom(8000),
+  // Upper bound the structured caller may raise maxTokens to after a response
+  // is cut short (stopReason "max_tokens"). Kimi K2.5 caps output at 16k.
+  BEDROCK_MAX_TOKENS_CEILING: intFrom(16_000),
   BEDROCK_TEMPERATURE: floatFrom(0.2),
   BEDROCK_TOP_P: floatFrom(0.9),
   BEDROCK_TIMEOUT_MS: intFrom(120_000),
@@ -94,6 +97,7 @@ export interface ServerEnv {
     validationModelId?: string;
     fixerModelId?: string;
     maxTokens: number;
+    maxTokensCeiling: number;
     temperature: number;
     topP: number;
     timeoutMs: number;
@@ -145,6 +149,7 @@ function read(): ServerEnv {
       validationModelId: parsed.BEDROCK_VALIDATION_MODEL_ID,
       fixerModelId: parsed.BEDROCK_FIXER_MODEL_ID,
       maxTokens: parsed.BEDROCK_MAX_TOKENS,
+      maxTokensCeiling: Math.max(parsed.BEDROCK_MAX_TOKENS, parsed.BEDROCK_MAX_TOKENS_CEILING),
       temperature: parsed.BEDROCK_TEMPERATURE,
       topP: parsed.BEDROCK_TOP_P,
       timeoutMs: parsed.BEDROCK_TIMEOUT_MS,

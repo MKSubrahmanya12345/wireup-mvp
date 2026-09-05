@@ -360,6 +360,13 @@ console explains why it stopped. The UI therefore never polls forever.
   explicit `NODE_OPTIONS=--dns-result-order=…` always wins. `pnpm
   diagnose:bedrock` prints the active order and flags an AAAA-only failure as
   harmless.
+* **Output cut off by the token budget** — Bedrock signals a completion clipped
+  by `maxTokens` with `stopReason: "max_tokens"`. The text is a valid *prefix*,
+  so it can never parse, and retrying with the same budget reproduces it byte
+  for byte. The structured caller detects that specific stop reason, doubles the
+  budget up to `BEDROCK_MAX_TOKENS_CEILING`, and tells the model it was cut off
+  rather than malformed. At the ceiling it stops instead of burning further
+  calls and reports `output_truncated` naming the budget to raise.
 * **Unresolved blocking issues** — a run that finishes with blocking validation
   errors ends as `completed_with_errors` (a red badge and a `failed` final
   event), not `completed_with_warnings`. Every issue the fixer could not repair
