@@ -13,7 +13,7 @@ import type { ProjectRequirements } from '@/types/project';
 import type { PromptAnalysis } from '@/modules/project-understanding/heuristics';
 import { getMcuProfile } from '@/modules/pin-planner/mcu-profiles';
 
-import { partLogicVoltage } from './compatibility';
+import { logicLevelToleratesMcu, partLogicVoltage } from './compatibility';
 import type { DraftSelection } from './types';
 
 export interface DefaultsInput {
@@ -243,7 +243,8 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
   const totalQuantity = (predicate: (definition: ComponentDefinition) => boolean) =>
     [...drafts, ...additions].reduce((sum, draft) => {
       const definition = definitionOf(draft.componentId);
-      return definition && predicate(definition) ? sum + draft.quantity : 0;
+      // (A non-matching draft must not reset the running total.)
+      return definition && predicate(definition) ? sum + draft.quantity : sum;
     }, 0);
 
   /* 1. Controller ------------------------------------------------------------ */
@@ -412,7 +413,10 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
       const definition = definitionOf(draft.componentId);
       if (!definition || definition.category === 'microcontroller') return false;
       const partLogic = partLogicVoltage(definition);
-      return partLogic !== undefined && partLogic <= 3.3 && partLogic < mcuLogic;
+      if (partLogic === undefined || partLogic > 3.3 || partLogic >= mcuLogic) return false;
+      // Parts rated for the MCU supply (regulated breakouts such as the
+      // SSD1306 OLED module, 5 V tolerant inputs) need no shifter.
+      return !logicLevelToleratesMcu(definition, mcuLogic);
     });
 
     if (lowVoltageLogic.length > 0 && !present('logic-level-shifter-4ch')) {
@@ -453,9 +457,16 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
     add('capacitor-1000uf-electrolytic', 1, 'passive', 'Motor/servo inrush and stall transients collapse thin supplies. A 1000 µF bulk capacitor across the motor rail keeps the logic rail alive during stalls.');
   }
 
-  /* 9. Decoupling for ICs ----------------------------------------------------- */
+  /* 9. Decoupling for bare ICs ------------------------------------------------ */
+  // Breakout modules (OLED, DHT, HC-SR04, driver boards, …) already carry their
+  // own decoupling; only a bare chip in a DIP/SOIC package needs one added.
+  const isBareIc = (component: ComponentDefinition): boolean =>
+    component.metadata.bareIc === true ||
+    (typeof component.metadata.package === 'string' && /^(DIP|SOIC|TSSOP|QFN|TO-)/i.test(component.metadata.package));
   const icCount = totalQuantity(
-    (component) => component.category === 'sensor' || component.category === 'display' || component.category === 'communication' || component.category === 'motor_driver',
+    (component) =>
+      isBareIc(component) &&
+      (component.category === 'sensor' || component.category === 'display' || component.category === 'communication' || component.category === 'motor_driver'),
   );
   if (icCount > 0 && !present('capacitor-100nf-ceramic')) {
     add('capacitor-100nf-ceramic', Math.min(4, icCount), 'passive', 'Each IC needs a 100 nF decoupling capacitor between its supply and ground pins to suppress switching noise.');

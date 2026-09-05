@@ -87,14 +87,16 @@ export function generateLibraries(input: LibrariesGeneratorInput): LibrariesArti
     notes.push(`Provided by the platform core, no install needed: ${builtIn.map((library) => library.import).join(', ')}.`);
   }
 
-  const adafruitDeps = libraries.some((library) => /Adafruit_(MPU6050|SSD1306|DHT|GFX)/i.test(library.import));
+  // Only the Adafruit *sensor* drivers depend on the Unified Sensor layer; the
+  // SSD1306/GFX display stack does not, and including it there is dead weight.
+  const adafruitDeps = libraries.some((library) => /Adafruit_(MPU6050|BME280|BMP280|DHT)/i.test(library.import) || /^DHT\.h$/i.test(library.import));
   if (adafruitDeps && !libraries.some((library) => /Adafruit_Sensor\.h/i.test(library.import))) {
     const dependency: LibraryRequirement = {
       name: 'Adafruit Unified Sensor',
       import: 'Adafruit_Sensor.h',
       manager: 'arduino',
       repository: 'https://github.com/adafruit/Adafruit_Sensor',
-      purpose: 'Common dependency required by Adafruit sensor/display drivers',
+      purpose: 'Common dependency required by Adafruit sensor drivers',
     };
     add(dependency);
     installCommands.push(`arduino-cli lib install "${dependency.name}"`);

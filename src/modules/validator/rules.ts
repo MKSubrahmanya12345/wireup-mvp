@@ -31,6 +31,8 @@ import { constantName, pinLiteral } from '@/modules/code-generator/templates';
 import { checkDiagramIntegrity, findMissingDiagramComponents } from '@/modules/diagram-generator';
 import { detectConflicts } from '@/modules/wiring-planner/conflicts';
 import { includeStatement } from '@/modules/code-generator/templates';
+import { syncPinConstants } from '@/modules/code-generator';
+import { ensureWireBegin, fixI2cAddressLiterals, pruneIncludes } from '@/modules/code-generator/hygiene';
 
 /** Issue codes the deterministic fixer knows how to repair. */
 export const AUTO_FIXABLE_CODES: ValidationIssueCode[] = [
@@ -50,6 +52,9 @@ export const AUTO_FIXABLE_CODES: ValidationIssueCode[] = [
   'diagram_missing_connection',
   'code_pin_mismatch',
   'code_missing_include',
+  'code_stray_include',
+  'code_i2c_address_invalid',
+  'code_missing_bus_init',
   'code_unbalanced_braces',
   'code_missing_setup_loop',
   'library_missing',
@@ -408,7 +413,12 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
     if (!definition) continue;
     if (definition.metadata.electrical === false || definition.metadata.integrated === true) continue;
     if (['prototyping', 'passive', 'power'].includes(definition.category)) continue;
-    const needed = definition.pins.filter((entry) => entry.required && ['digital', 'analog', 'pwm', 'uart', 'i2c', 'spi', 'one_wire', 'enable'].includes(entry.type)).length;
+    let needed = definition.pins.filter((entry) => entry.required && ['digital', 'analog', 'pwm', 'uart', 'i2c', 'spi', 'one_wire', 'enable'].includes(entry.type)).length;
+    /*
+     * A two-terminal switch (pushbutton, reed, tilt) has one leg on a GPIO and
+     * the other on GND or VCC — only one MCU pin is ever assigned to it.
+     */
+    if (definition.category === 'input_device' && definition.metadata.momentary === true && needed >= 2) needed = 1;
     if (needed === 0) continue;
     for (const instance of selection.instances) peripheralNeeds.set(instance.instanceId, needed);
   }
@@ -616,6 +626,56 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
             target: { artifact: 'code', filePath: entry.path, pin: assignment.pin },
           });
         }
+      }
+
+      // Hand-written pin constants must not contradict the pin plan either.
+      // (`const int BUTTON_PIN = 2;` next to a pin map that says D4 is the
+      // exact bug that shipped a sketch which never saw the button.)
+      const strayConstants = syncPinConstants(content, project.pinAssignments);
+      for (const stray of strayConstants.synced) {
+        add('code', {
+          code: 'code_pin_mismatch',
+          severity: 'error',
+          domain: 'code',
+          message: `${entry.path} declares ${stray.name} = ${stray.from} but the pin plan wires that peripheral to ${stray.to}.`,
+          fixHint: `Set ${stray.name} to ${stray.to} or reference the generated PIN_* constant.`,
+          target: { artifact: 'code', filePath: entry.path },
+        });
+      }
+
+      // I2C hygiene: hex addresses that match the catalog, and a started bus.
+      const hygieneContext = { selections: project.components, catalog, libraries: project.artifacts.libraries?.libraries ?? project.softwarePlan?.libraries ?? [] };
+      const addresses = fixI2cAddressLiterals(content, hygieneContext);
+      for (const fix of addresses.fixed) {
+        add('code', {
+          code: 'code_i2c_address_invalid',
+          severity: 'error',
+          domain: 'code',
+          message: `${entry.path} sets ${fix.name} to ${fix.from}; the catalog address for that I2C device is ${fix.to}.`,
+          fixHint: `Write the address as a hex literal: ${fix.to}.`,
+          target: { artifact: 'code', filePath: entry.path },
+        });
+      }
+      if (ensureWireBegin(content, hygieneContext).added) {
+        add('code', {
+          code: 'code_missing_bus_init',
+          severity: 'error',
+          domain: 'code',
+          message: `${entry.path} drives an I2C peripheral but never calls Wire.begin().`,
+          fixHint: 'Call Wire.begin() in setup() before initialising any I2C device.',
+          target: { artifact: 'code', filePath: entry.path },
+        });
+      }
+      const stray = pruneIncludes(content, hygieneContext);
+      for (const header of stray.removed) {
+        add('code', {
+          code: 'code_stray_include',
+          severity: 'warning',
+          domain: 'code',
+          message: `${entry.path} includes <${header}> but no library in the plan provides it (or it duplicates the managed include block).`,
+          fixHint: `Remove #include <${header}> or add the library to the plan.`,
+          target: { artifact: 'code', filePath: entry.path, library: header },
+        });
       }
 
       // Includes must cover every library.
