@@ -1709,6 +1709,12 @@ pre,
   color: var(--ok);
 }
 
+.notice--info {
+  border-left-color: var(--info);
+  background: var(--info-bg);
+  color: var(--info);
+}
+
 .notice__body {
   min-width: 0;
   word-break: break-word;
@@ -2125,4 +2131,223 @@ pre,
   .hub__nav {
     top: 0;
   }
+}
+
+/* ===========================================================================
+   Simulation page — the emulator half, the website half, and the toggle.
+
+   Both halves stay mounted at all times (hiding, never unmounting) so the
+   postMessage bridges and the serial relay survive a flip of the switch.
+   `--hidden` therefore has to keep the iframe rendered but out of the flow
+   and out of the accessibility tree.
+   =========================================================================== */
+
+.sim {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sim__spacer {
+  flex: 1 1 auto;
+}
+
+.sim__swap {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-sunken);
+}
+
+.sim__swap-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.sim__swap-btn:hover {
+  color: var(--text);
+}
+
+.sim__swap-btn--on {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.sim__pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-alt);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.sim__pill-label {
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+}
+
+.sim__pill-state {
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.sim__pill--ok {
+  border-color: #bfe0cb;
+  background: var(--ok-bg);
+}
+
+.sim__pill--warn {
+  border-color: #ecd6a8;
+  background: var(--warn-bg);
+}
+
+.sim__pill--err {
+  border-color: #e8bcbc;
+  background: var(--err-bg);
+}
+
+.sim__stage {
+  position: relative;
+}
+
+.sim__half {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Hidden, not unmounted: the bridge inside must keep running. */
+.sim__half--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.sim__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sim__head p {
+  margin: 2px 0 0;
+  max-width: 720px;
+  font-size: 12px;
+}
+
+.sim__meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sim__frame-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-sunken);
+  min-height: 620px;
+}
+
+.sim__frame {
+  display: block;
+  width: 100%;
+  height: 78vh;
+  min-height: 620px;
+  border: 0;
+  background: var(--bg);
+}
+
+.sim__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(252, 252, 253, 0.94);
+}
+
+.sim__overlay p {
+  margin: 0;
+  max-width: 560px;
+  font-size: 12px;
+}
+
+.sim__overlay code {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg-sunken);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.sim__list {
+  margin: 4px 0 8px;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.sim__list li {
+  margin-bottom: 2px;
+}
+
+.sim__list code {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.sim__details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--bg-alt);
+}
+
+.sim__details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sim__pre {
+  max-height: 320px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  background: var(--bg-sunken);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
 }
