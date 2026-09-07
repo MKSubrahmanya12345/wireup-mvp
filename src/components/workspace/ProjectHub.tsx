@@ -30,6 +30,7 @@ const TABS = [
   { href: '/parts', label: 'Parts & BOM', short: 'Parts' },
   { href: '/wiring', label: 'Wiring & Pins', short: 'Wiring' },
   { href: '/diagram', label: 'Diagram & Simulator', short: 'Diagram' },
+  { href: '/simulation', label: 'Simulation', short: 'Simulation' },
   { href: '/firmware', label: 'Firmware', short: 'Firmware' },
   { href: '/guide', label: 'Build guide', short: 'Guide' },
   { href: '/quality', label: 'Check & fix', short: 'Check' },

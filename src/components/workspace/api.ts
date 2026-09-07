@@ -84,6 +84,91 @@ export async function fetchDiagram(id: string, target: 'wireup' | 'wokwi'): Prom
   return unwrap<DiagramPayload>(response);
 }
 
+/* -------------------------------------------------------------------------- */
+/* Simulation                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export interface SoftwareFinding {
+  severity: 'error' | 'warning' | 'info';
+  code: string;
+  message: string;
+  file?: string;
+  suggestion?: string;
+}
+
+export interface DeviceContract {
+  projectName: string;
+  controller: string;
+  baud: number;
+  telemetryPrefix: string;
+  telemetryIntervalMs: number;
+  metrics: { field: string; label: string; unit: string; kind: 'number' | 'string'; source: string }[];
+  commands: { character: string; label: string; meaning: string; builtIn: boolean }[];
+  transport: string;
+  caveats: string[];
+}
+
+export interface SimulationPayload {
+  projectId: string;
+  projectName: string;
+  slug: string;
+  revision: number;
+  status: ProjectState['status'];
+  stage: ProjectState['stage'];
+  config: { velxioUrl: string; websiteUrl: string; defaultView: 'simulation' | 'website' };
+  velxio: {
+    /** The whole .vlx, ready to push onto the canvas. */
+    vlx: string;
+    name: string;
+    boardKind: string | null;
+    parts: number;
+    wires: number;
+    files: string[];
+    unsupported: string[];
+    warnings: string[];
+  } | null;
+  software: {
+    slug: string;
+    devPort: number;
+    contract: DeviceContract;
+    files: { path: string; bytes: number }[];
+    findings: SoftwareFinding[];
+    passed: boolean;
+    notes: string[];
+    generatedAt: string;
+    zipUrl: string;
+  } | null;
+  blocked: { velxio: string | null; software: string | null };
+}
+
+export async function fetchSimulation(id: string): Promise<SimulationPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/simulation`, { cache: 'no-store' });
+  return unwrap<SimulationPayload>(response);
+}
+
+export interface CanvasSyncPayload {
+  revision: number;
+  summary: string;
+  changes: {
+    partsFromCanvas: number;
+    partsPreserved: number;
+    wiresFromCanvas: number;
+    wiresPreserved: number;
+    wiresDropped: number;
+  };
+  unmapped: string[];
+}
+
+/** Fold a pulled Velxio canvas back into this project's diagram.json. */
+export async function syncCanvas(id: string, canvas: unknown): Promise<CanvasSyncPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/simulation/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ canvas }),
+  });
+  return unwrap<CanvasSyncPayload>(response);
+}
+
 export const TERMINAL_STATUSES: ProjectState['status'][] = [
   'completed',
   'completed_with_warnings',

@@ -52,6 +52,11 @@ export type AgentEventType =
   | 'diagram_generation_completed'
   | 'instructions_generation_started'
   | 'instructions_generation_completed'
+  /** The dashboard website is generated + statically checked (never built here). */
+  | 'software_generation_started'
+  | 'software_generation_completed'
+  /** A Velxio canvas edit was pulled back into diagram.json. */
+  | 'canvas_sync_applied'
   | 'revision_created'
   | 'validation_started'
   | 'validation_completed'

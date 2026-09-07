@@ -1,0 +1,93 @@
+diff --git a/frontend/src/main.tsx b/frontend/src/main.tsx
+index 8c93059..6b2d124 100644
+--- a/frontend/src/main.tsx
++++ b/frontend/src/main.tsx
+@@ -29,6 +29,12 @@ import './components/velxio-components/Ds3231Element';
+ import './components/velxio-components/GpsNeo6mElement';
+ import './components/velxio-components/EPaperElement';
+ import App from './App.tsx';
++import { initEmbedBridge } from './utils/embedBridge';
++
++// Embedded-host bridge (Wireup page 04 and friends): inert unless this
++// window is actually inside an iframe. Must init before render so a fast
++// parent never posts into the void.
++initEmbedBridge();
+ 
+ // Configure monaco-editor for offline use via local static assets
+ const monacoVsPath = `${import.meta.env.BASE_URL}monaco/vs`;
+diff --git a/frontend/src/utils/embedBridge.ts b/frontend/src/utils/embedBridge.ts
+new file mode 100644
+index 0000000..4d755d2
+--- /dev/null
++++ b/frontend/src/utils/embedBridge.ts
+@@ -0,0 +1,70 @@
++/**
++ * Embed bridge — lets a PARENT page (e.g. Wireup's page 04) drive this Velxio
++ * instance when it runs inside an iframe. Wireup vendors Velxio as a
++ * submodule and embeds it; without this bridge the only way in is the manual
++ * file picker, which no parent page can trigger cross-origin.
++ *
++ * Protocol (window.postMessage, JSON-serialisable payloads only):
++ *
++ *   parent → velxio   { type: 'velxio:load-vlx', vlx: string | VlxPayload }
++ *     Loads a .vlx project into the canvas — the exact same code path as the
++ *     Import button (validation included). Replies with
++ *     { type: 'velxio:vlx-loaded', name } or { type: 'velxio:vlx-error', message }.
++ *
++ *   parent → velxio   { type: 'velxio:export-vlx', name?: string }
++ *     Serialises the CURRENT canvas (boards + components + wires + files) and
++ *     replies with { type: 'velxio:vlx-export', vlx: VlxPayload }. This is the
++ *     other half of the bidirectional sync: canvas edits flow back to the
++ *     parent, which can fold them into its own diagram.json.
++ *
++ *   velxio → parent   { type: 'velxio:ready' }
++ *     Fired once on startup (embedded contexts only) so the parent knows when
++ *     it may start posting.
++ *
++ * Security: the bridge only activates when the window is actually embedded,
++ * and every reply goes to event.origin — never '*'. Loading a project is the
++ * same trust decision as the user importing a file; nothing here can touch
++ * accounts, storage or the host machine.
++ */
++import { buildVlxPayload, importVlxFile } from './vlxFile';
++
++interface BridgeMessage {
++  type?: unknown;
++  vlx?: unknown;
++  name?: unknown;
++}
++
++function reply(event: MessageEvent, payload: Record<string, unknown>): void {
++  (event.source as WindowProxy | null)?.postMessage(payload, event.origin);
++}
++
++export function initEmbedBridge(): void {
++  if (window.parent === window) return; // not embedded — stay inert
++
++  window.addEventListener('message', (event: MessageEvent) => {
++    const message = event.data as BridgeMessage;
++    if (!message || typeof message !== 'object' || typeof message.type !== 'string') return;
++
++    if (message.type === 'velxio:load-vlx') {
++      const text = typeof message.vlx === 'string' ? message.vlx : JSON.stringify(message.vlx);
++      const file = new File([text], 'embedded.vlx', { type: 'application/json' });
++      importVlxFile(file)
++        .then((payload) => reply(event, { type: 'velxio:vlx-loaded', name: payload.name ?? null }))
++        .catch((err: unknown) =>
++          reply(event, { type: 'velxio:vlx-error', message: err instanceof Error ? err.message : String(err) }),
++        );
++      return;
++    }
++
++    if (message.type === 'velxio:export-vlx') {
++      try {
++        const payload = buildVlxPayload(typeof message.name === 'string' ? { name: message.name } : {});
++        reply(event, { type: 'velxio:vlx-export', vlx: payload });
++      } catch (err: unknown) {
++        reply(event, { type: 'velxio:vlx-error', message: err instanceof Error ? err.message : String(err) });
++      }
++    }
++  });
++
++  window.parent.postMessage({ type: 'velxio:ready' }, '*');
++}

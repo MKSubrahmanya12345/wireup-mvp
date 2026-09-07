@@ -149,7 +149,9 @@ export function Chips({ items, dark }: { items: string[]; dark?: boolean }) {
 }
 
 export function Notice({ tone = 'neutral', title, children }: { tone?: Tone; title?: string; children: ReactNode }) {
-  const suffix = tone === 'neutral' ? '' : ` notice--${tone === 'err' ? 'err' : tone === 'warn' ? 'warn' : tone === 'ok' ? 'ok' : ''}`;
+  // `Tone` also carries 'info' and 'solid'; only the variants with a matching
+  // `.notice--*` rule get a suffix, the rest fall back to the neutral styling.
+  const suffix = tone === 'ok' || tone === 'warn' || tone === 'err' || tone === 'info' ? ` notice--${tone}` : '';
   return (
     <div className={`notice${suffix}`}>
       <div className="notice__body">
