@@ -166,7 +166,14 @@ export function layoutComponents(entries: LayoutInput[]): LayoutResult {
             simulator: {
               ...(entry.definition.simulator.part ? { part: entry.definition.simulator.part } : {}),
               ...(entry.definition.simulator.attrs ? { attrs: entry.definition.simulator.attrs } : {}),
-              supported: entry.definition.simulator.supported ?? false,
+              /*
+               * A catalog entry that names a simulator part is asserting the
+               * mapping exists; only an explicit `supported: false` overrides
+               * that. Defaulting to false silently dropped mapped parts from
+               * every simulation with the misleading reason "part id
+               * unverified".
+               */
+              supported: entry.definition.simulator.supported ?? entry.definition.simulator.part !== undefined,
               ...(entry.definition.simulator.notes ? { notes: entry.definition.simulator.notes } : {}),
             },
           }

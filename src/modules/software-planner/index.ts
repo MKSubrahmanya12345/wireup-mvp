@@ -209,11 +209,39 @@ export function deriveCommandSet(states: ControlState[], requirements: ProjectRe
 }
 
 /** Resolve the authoritative library list from the catalog. */
+/**
+ * Does this build need non-volatile storage?
+ *
+ * Anything that authorises access (a keypad or a set of switches plus a lock)
+ * has a credential that must survive a power cycle; so does any brief that asks
+ * to "store", "remember" or "persist" a setting. Without EEPROM.h in the plan
+ * the firmware cannot keep the PIN and the include block would strip it.
+ */
+export function needsPersistentStorage(
+  selections: ComponentSelection[],
+  catalog: ComponentDefinition[],
+  requirements: { goal: string; behaviors: string[]; requirements: string[] },
+): boolean {
+  const text = `${requirements.goal} ${requirements.behaviors.join(' ')} ${requirements.requirements.join(' ')}`.toLowerCase();
+  if (/\b(store|persist|remember|survive|non-?volatile|save)\b/.test(text) && /\b(pin|password|code|setting|calibrat)\w*\b/.test(text)) {
+    return true;
+  }
+
+  const hasLock = selections.some((selection) => /servo/i.test(selection.componentId) || /relay/i.test(selection.componentId));
+  const hasKeyInput = selections.some((selection) => {
+    const definition = catalog.find((component) => component.id === selection.componentId);
+    if (definition?.metadata.keypadMatrix !== undefined) return true;
+    return selection.category === 'input_device' && /button|switch|key/i.test(selection.componentId);
+  });
+  const credential = /\b(pin|password|passcode|code|access|safe|lock)\b/.test(text);
+  return hasLock && hasKeyInput && credential;
+}
+
 export function resolveLibraries(
   selections: ComponentSelection[],
   catalog: ComponentDefinition[],
   extra: LibraryRequirement[] = [],
-  context: { i2c: boolean; softwareSerial: boolean; bluetoothSerial: boolean; platform: string },
+  context: { i2c: boolean; softwareSerial: boolean; bluetoothSerial: boolean; platform: string; persistentStorage?: boolean },
 ): LibraryRequirement[] {
   const libraries = new Map<string, LibraryRequirement>();
 
@@ -237,6 +265,14 @@ export function resolveLibraries(
     add({ name: 'SoftwareSerial', import: 'SoftwareSerial.h', manager: 'arduino', purpose: 'Emulated UART for the Bluetooth module on AVR boards', builtIn: true });
   if (context.bluetoothSerial)
     add({ name: 'BluetoothSerial', import: 'BluetoothSerial.h', manager: 'arduino', purpose: 'Bluetooth Classic SPP link on the ESP32 integrated radio', builtIn: true });
+  if (context.persistentStorage)
+    add({
+      name: 'EEPROM',
+      import: 'EEPROM.h',
+      manager: 'arduino',
+      purpose: 'Non-volatile storage so a stored PIN/setting survives a reset (flash-emulated on ESP32)',
+      builtIn: true,
+    });
 
   for (const library of extra) {
     if (!library.name || !library.import) continue;
@@ -281,6 +317,7 @@ export function planSoftware(input: SoftwarePlannerInput): SoftwarePlan {
     softwareSerial: serialLinks.some((link) => link.kind === 'software'),
     bluetoothSerial: wantsBluetooth && integratedRadio,
     platform,
+    persistentStorage: needsPersistentStorage(selections, catalog, requirements),
   });
 
   const transport = (() => {

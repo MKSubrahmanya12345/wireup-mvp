@@ -23,7 +23,9 @@
 
 import type { ComponentSelection } from '@/types/component';
 import type { PinAssignment } from '@/types/wiring';
-import type { CommandSpec, SoftwarePlan } from '@/types/project';
+import type { CommandSpec, GeneratedCodeFile, SoftwarePlan } from '@/types/project';
+
+import { commandCharacters, telemetryFields } from './firmware-signals';
 
 export interface DeviceMetric {
   /** Key as it appears in the telemetry JSON. */
@@ -83,7 +85,49 @@ export interface DeviceContractInput {
   softwarePlan: SoftwarePlan;
   /** Control states the sketch compiled in — the `state` field's domain. */
   hasCounter?: boolean;
+  /**
+   * The generated firmware. When present it is authoritative: a metric the
+   * sketch never prints is not offered to the dashboard, and a command the
+   * parser never accepts is not shown as a button.
+   */
+  firmware?: Pick<GeneratedCodeFile, 'path' | 'content'>[];
 }
+
+/**
+ * Shape of every telemetry key an access-control (PIN lock) build can print,
+ * mirroring `behaviours/access-control.ts`'s `sendTelemetry()`.
+ */
+const ACCESS_CONTROL_FIELDS: Record<string, Omit<DeviceMetric, 'field'>> = {
+  state: { label: 'Lock state', unit: '', kind: 'string', source: 'PIN / lock state machine' },
+  locked: { label: 'Locked', unit: '', kind: 'string', source: 'lock actuator position' },
+  door: { label: 'Door', unit: '', kind: 'string', source: 'door switch (or auto-relock timer)' },
+  attempts: {
+    label: 'Failed attempts',
+    unit: '',
+    kind: 'number',
+    min: 0,
+    precision: 0,
+    source: 'PIN attempt counter',
+  },
+  angle: {
+    label: 'Bolt angle',
+    unit: '°',
+    kind: 'number',
+    min: 0,
+    max: 180,
+    precision: 0,
+    source: 'servo position',
+  },
+};
+
+/** Labels for the command characters a generated sketch handles but the planner did not name. */
+const BUILT_IN_COMMANDS: Record<string, { label: string; meaning: string }> = {
+  '?': { label: 'Refresh now', meaning: 'Force an immediate telemetry frame.' },
+  S: { label: 'Status now', meaning: 'Force an immediate telemetry frame.' },
+  L: { label: 'Lock now', meaning: 'Drive the lock back to its locked position and clear the entered PIN.' },
+  '+': { label: 'Speed +10%', meaning: 'Raise the speed setpoint by 10 percentage points.' },
+  '-': { label: 'Speed −10%', meaning: 'Lower the speed setpoint by 10 percentage points.' },
+};
 
 /**
  * Recreate, from the plan, exactly which fields `sendTelemetry()` prints.
@@ -193,6 +237,36 @@ export function deriveDeviceContract(input: DeviceContractInput): DeviceContract
     });
   }
 
+  /* Reconcile with the firmware that was actually generated ---------------- */
+  const printed = telemetryFields(input.firmware ?? []);
+  if (printed) {
+    for (const field of printed) {
+      const shape = ACCESS_CONTROL_FIELDS[field];
+      if (!shape) continue;
+      if (metrics.some((metric) => metric.field === field)) {
+        // The access-control state machine relabels `state`: use its words.
+        const existing = metrics.find((metric) => metric.field === field);
+        if (existing) {
+          existing.label = shape.label;
+          existing.source = shape.source;
+        }
+        continue;
+      }
+      metrics.push({ field, ...shape });
+    }
+    /*
+     * Drop anything the sketch does not print. A keypad safe has no speed
+     * setpoint, so a "Speed %" card would sit empty forever — and the static
+     * cross-check would (rightly) flag it on every build.
+     */
+    for (let index = metrics.length - 1; index >= 0; index--) {
+      const metric = metrics[index];
+      if (metric && !printed.includes(metric.field)) metrics.splice(index, 1);
+    }
+    // Keep the declared order: `state` first, then the build's own readings.
+    metrics.sort((a, b) => printed.indexOf(a.field) - printed.indexOf(b.field));
+  }
+
   /* Commands --------------------------------------------------------------- */
   const planned: CommandSpec[] = softwarePlan.communication?.commandSet ?? [];
   const commands: DeviceCommand[] = [];
@@ -208,16 +282,36 @@ export function deriveDeviceContract(input: DeviceContractInput): DeviceContract
       builtIn: false,
     });
   }
-  // The sketch always compiles these three in when it has any command set.
-  if (commands.length > 0) {
-    for (const builtIn of [
-      { character: '+', label: 'Speed +10%', meaning: 'Raise the speed setpoint by 10 percentage points.' },
-      { character: '-', label: 'Speed −10%', meaning: 'Lower the speed setpoint by 10 percentage points.' },
-      { character: '?', label: 'Refresh now', meaning: 'Force an immediate telemetry frame.' },
-    ]) {
-      if (seen.has(builtIn.character)) continue;
-      seen.add(builtIn.character);
-      commands.push({ ...builtIn, builtIn: true });
+  const accepted = commandCharacters(input.firmware ?? []);
+  if (accepted) {
+    /*
+     * The parser in the sketch is the truth: it decides what the board does
+     * with a keystroke. Anything it does not accept would come back as
+     * "err:unknown command", and anything it accepts but the planner never
+     * named still deserves a button.
+     */
+    for (let index = commands.length - 1; index >= 0; index--) {
+      const command = commands[index];
+      if (command && !accepted.includes(command.character)) commands.splice(index, 1);
+    }
+    for (const character of accepted) {
+      if (commands.some((command) => command.character === character)) continue;
+      const known = BUILT_IN_COMMANDS[character];
+      commands.push({
+        character,
+        label: known?.label ?? `Send "${character}"`,
+        meaning: known?.meaning ?? `The firmware's command parser accepts "${character}".`,
+        builtIn: true,
+      });
+    }
+  } else if (commands.length > 0) {
+    // No firmware to read (e.g. the model wrote the sketch): assume the
+    // generator's built-ins are present.
+    for (const character of ['+', '-', '?']) {
+      if (seen.has(character)) continue;
+      seen.add(character);
+      const known = BUILT_IN_COMMANDS[character];
+      commands.push({ character, label: known?.label ?? character, meaning: known?.meaning ?? '', builtIn: true });
     }
   }
 

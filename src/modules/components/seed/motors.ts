@@ -39,6 +39,7 @@ export const MOTORS: ComponentDefinition[] = [
     exampleUsage: ['RC car wheel driven by an L298N OUT1/OUT2 pair', 'Conveyor belt driven through a TB6612FNG channel'],
     metadata: {
       electrical: true,
+      noSupplyPins: true,
       notes: 'Add a flyback diode (or use a driver with built-in clamp diodes) to absorb back-EMF.',
       incompatibleReason: 'Stall current exceeds any MCU GPIO rating; an H-bridge driver is mandatory.',
     },
@@ -76,7 +77,18 @@ export const MOTORS: ComponentDefinition[] = [
     aliases: ['servo', 'sg90', 'micro servo', 'hobby servo', '9g servo'],
     exampleUsage: ['RC car steering', 'Sensor pan/tilt', 'Robotic arm joint'],
     simulator: { part: 'wokwi-servo', supported: true },
-    metadata: { electrical: true, pwmFrequencyHz: 50, pulseRangeUs: [500, 2500] },
+    metadata: {
+      electrical: true,
+      pwmFrequencyHz: 50,
+      pulseRangeUs: [500, 2500],
+      /*
+       * A servo is driven to a position and then holds at a few mA; its stall
+       * figure is an abnormal, brief condition, not a continuous draw. Treating
+       * stall current as sustained made every single-servo build fail the power
+       * budget on paper.
+       */
+      stallIsTransient: true,
+    },
   }),
 
   def({
@@ -108,7 +120,14 @@ export const MOTORS: ComponentDefinition[] = [
     keywords: ['servo', 'mg996r', 'metal gear', 'high torque'],
     aliases: ['mg996r', 'metal gear servo', 'high torque servo'],
     simulator: { part: 'wokwi-servo', supported: true, notes: 'Simulated as a generic servo; current draw is not modelled.' },
-    metadata: { electrical: true, pwmFrequencyHz: 50, pulseRangeUs: [500, 2500], requiresBulkCapacitor: true },
+    metadata: {
+      electrical: true,
+      pwmFrequencyHz: 50,
+      pulseRangeUs: [500, 2500],
+      requiresBulkCapacitor: true,
+      // Position servo: stall current is brief and abnormal, not a continuous draw.
+      stallIsTransient: true,
+    },
   }),
 
   def({
@@ -184,7 +203,7 @@ export const MOTORS: ComponentDefinition[] = [
     keywords: ['stepper', 'nema17', 'bipolar', 'cnc', '3d printer'],
     aliases: ['nema 17', 'nema17', 'bipolar stepper', '17hs4401'],
     simulator: { supported: false, notes: 'Not available in common simulators.' },
-    metadata: { electrical: true, incompatibleReason: 'Requires a chopper driver (A4988/DRV8825) between MCU and motor coils.' },
+    metadata: { electrical: true, noSupplyPins: true, incompatibleReason: 'Requires a chopper driver (A4988/DRV8825) between MCU and motor coils.' },
   }),
 
   def({

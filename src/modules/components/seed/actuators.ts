@@ -138,7 +138,13 @@ export const ACTUATORS: ComponentDefinition[] = [
     ],
     keywords: ['neopixel', 'ws2812', 'ws2812b', 'addressable led', 'led strip', 'rgb strip'],
     aliases: ['neopixel', 'ws2812b', 'led strip', 'addressable leds'],
-    simulator: { part: 'wokwi-neopixel', supported: false, notes: 'Part id unverified — confirm before use.' },
+    simulator: {
+      part: 'wokwi-neopixel',
+      supported: true,
+      notes:
+        'Simulated as ONE addressable pixel (DIN/DOUT/VDD/VSS match the strip pin for pin). ' +
+        'A real strip needs one part per pixel in the simulator, or a bench build with the full length.',
+    },
     metadata: { electrical: true, levelShiftFrom3v3: true, protocol: 'ws2812b-single-wire', ledCount: 'per segment' },
   }),
 ];
