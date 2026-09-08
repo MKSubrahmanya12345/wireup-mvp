@@ -62,7 +62,8 @@ export interface FixerRefreshers {
   software?: (project: ProjectState) => RefreshResult;
   pins?: (project: ProjectState) => RefreshResult;
   wiring?: (project: ProjectState) => RefreshResult;
-  code?: (project: ProjectState, options?: { force?: boolean }) => RefreshResult;
+  /** The code refresher may re-run the AI-first (async) generation. */
+  code?: (project: ProjectState, options?: { force?: boolean }) => RefreshResult | Promise<RefreshResult>;
   libraries?: (project: ProjectState) => RefreshResult;
   diagram?: (project: ProjectState) => RefreshResult;
   instructions?: (project: ProjectState) => RefreshResult;
@@ -183,7 +184,7 @@ function rebuildMarkdown(instructions: InstructionsArtifact): string {
 /* Applier                                                                    */
 /* ------------------------------------------------------------------------- */
 
-export function applyChanges(input: ApplyInput): ApplyOutput {
+export async function applyChanges(input: ApplyInput): Promise<ApplyOutput> {
   const { changes, catalog, events, iteration } = input;
   const working = workingFrom(input.project);
   const applied: AppliedChange[] = [];
@@ -874,7 +875,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
   const pending: RerunStage[] = [];
 
   if (componentsChanged && input.refresh?.hardware) {
-    const outcome = runRefresh(input.refresh.hardware, snapshot(working, input.project), 'hardware plan');
+    const outcome = await runRefresh(input.refresh.hardware, snapshot(working, input.project), 'hardware plan');
     if (outcome) {
       adopt(working, outcome.project);
       notes.push('Hardware plan re-derived from the patched component list.');
@@ -882,7 +883,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
   }
 
   if (componentsChanged && input.refresh?.software) {
-    const outcome = runRefresh(input.refresh.software, snapshot(working, input.project), 'software plan');
+    const outcome = await runRefresh(input.refresh.software, snapshot(working, input.project), 'software plan');
     if (outcome) {
       adopt(working, outcome.project);
       notes.push('Software plan re-derived from the patched component list.');
@@ -924,7 +925,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
       }
       pinsRederived = false;
     }
-    const outcome = runRefresh(refresher, snapshot(working, input.project), stage, {
+    const outcome = await runRefresh(refresher, snapshot(working, input.project), stage, {
       force: requestedStages.get(stage) === true,
     });
     if (!outcome) {
@@ -1024,14 +1025,14 @@ function adopt(working: Working, project: ProjectState): void {
   working.instructions = project.artifacts.instructions;
 }
 
-function runRefresh(
-  refresher: (project: ProjectState, options?: { force?: boolean }) => RefreshResult,
+async function runRefresh(
+  refresher: (project: ProjectState, options?: { force?: boolean }) => RefreshResult | Promise<RefreshResult>,
   project: ProjectState,
   label: string,
   options?: { force?: boolean },
-): RefreshResult | undefined {
+): Promise<RefreshResult | undefined> {
   try {
-    return refresher(project, options);
+    return await refresher(project, options);
   } catch (error) {
     logger.error({ err: error, stage: label }, 'fixer: deterministic re-derivation failed');
     return undefined;
