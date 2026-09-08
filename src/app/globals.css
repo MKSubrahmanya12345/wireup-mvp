@@ -3453,3 +3453,136 @@ body {
   font-size: 11px;
   line-height: 1.5;
 }
+
+/* First-touch type scale -----------------------------------------------------
+   The landing and handoff screens carry the product story, so they use the
+   readable system sans instead of the compact editor-style display face. */
+:root {
+  --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.landing__signal {
+  font-size: 11px;
+}
+
+.landing__eyebrow {
+  font-size: 11px;
+}
+
+.landing__title {
+  font-weight: 760;
+}
+
+.landing__subtitle {
+  font-size: 18px;
+  line-height: 1.58;
+}
+
+.landing__form-label {
+  font-size: 11px;
+}
+
+.prompt-form__head {
+  font-size: 11px;
+}
+
+.prompt-form__textarea {
+  font-size: 18px;
+  line-height: 1.58;
+}
+
+.prompt-form__hint {
+  font-size: 13px;
+}
+
+.example__title {
+  font-size: 11px;
+}
+
+.example__body {
+  font-size: 13px;
+}
+
+.landing__note {
+  font-size: 12px;
+}
+
+.hub__crumb-label,
+.hub__kicker,
+.hub__tab {
+  font-size: 11px;
+}
+
+.hub__title {
+  font-weight: 760;
+}
+
+.hub__sub {
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.hub__step {
+  font-size: 12px;
+}
+
+.overview__hero-topline {
+  font-size: 10.5px;
+}
+
+.overview__headline {
+  font-size: clamp(27px, 3.3vw, 40px);
+  font-weight: 750;
+}
+
+.overview__subhead {
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.overview__fact-label {
+  font-size: 11px;
+}
+
+.overview__fact-value {
+  font-size: 19px;
+}
+
+.overview__link-label {
+  font-size: 17px;
+}
+
+.overview__link-blurb {
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .landing__subtitle {
+    font-size: 16px;
+  }
+
+  .prompt-form__textarea {
+    font-size: 17px;
+  }
+
+  .prompt-form__hint {
+    font-size: 13px;
+  }
+
+  .example__body {
+    font-size: 13.5px;
+  }
+
+  .hub__sub {
+    font-size: 16px;
+  }
+
+  .overview__headline {
+    font-size: clamp(28px, 8.5vw, 38px);
+  }
+
+  .overview__subhead {
+    font-size: 15px;
+  }
+}
