@@ -136,9 +136,11 @@ fails the harness, not the user's build.
   `supported: false` but the reason is now the truth — Wokwi/Velxio only model a **four-pin
   photoresistor module** (VCC/GND/DO/AO), not a bare two-terminal LDR, and placing the module would
   wire a divider to pins the part does not have.
-- **Board fallback** still defaults to `arduino-uno` when no controller reaches the projection
-  (that is what the user saw: "no controller maps to a Velxio board"). Not yet fixed — see §7.2.
-  On the repro the board is correctly `arduino-nano`.
+- **Board fallback — FIXED.** It used to default to `arduino-uno` whenever no controller reached the
+  projection (that is what the user saw: "no controller maps to a Velxio board"). Resolution is now
+  Wokwi part → the diagram's own controller ref → `arduino-uno`, the substituted board is named in
+  `unsupported` with the reason, and the Wokwi projection raises a first-position warning when the
+  controller itself is skipped. See §7.1.
 
 ### 2.6 Power plan: over budget, SG90 on 9 V, capacitor on the wrong rail, noisy notes — **PARTLY FIXED**
 
@@ -333,7 +335,8 @@ npx tsx scripts/repro-safe.ts        → keypad in BOM; 14 pin assignments, no p
                                        target pins; wiring 24 connections / 0 conflicts;
                                        validation passed, 0 errors 0 warnings; fix applied 0 (nothing to fix);
                                        wokwi 9 parts / 24 connections / 0 skipped connections;
-                                       velxio board arduino-nano, 8 components, 24 wires, 0 unsupported;
+                                       velxio board arduino-nano, 8 components, 24 wires, 0 unsupported,
+                                       no controller-skip warning;
                                        contract metrics [state, locked, door, attempts, angle],
                                        commands ['?' Refresh now, 'L' Lock now, 'S' Status now],
                                        software findings: none, passed: true
@@ -347,28 +350,22 @@ project with rejected wires, and a dashboard advertising fields the firmware nev
 
 ## 7. Remaining work, in priority order
 
-### 7.1 Velxio board fallback (user-visible: "embed shows arduino-uno")
+### 7.1 ~~Velxio board fallback~~ — **DONE (2026-09-08, second commit)**
 
-`src/modules/simulation/velxio-project.ts`, board resolution:
+Both halves landed, verified by `npx tsc --noEmit`, `verify:offline`, `verify:firmware` (8/8) and
+the safe repro (`vlx boards: arduino-nano`, `vlx unsupported: 0`):
 
-```ts
-const boardPart = wokwi.parts.find((part) => BOARD_KIND_BY_WOKWI_TYPE[part.type] !== undefined);
-const boardKind = boardPart ? BOARD_KIND_BY_WOKWI_TYPE[boardPart.type] : 'arduino-uno';
-```
-
-When the Wokwi projection skips the controller (`simulator.part` missing, or `supported === false`),
-the exporter silently opens an **Arduino Uno** and the firmware cannot run. Do both:
-
-1. Fall back to the diagram's own controller instead of a literal:
-   `input.diagram.components.find(c => c.category === 'microcontroller')?.ref` → a small
-   catalog-id→boardKind map (`arduino-nano` → `arduino-nano`, `arduino-uno-r3` → `arduino-uno`,
-   `esp32-devkit-v1` → `esp32`). `BOARD_KIND_BY_WOKWI_TYPE` is keyed by *Wokwi element*, so a
-   second table keyed by *catalog id* is needed; keep them adjacent with a comment saying why there
-   are two.
-2. Make the skip **loud** in `src/modules/diagram-generator/wokwi.ts`: when a skipped part is the
-   controller, push a distinctive entry into `warnings` (e.g. `controller-not-simulatable`) rather
-   than a generic `skippedParts` reason, and have `velxio-project.ts` surface it in `unsupported`
-   with the board it fell back to.
+1. `src/modules/simulation/velxio-project.ts` gained `BOARD_KIND_BY_CATALOG_ID`
+   (`esp32-devkit-v1` → `esp32`, `arduino-uno-r3` → `arduino-uno`, `arduino-nano` → `arduino-nano`),
+   sitting next to the Wokwi-element table with a comment explaining why there are two: the element
+   key only exists once the projection placed the board, the catalog `ref` always does. Resolution
+   order is now *Wokwi part → diagram controller ref → `arduino-uno`*, and the `unsupported` entry
+   names the controller, quotes the projection's skip reason, and states which board was substituted
+   and what that costs (no wires to the MCU, firmware does not run).
+   **If a new controller is added to the catalog, add it to both tables.**
+2. `src/modules/diagram-generator/wokwi.ts` now `unshift`es a first-position warning when a skipped
+   part is the controller — spelling out that the exported diagram has **no board**, so every wire to
+   the MCU is dropped and an embedding simulator will substitute its own default.
 
 ### 7.2 Validator rules for the pin-plan defects (defence in depth)
 
