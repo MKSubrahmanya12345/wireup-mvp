@@ -113,6 +113,22 @@ const BOARD_KIND_BY_WOKWI_TYPE: Record<string, string> = {
 };
 
 /**
+ * Catalog controller id → Velxio `boardKind`.
+ *
+ * The table above is keyed by Wokwi *element*, which only exists once the
+ * diagram projection has placed the board. When the controller is skipped — no
+ * simulator part in the catalog, or `supported: false` — that lookup finds
+ * nothing, and the exporter used to open an Arduino Uno regardless of what the
+ * user actually designed. The diagram still names the controller (`ref`), so
+ * fall back to that before falling back to a guess.
+ */
+const BOARD_KIND_BY_CATALOG_ID: Record<string, string> = {
+  'esp32-devkit-v1': 'esp32',
+  'arduino-uno-r3': 'arduino-uno',
+  'arduino-nano': 'arduino-nano',
+};
+
+/**
  * Wokwi part type → Velxio component `metadataId`.
  *
  * Velxio's catalog (`external/velxio/frontend/public/components-metadata.json`,
@@ -327,10 +343,20 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
   const unsupported: string[] = [];
 
   const boardPart = wokwi.parts.find((part) => BOARD_KIND_BY_WOKWI_TYPE[part.type] !== undefined);
-  const boardKind = boardPart ? (BOARD_KIND_BY_WOKWI_TYPE[boardPart.type] as string) : 'arduino-uno';
+  const diagramController = input.diagram.components.find((component) => component.category === 'microcontroller');
+  const kindFromDiagram = diagramController ? BOARD_KIND_BY_CATALOG_ID[diagramController.ref] : undefined;
+  const boardKind = boardPart
+    ? (BOARD_KIND_BY_WOKWI_TYPE[boardPart.type] as string)
+    : kindFromDiagram ?? 'arduino-uno';
   if (!boardPart) {
+    const skipped = projection.skippedParts.find((part) => part.id === diagramController?.id);
     unsupported.push(
-      'board: no controller in this diagram maps to a Velxio board — the project opens with an Arduino Uno so the parts are still inspectable, but the firmware will not run.',
+      kindFromDiagram
+        ? `board: the controller (${diagramController?.ref}) was not placed in the simulator projection` +
+          `${skipped ? ` — ${skipped.reason}` : ''}, so the canvas opens as a ${boardKind} from the diagram itself. ` +
+          'The parts are inspectable, but wires to the board and the firmware run are not reproduced.'
+        : 'board: no controller in this diagram maps to a Velxio board — the project opens with an Arduino Uno so the ' +
+          'parts are still inspectable, but the firmware will not run.',
     );
   }
   const boardPartIds = new Set(

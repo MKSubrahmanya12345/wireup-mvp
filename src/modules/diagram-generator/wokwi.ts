@@ -385,6 +385,24 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
     connections.push([`${from.id}:${fromPin}`, `${to.id}:${toPin}`, colour, []]);
   }
 
+  /*
+   * A skipped peripheral is an inconvenience; a skipped CONTROLLER means there
+   * is no board on the canvas, no wires to it, and nothing to run the firmware
+   * on. That must never be one line in a list of twenty — it goes first, and it
+   * says what the downstream simulator will do about it.
+   */
+  const skippedController = diagram.components.find(
+    (component) => component.category === 'microcontroller' && skippedParts.some((part) => part.id === component.id),
+  );
+  if (skippedController) {
+    const reason = skippedParts.find((part) => part.id === skippedController.id)?.reason ?? 'no reason recorded';
+    warnings.unshift(
+      `The controller ${skippedController.id} (${skippedController.ref}) is not representable in the target simulator: ${reason} ` +
+        'The exported diagram therefore has NO board — every wire to the MCU is dropped and a simulator embedding this ' +
+        'diagram will substitute its own default board, on which this firmware will not run.',
+    );
+  }
+
   if (skippedParts.some((part) => part.reason !== 'Wiring medium — not part of the electrical graph.')) {
     const ids = skippedParts.filter((part) => !part.reason.startsWith('Wiring medium')).map((part) => part.id);
     warnings.push(`${ids.length} part(s) have no verified simulator mapping and were omitted: ${ids.join(', ')}.`);
