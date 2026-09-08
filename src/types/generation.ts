@@ -261,6 +261,13 @@ export interface RerunStageChange extends BaseChange {
   artifact: 'diagram' | 'wiring' | 'pinAssignments' | 'instructions' | 'libraries' | 'code';
   op: 'rerun_stage';
   stage: 'pins' | 'wiring' | 'diagram' | 'instructions' | 'libraries' | 'code';
+  /**
+   * Force a full re-derivation instead of the cheap re-sync. Used by the
+   * behavioural fixer: a sketch that is structurally fine but behaviourally
+   * wrong must be regenerated from the deterministic template, not merely
+   * re-synchronised with the pin plan.
+   */
+  force?: boolean;
 }
 
 export type FixChange =

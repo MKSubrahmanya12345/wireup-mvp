@@ -25,6 +25,7 @@ import { nowIso, nowMs } from '@/lib/validation/time';
 
 import { groupIssuesByArtifact, runRuleEngine, summariseIssues } from './rules';
 import { issueSignature, runModelReview } from './llm';
+import { evaluateBehavioral } from '@/modules/behaviour-evaluator';
 
 export const ENGINE_VERSION = 'wireup-validator/1.0';
 
@@ -89,6 +90,53 @@ export async function validateProject(input: ValidatorInput): Promise<ValidatePr
   let llmCall: LlmCallRecord | undefined;
   let modelReview: ModelReview | undefined;
   let engineError: string | undefined;
+
+  /* --- 1b. Behavioural assertion layer ------------------------------------- */
+  /*
+   * Structural validation stops at "it compiles / the schema holds". The
+   * behavioural layer checks that the firmware actually keeps the promises
+   * extracted from the prompt: each failed assertion becomes a targeted,
+   * auto-fixable `behavioral_assertion_failed` issue the fixer receives as
+   * structured input ("expected X, got Y").
+   */
+  if (project.requirements?.behavioralSpec?.assertions.length) {
+    const report = evaluateBehavioral({
+      requirements: project.requirements,
+      code: project.artifacts.code,
+      pinAssignments: project.pinAssignments,
+      selections: project.components,
+    });
+
+    const behavioralIssueIds: string[] = [];
+    for (const check of report.checks) {
+      if (check.status !== 'failed') continue;
+      const issue: ValidationIssue = {
+        id: `behavioral.${check.assertionId}`,
+        code: 'behavioral_assertion_failed',
+        severity: check.severity,
+        domain: 'behavior',
+        message: `Behavioural assertion failed: ${check.title} (${check.mode})`,
+        details: check.failure ?? `expected ${check.expected}, got ${check.actual}`,
+        target: { artifact: 'code' },
+        fixHint: check.failure ?? `expected ${check.expected}, got ${check.actual}`,
+        autoFixable: true,
+        origin: 'rules',
+      };
+      issues.push(issue);
+      behavioralIssueIds.push(issue.id);
+    }
+
+    checks.push({
+      id: 'behavior.assertions',
+      name: 'Behavioural assertions',
+      domain: 'behavior',
+      status: report.failures > 0 ? 'failed' : report.checks.length > 0 ? 'passed' : 'skipped',
+      message: report.runtimeError
+        ? `${report.checks.length} assertion(s) checked statically; emulation unavailable (${report.runtimeError}).`
+        : `${report.checks.length} assertion(s) checked (${report.checks.filter((c) => c.status === 'passed').length} passed, ${report.failures + report.warnings} failed)${report.runtimeRan ? ', emulation ran' : ''}.`,
+      issueIds: behavioralIssueIds,
+    });
+  }
 
   /* --- 2. Model review (additive) ------------------------------------------ */
   if (modelReviewEnabled) {

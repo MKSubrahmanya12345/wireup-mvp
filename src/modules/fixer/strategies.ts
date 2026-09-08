@@ -308,6 +308,32 @@ function giveUp(ctx: Ctx, issue: ValidationIssue, reason: string): void {
 }
 
 /* ------------------------------------------------------------------------- */
+/* Behavioural assertion failures                                             */
+/* ------------------------------------------------------------------------- */
+
+interface BehavioralFailure {
+  assertionId: string;
+  expected: string;
+  got: string;
+}
+
+/**
+ * The validator reports a behavioural failure as structured input
+ * ("assertion X failed: expected Y, got Z"). Split it back apart so the fixer
+ * can act on the exact value that was wrong instead of "the build broke".
+ */
+function parseBehavioralFailure(issue: ValidationIssue): BehavioralFailure {
+  const assertionId = issue.id.startsWith('behavioral.') ? issue.id.slice('behavioral.'.length) : issue.id;
+  const text = `${issue.details ?? ''} ${issue.fixHint ?? ''}`;
+  const match = /expected\s+(.+?),\s+got\s+(.+)$/.exec(text);
+  return {
+    assertionId,
+    expected: match?.[1]?.trim() ?? '',
+    got: match?.[2]?.trim() ?? '',
+  };
+}
+
+/* ------------------------------------------------------------------------- */
 /* Individual strategies                                                      */
 /* ------------------------------------------------------------------------- */
 
@@ -780,6 +806,11 @@ function rerun(ctx: Ctx, issue: ValidationIssue, stage: RerunStage, reason: stri
   return push(ctx, issue, { artifact: RERUN_ARTIFACT[stage], op: 'rerun_stage', stage, reason });
 }
 
+/** Re-derive a stage fully (skips the in-place re-sync shortcut in the applier). */
+function rerunForced(ctx: Ctx, issue: ValidationIssue, stage: RerunStage, reason: string): boolean {
+  return push(ctx, issue, { artifact: RERUN_ARTIFACT[stage], op: 'rerun_stage', stage, force: true, reason });
+}
+
 function planForIssue(ctx: Ctx, issue: ValidationIssue): void {
   const code: ValidationIssueCode = issue.code;
 
@@ -1083,6 +1114,77 @@ function planForIssue(ctx: Ctx, issue: ValidationIssue): void {
         return;
       }
       giveUp(ctx, issue, `${path} has ${-balance} stray closing brace(s) — removing them automatically could delete real logic.`);
+      return;
+    }
+
+    case 'behavioral_assertion_failed': {
+      const failure = parseBehavioralFailure(issue);
+      const path = issue.target?.filePath ?? ctx.project.artifacts.code?.entryPoint ?? 'sketch.ino';
+      const file = (ctx.project.artifacts.code?.files ?? []).find((entry) => entry.path === path);
+      const content = file?.content ?? '';
+
+      /* Numeric constants the assertion pinned down can be patched directly. */
+      if (failure.assertionId === 'pin-min-length' || failure.assertionId === 'pin-max-length') {
+        const target = Number.parseInt(failure.expected, 10);
+        const constant = failure.assertionId === 'pin-min-length' ? 'PIN_MIN_LENGTH' : 'PIN_MAX_LENGTH';
+        const present = file !== undefined && new RegExp(`\\b${constant}\\s*=\\s*\\d+`).test(content);
+        if (Number.isFinite(target) && present) {
+          push(ctx, issue, {
+            artifact: 'code',
+            op: 'patch_code_file',
+            path,
+            mode: 'regex_replace',
+            find: `(${constant}\\s*=\\s*)\\d+`,
+            replace: `$1${target}`,
+            reason: `Behavioural assertion failed: expected ${constant} = ${failure.expected}, got ${failure.got}. Corrected the constant.`,
+          });
+          return;
+        }
+        rerunForced(
+          ctx,
+          issue,
+          'code',
+          `Behavioural assertion failed: expected ${constant} = ${failure.expected}, got ${failure.got}. Regenerating the firmware deterministically.`,
+        );
+        return;
+      }
+
+      if (failure.assertionId === 'default-pin-covers-min') {
+        const min = Number.parseInt(failure.expected, 10);
+        const present = file !== undefined && /const\s+char\s*\*\s*fallback\s*=\s*"[0-9]*"/.test(content);
+        if (Number.isFinite(min) && present) {
+          const digits = '1234567890'.repeat(Math.ceil(min / 10)).slice(0, min);
+          push(ctx, issue, {
+            artifact: 'code',
+            op: 'patch_code_file',
+            path,
+            mode: 'regex_replace',
+            find: '(const\\s+char\\s*\\*\\s*fallback\\s*=\\s*")[0-9]*(")',
+            replace: `$1${digits}$2`,
+            reason: `Behavioural assertion failed: factory default must be at least ${min} digits, got ${failure.got}.`,
+          });
+          return;
+        }
+        rerunForced(
+          ctx,
+          issue,
+          'code',
+          `Behavioural assertion failed: factory default too short (expected ≥ ${failure.expected}, got ${failure.got}). Regenerating deterministically.`,
+        );
+        return;
+      }
+
+      /*
+       * Logic-level failures (inverted reset, spurious press counter, telemetry
+       * shape) can't be repaired with a safe one-line patch; the deterministic
+       * template is the source of truth, so re-derive the sketch from it.
+       */
+      rerunForced(
+        ctx,
+        issue,
+        'code',
+        `Behavioural assertion failed: expected ${failure.expected}, got ${failure.got}. Regenerating the firmware deterministically.`,
+      );
       return;
     }
 
