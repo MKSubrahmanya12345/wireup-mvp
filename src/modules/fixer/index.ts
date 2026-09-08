@@ -162,7 +162,7 @@ export async function fixProject(input: FixerInput): Promise<FixOutcome> {
 
   let apply: ApplyOutput;
   try {
-    apply = applyChanges(applyInput);
+    apply = await applyChanges(applyInput);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     handle?.fail(`Fix pass ${iteration + 1} failed: ${message}`, message, { iteration });

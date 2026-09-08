@@ -80,6 +80,7 @@ export type ValidationIssueCode =
   | 'code_missing_bus_init'
   | 'code_missing_setup_loop'
   | 'code_unbalanced_braces'
+  | 'firmware_compile_error'
   | 'library_missing'
   | 'library_unused'
   | 'instructions_missing_section'

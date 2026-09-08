@@ -931,3 +931,476 @@ html {
     height: 300px;
   }
 }
+/* ==========================================================================
+   FIRMWARE WORKBENCH — chat + editor + diff
+   ========================================================================== */
+
+.fwb {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  gap: 0;
+  min-height: 640px;
+  border-top: 1px solid var(--border);
+}
+
+.fwb__chat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+
+.fwb__colhead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---- chat ---- */
+
+.fwb-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.fwb-chat__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fwb-chat__empty {
+  padding: 8px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fwb-chat__row {
+  display: flex;
+}
+
+.fwb-chat__row--user {
+  justify-content: flex-end;
+}
+
+.fwb-chat__row--assistant {
+  justify-content: flex-start;
+}
+
+.fwb-bubble {
+  max-width: 92%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.fwb-bubble--user {
+  background: var(--ink);
+  color: #f2f6ef;
+  border-color: var(--ink);
+  border-bottom-right-radius: 3px;
+}
+
+.fwb-bubble--assistant {
+  background: var(--bg);
+  border-bottom-left-radius: 3px;
+}
+
+.fwb-bubble--busy {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fwb-bubble__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.fwb-bubble__text {
+  overflow-wrap: anywhere;
+}
+
+.fwb-typing {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.fwb-typing i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  animation: fwb-typing 1.2s infinite ease-in-out;
+}
+
+.fwb-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.fwb-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes fwb-typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+.fwb-chat__composer {
+  border-top: 1px solid var(--border);
+  padding: 10px 12px;
+  background: var(--bg);
+}
+
+.fwb-chat__inputrow {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.fwb-chat__input {
+  flex: 1;
+  resize: none;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 44px;
+  max-height: 140px;
+}
+
+.fwb-chat__input:focus {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: -1px;
+}
+
+.fwb-chat__send {
+  flex-shrink: 0;
+}
+
+/* ---- editor ---- */
+
+.fwb__code {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg);
+}
+
+.fwb-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fwb-editor__surface {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+.fwb-editor__gutter {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  padding: 8px 0;
+  min-width: 44px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-faint);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  user-select: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fwb-editor__gutter-no {
+  padding: 0 10px 0 6px;
+  min-height: 1.55em;
+}
+
+.fwb-editor__gutter-no--error {
+  color: var(--err);
+  font-weight: 700;
+  background: var(--err-bg);
+}
+
+.fwb-editor__gutter-no--warning {
+  color: var(--warn);
+  font-weight: 700;
+  background: var(--warn-bg);
+}
+
+.fwb-editor__stack {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.fwb-editor__highlight,
+.fwb-editor__input {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  tab-size: 2;
+  padding: 8px 14px;
+  margin: 0;
+  border: 0;
+  white-space: pre;
+  overflow: auto;
+}
+
+.fwb-editor__stack .fwb-editor__highlight {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.fwb-editor__input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text);
+  resize: none;
+  width: 100%;
+  height: 100%;
+}
+
+.fwb-editor__input::selection {
+  background: rgba(185, 216, 62, 0.35);
+}
+
+.fwb-editor__input:focus {
+  outline: none;
+}
+
+.fwb-editor__line {
+  display: block;
+  min-height: 1.55em;
+}
+
+.fwb-editor__line--error {
+  background: var(--err-bg);
+  box-shadow: inset 3px 0 0 var(--err);
+}
+
+.fwb-editor__line--warning {
+  background: var(--warn-bg);
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+
+.fwb-editor__hints {
+  border-top: 1px solid var(--border);
+  padding: 4px 12px;
+}
+
+/* ---- diff ---- */
+
+.fwb-diff__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-alt);
+}
+
+.fwb-diff__stat {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fwb-diff__stat--add {
+  color: var(--ok);
+}
+
+.fwb-diff__stat--del {
+  color: var(--err);
+}
+
+.fwb-diff__scroll {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.fwb-diff__pre {
+  margin: 0;
+  padding: 8px 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  tab-size: 2;
+}
+
+.fwb-diff__row {
+  display: grid;
+  grid-template-columns: 18px 44px 44px minmax(0, 1fr);
+  white-space: pre;
+}
+
+.fwb-diff__sign {
+  text-align: center;
+  color: var(--text-faint);
+  user-select: none;
+}
+
+.fwb-diff__no {
+  text-align: right;
+  padding-right: 8px;
+  color: var(--text-faint);
+  user-select: none;
+}
+
+.fwb-diff__text {
+  padding-right: 14px;
+}
+
+.fwb-diff__row--add {
+  background: var(--ok-bg);
+}
+
+.fwb-diff__row--add .fwb-diff__sign {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.fwb-diff__row--del {
+  background: var(--err-bg);
+}
+
+.fwb-diff__row--del .fwb-diff__sign {
+  color: var(--err);
+  font-weight: 700;
+}
+
+.fwb-diff__row--del .fwb-diff__text {
+  text-decoration: line-through;
+  text-decoration-color: rgba(169, 75, 66, 0.4);
+  text-decoration-thickness: 1px;
+}
+
+.fwb-diff__row--gap {
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ---- problems ---- */
+
+.fwb-problems {
+  margin: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg-sunken);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.fwb-problems__head {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.fwb-problems ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.fwb-problems__item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 3px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.fwb-problems__item--error {
+  color: var(--err);
+}
+
+.fwb-problems__item--warning {
+  color: var(--warn);
+}
+
+.fwb-problems__jump {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.fwb-problems--bubble {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.fwb-problems--bubble .fwb-problems__item {
+  padding: 2px 0;
+}
+
+/* ---- narrow screens: stack chat above the editor ---- */
+
+@media (max-width: 1020px) {
+  .fwb {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .fwb__chat {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    max-height: 420px;
+  }
+
+  .fwb-chat__scroll {
+    max-height: 240px;
+  }
+
+  .fwb-editor__surface {
+    min-height: 320px;
+  }
+}

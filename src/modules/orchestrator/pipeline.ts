@@ -31,6 +31,7 @@ import { planPins } from '@/modules/pin-planner';
 import { planWiring } from '@/modules/wiring-planner';
 import { planSoftware } from '@/modules/software-planner';
 import { generateCode } from '@/modules/code-generator';
+import { bedrockSketchPlanProvider } from '@/modules/code-generator/llm';
 import { generateLibraries } from '@/modules/libraries-generator';
 import { generateDiagram } from '@/modules/diagram-generator';
 import { generateInstructions } from '@/modules/instructions-generator';
@@ -283,8 +284,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   });
   await stage({ softwarePlan }, 'software');
 
-  /* --- 9. Firmware -------------------------------------------------------- */
-  const code = generateCode({
+  /* --- 9. Firmware (AI-first when Bedrock is configured, rooted always) ---- */
+  const code = await generateCode({
     projectName,
     projectSummary: requirements.summary,
     requirements,
@@ -298,11 +299,24 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     ...(profile ? { profile } : {}),
     revision: 1,
     modelCode: modelPayload.code,
+    prompt: base.prompt,
+    ...(bedrock.configured ? { llmProvider: bedrockSketchPlanProvider() } : {}),
+    onLlmCall: (call) => llmCalls.push(call),
     events,
   });
   artifacts = { ...artifacts, code };
   notes.push(...code.notes);
-  await stage({ artifacts }, 'code');
+  await stage(
+    {
+      artifacts,
+      llm: {
+        ...(bedrock.model ? { model: bedrock.model } : {}),
+        ...(bedrock.validationModel ? { validationModel: bedrock.validationModel } : {}),
+        calls: llmCalls,
+      },
+    },
+    'code',
+  );
 
   /* --- 10. Libraries ------------------------------------------------------ */
   const libraries = generateLibraries({

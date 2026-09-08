@@ -28,6 +28,8 @@ import { planPins } from '@/modules/pin-planner';
 import { extendWiringPlan, planWiring } from '@/modules/wiring-planner';
 import { planSoftware } from '@/modules/software-planner';
 import { ensureIncludesBlock, ensurePinMap, generateCode, syncPinConstants } from '@/modules/code-generator';
+import { bedrockSketchPlanProvider, llmCodegenEnabled } from '@/modules/code-generator/llm';
+import { describeBedrockConfig } from '@/lib/bedrock';
 import { generateLibraries } from '@/modules/libraries-generator';
 import { generateDiagram } from '@/modules/diagram-generator';
 import { generateInstructions } from '@/modules/instructions-generator';
@@ -324,7 +326,7 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
       };
     },
 
-    code: (project, options) => {
+    code: async (project, options) => {
       const controller = controllerInfo(project, catalog);
       const entry = project.artifacts.code?.files.find((file) => file.path === project.artifacts.code?.entryPoint);
       const broken =
@@ -361,7 +363,11 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
       }
 
       const links = linksFor(project, controller.profile);
-      const code = generateCode({
+      /* The rebuild keeps the same AI-first rooting contract as the initial
+         build: the model authors the logic, Wireup re-derives the managed
+         blocks from the (possibly patched) pin plan. */
+      const bedrock = await describeBedrockConfig();
+      const code = await generateCode({
         projectName: project.name,
         projectSummary: project.requirements.summary,
         requirements: project.requirements,
@@ -374,6 +380,8 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
         controllerName: controller.name,
         ...(controller.profile ? { profile: controller.profile } : {}),
         revision: project.revision,
+        prompt: project.prompt,
+        ...(bedrock.configured && llmCodegenEnabled() ? { llmProvider: bedrockSketchPlanProvider() } : {}),
         ...(events ? { events } : {}),
       });
       return {

@@ -65,6 +65,8 @@ Other scripts:
 | `pnpm dev:turbo` | Same dev server on Turbopack. Cold start and per-route compile are several times faster than the default webpack pass; use it unless you hit a Turbopack-specific problem |
 | `pnpm diagnose:bedrock` | Walks configuration → DNS → TLS → a real Bedrock `Converse` call and stops at the first failure with the exact thing to check. Exits 0 only when a round trip succeeds |
 | `pnpm verify:offline` | Runs the real pipeline, validator and fixer with `*.amazonaws.com` DNS forced to fail, and asserts the project is still complete and the outage is reported honestly. Needs no credentials, no MongoDB and no network |
+| `pnpm verify:llm-codegen` | Proves the AI-first codegen rooting gate offline with canned model plans (good, hallucinated pin, aliased pin, hijacked constant, foreign include, contract breach, provider failure); the happy-path sketch is compiled against the firmware shim. `WIREUP_ENABLE_LLM_CODEGEN=false … --flag-off` also proves the flag disables the stage |
+| `pnpm verify:workbench` | Proves the firmware workbench loop offline: the compile gate, chat turns (applied with revision + diff, answer-only, rooting refusal, compile-fail repair round), manual saves (pin-drift repair, broken-save refusal), and the validator surfacing `firmware_compile_error` |
 
 `WIREUP_AUTOSEED_COMPONENTS=true` (the default) also seeds the catalog on first
 use if the collection is empty, so the app is runnable before you ever call
@@ -93,6 +95,8 @@ hardcoded. `.env.example` documents each variable; the validated shape lives in
 | `WIREUP_MAX_FIX_ITERATIONS` | Cap on validate → fix → re-validate loops (default 3) |
 | `WIREUP_ENABLE_LLM_FIXER` | Allow the model to propose a changeset when deterministic fixes are not enough |
 | `WIREUP_ENABLE_LLM_VALIDATION` | Run the critical model review in addition to the rule engine |
+| `WIREUP_ENABLE_LLM_CODEGEN` | AI-first firmware authoring: the model writes the sketch logic against the grounded pin plan and the rooting gate keeps the managed blocks authoritative (default on; inert without Bedrock; falls back to the deterministic template on any violation) |
+| `WIREUP_ENABLE_FIRMWARE_COMPILE` | Host compile gate: the sketch is type-checked against the stub Arduino core (g++/clang++) before a revision is frozen — generation, fixes and workbench edits all pass through it. Skipped honestly when no compiler is on PATH |
 | `WIREUP_AUTOSEED_COMPONENTS` | Seed the catalog into MongoDB when the collection is empty |
 | `WIREUP_MAX_REVISIONS`, `WIREUP_MAX_EVENTS` | Storage caps per project document |
 | `WIREUP_LOG_LEVEL` | Structured server log verbosity |
@@ -116,8 +120,13 @@ USER PROMPT
    │                            wire colours, explanations, conflict report
    ├─ software-planner      ── modules, control states, sensor/actuator logic,
    │                            communication command set, safety, loop strategy
-   ├─ code-generator        ── sketch.ino (+ extra files) with a pin-constant
-   │                            block derived from the pin plan
+   ├─ code-generator        ── sketch.ino (+ extra files). AI-first: the model
+   │                            authors the behavioural logic against the
+   │                            grounded pin plan, and the rooting gate
+   │                            assembles it with machine-managed include +
+   │                            pin-map blocks; violations (invented pins,
+   │                            foreign includes) fall back to the
+   │                            deterministic template
    ├─ libraries-generator   ── libraries.json + install commands
    ├─ diagram-generator     ── diagram.json (layout, pin anchors, routed wires)
    ├─ instructions-generator── instructions.md + bill of materials
@@ -442,8 +451,19 @@ src/components/                   PromptForm + workspace (console, cards,
   run.
 * Model quality depends on the configured Bedrock model; with Bedrock disabled
   the deterministic path still produces a complete, internally consistent
-  project, but the design is more conservative.
+  project, but the design is more conservative. On the firmware stage the
+  model authors only the behavioural logic of the sketch — pin constants,
+  includes and bus setup are re-derived from the plan on every generation,
+  and a plan that violates the rooting contract (invented pins, foreign
+  includes, broken structure) is rejected in favour of the deterministic
+  template. The firmware workbench chat needs Bedrock; the editor, the
+  compile gate and manual saves work without it. On the firmware stage the model
+  authors only the behavioural logic of the sketch — pin constants, includes
+  and bus setup are re-derived from the plan on every generation, and a plan
+  that violates the rooting contract (invented pins, foreign includes, broken
+  structure) is rejected in favour of the deterministic template.
 * The event log is polled (not streamed over a socket) by design, so the UI
   latency is bounded by the poll interval.
 * Catalog coverage is finite by construction: a project needing a part that is
   not seeded will be reported as an uncovered requirement rather than invented.
+l be reported as an uncovered requirement rather than invented.
