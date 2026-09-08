@@ -1,21 +1,37 @@
 /**
  * Code generator.
  *
- * The model writes the firmware, but the pin map, the include list and the pin
- * constants are re-derived here from the authoritative pin plan. That way the
- * sketch can never disagree with the wiring graph or `diagram.json`, and a pin
- * fix later only needs to re-run this synchronisation step.
+ * AI-first with a rooted fallback. When the environment enables it
+ * (`WIREUP_ENABLE_LLM_CODEGEN`) and a sketch provider is supplied, the model
+ * authors the behavioural sections of the sketch against the fully grounded
+ * hardware context (see `llm.ts`), and `rooting.ts` assembles the final file:
+ * the managed include block and pin map are re-derived here from the
+ * authoritative pin plan, so the firmware can never disagree with the wiring
+ * graph or `diagram.json`, and a pin fix later only needs to re-run this
+ * synchronisation step.
  *
- * If the model returns no usable code, a complete sketch is generated from the
- * structured project instead — the artifact always exists.
+ * Order of preference for the sketch source:
+ *
+ *   1. the model's rooted sketch plan (AI-first path),
+ *   2. whole-file model code from the generation call (`modelCode`),
+ *   3. the deterministic template.
+ *
+ * Every path runs through the same deterministic synchronisation passes
+ * (managed blocks, pin-constant sync, firmware hygiene), and if the model
+ * returns nothing usable the artifact still exists — the model refines, it
+ * never owns correctness.
  */
 
 import type { ComponentDefinition, ComponentSelection, LibraryRequirement } from '@/types/component';
-import type { CodeArtifact, GeneratedCodeFile, ProjectRequirements, SoftwarePlan } from '@/types/project';
+import type { CodeArtifact, GeneratedCodeFile, LlmCallRecord, ProjectRequirements, SoftwarePlan } from '@/types/project';
 import type { PinAssignment } from '@/types/wiring';
 import type { AgentEventLog } from '@/lib/logging/events';
 import type { I2CBus, SerialLink } from '@/modules/pin-planner';
 import type { McuProfile } from '@/modules/pin-planner/mcu-profiles';
+
+import { createId } from '@/lib/validation/ids';
+import { nowIso } from '@/lib/validation/time';
+import { env } from '@/lib/validation/env';
 
 import {
   INCLUDES_END,
@@ -25,12 +41,18 @@ import {
   buildIncludesBlock,
   buildPinMapBlock,
   constantName,
-  generateSketch,
+  i2cBusInitLines,
   includeStatement,
   pinLiteral,
-  type SketchContext,
-} from './templates';
+} from './managed-blocks';
+import { generateSketch, type SketchContext } from './templates';
 import { applyFirmwareHygiene } from './hygiene';
+import { braceBalance, assessCodeQuality, looksLikePinConstant, normalizeConstantName } from './quality';
+import { roleWordFor, rootLlmSketch, type RootingContext } from './rooting';
+import type { SketchPlanProvider } from './llm';
+
+/* Public re-exports: the validator and fixer import these from this module. */
+export { assessCodeQuality, braceBalance } from './quality';
 
 export interface CodeGeneratorInput {
   projectName: string;
@@ -47,6 +69,15 @@ export interface CodeGeneratorInput {
   revision: number;
   modelCode?: unknown;
   events?: AgentEventLog;
+  /** The original user brief — the grounding source for the AI-first path. */
+  prompt?: string;
+  /**
+   * AI-first sketch provider (the Bedrock one, or a canned stub in offline
+   * harnesses). Used only when `WIREUP_ENABLE_LLM_CODEGEN` is true.
+   */
+  llmProvider?: SketchPlanProvider;
+  /** Receives the finished `codegen` call record so callers can persist it. */
+  onLlmCall?: (call: LlmCallRecord) => void;
 }
 
 interface ModelFile {
@@ -91,76 +122,6 @@ function parseModelFiles(raw: unknown): ModelFile[] {
     });
   }
   return files;
-}
-
-/** Remove comments and string/char literals so brace counting is meaningful. */
-function stripForAnalysis(source: string): string {
-  let out = '';
-  let i = 0;
-  while (i < source.length) {
-    const char = source[i] as string;
-    const next = source[i + 1];
-
-    if (char === '/' && next === '/') {
-      while (i < source.length && source[i] !== '\n') i += 1;
-      continue;
-    }
-    if (char === '/' && next === '*') {
-      i += 2;
-      while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) i += 1;
-      i += 2;
-      continue;
-    }
-    if (char === '"' || char === "'") {
-      const quote = char;
-      i += 1;
-      while (i < source.length) {
-        if (source[i] === '\\') {
-          i += 2;
-          continue;
-        }
-        if (source[i] === quote) {
-          i += 1;
-          break;
-        }
-        i += 1;
-      }
-      out += '""';
-      continue;
-    }
-    out += char;
-    i += 1;
-  }
-  return out;
-}
-
-export function braceBalance(source: string): number {
-  const stripped = stripForAnalysis(source);
-  let balance = 0;
-  for (const char of stripped) {
-    if (char === '{') balance += 1;
-    if (char === '}') balance -= 1;
-  }
-  return balance;
-}
-
-interface CodeQualityReport {
-  usable: boolean;
-  reasons: string[];
-}
-
-export function assessCodeQuality(content: string): CodeQualityReport {
-  const reasons: string[] = [];
-  if (content.trim().length < 80) reasons.push('source is essentially empty');
-  if (!/void\s+setup\s*\(/.test(content)) reasons.push('missing setup()');
-  if (!/void\s+loop\s*\(/.test(content)) reasons.push('missing loop()');
-
-  const balance = braceBalance(content);
-  if (balance !== 0) reasons.push(`unbalanced braces (${balance > 0 ? `${balance} unclosed '{'` : `${-balance} extra '}'`})`);
-
-  if (/\b(TODO|FIXME|placeholder|your code here|\.\.\.)\b/i.test(content)) reasons.push('contains placeholder/TODO markers');
-
-  return { usable: reasons.length === 0, reasons };
 }
 
 export function replaceMarkerBlock(content: string, start: string, end: string, block: string): string | null {
@@ -214,46 +175,6 @@ export function ensureIncludesBlock(content: string, libraries: LibraryRequireme
   return insertAfterIncludes(content, missing.join('\n'));
 }
 
-function normalizeConstantName(name: string): string {
-  return name.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
-}
-
-/**
- * Does `NAME = VALUE` plausibly declare an MCU pin? Pin constants carry a
- * pin-ish word (PIN, GPIO, SDA, SCL, …) and hold a pin literal (`7`, `A4`,
- * `D7`), never an address (`0x3C`), a size (`128`) or a rate (`9600`).
- */
-function looksLikePinConstant(name: string, value: string): boolean {
-  const upper = normalizeConstantName(name);
-  const words = upper.split('_').filter(Boolean);
-  const pinWords = new Set(['PIN', 'GPIO', 'IO', 'SDA', 'SCL', 'MOSI', 'MISO', 'SCK', 'CS', 'SS', 'TX', 'RX', 'TRIG', 'ECHO', 'DIN', 'DOUT', 'DATA', 'SIG', 'SIGNAL', 'IN1', 'IN2', 'IN3', 'IN4', 'ENA', 'ENB']);
-  if (!words.some((word) => pinWords.has(word))) return false;
-  if (/ADDR|ADDRESS|WIDTH|HEIGHT|BAUD|COUNT|SIZE|DELAY|TIMEOUT|INTERVAL|MS$|HZ$|RATE/i.test(upper)) return false;
-  return /^(?:\d{1,2}|A\d{1,2}|D\d{1,2}|GPIO\d{1,2}|LED_BUILTIN)$/i.test(value.trim());
-}
-
-/** A generic role word models use for a peripheral (`LED_PIN`, `BUTTON_PIN`, `BUZZER_PIN`). */
-function roleWordFor(assignment: PinAssignment): string | undefined {
-  const id = assignment.targetInstanceId.toLowerCase();
-  if (/oled|ssd1306|lcd/.test(id)) return 'OLED';
-  if (/button|switch/.test(id)) return 'BUTTON';
-  if (/rgb/.test(id)) return 'RGB';
-  if (/(^|[^o])led/.test(id)) return 'LED';
-  if (/buzzer/.test(id)) return 'BUZZER';
-  if (/servo/.test(id)) return 'SERVO';
-  if (/relay/.test(id)) return 'RELAY';
-  if (/pir/.test(id)) return 'PIR';
-  if (/dht/.test(id)) return 'DHT';
-  if (/pot/.test(id)) return 'POT';
-  if (/ldr|photo/.test(id)) return 'LDR';
-  return undefined;
-}
-
-/**
- * Re-point every pin constant in the source at the value from the pin plan.
- * Handles both the generated constant names and model-invented names that can
- * be matched unambiguously to an assignment.
- */
 export function syncPinConstants(
   content: string,
   assignments: PinAssignment[],
@@ -372,7 +293,7 @@ export function ensureLibraryIncludes(
 }
 
 /** Produce the code artifact. */
-export function generateCode(input: CodeGeneratorInput): CodeArtifact {
+export async function generateCode(input: CodeGeneratorInput): Promise<CodeArtifact> {
   const handle = input.events?.start('code_generation_started', 'Generating firmware...', {
     stage: 'code',
     metadata: { assignments: input.assignments.length },
@@ -396,38 +317,162 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
 
   const platformIsEsp32 = /esp32/i.test(input.controllerName);
   const modelFiles = parseModelFiles(input.modelCode);
-  const entryCandidate =
-    modelFiles.find((file) => file.path.toLowerCase() === 'sketch.ino') ??
-    modelFiles.find((file) => file.path.toLowerCase().endsWith('.ino')) ??
-    modelFiles[0];
+  let entryCandidate: ModelFile | undefined;
 
-  let entryContent = entryCandidate?.content ?? '';
+  let entryContent = '';
   let generatedFromTemplate = false;
+  /** The three sketch sources, most preferred first — for the notes. */
+  let source: 'model-rooted' | 'model-file' | 'template' = 'template';
 
-  if (!entryCandidate) {
-    entryContent = generateSketch(sketchContext);
-    generatedFromTemplate = true;
-    notes.push('The model returned no source file; the firmware was generated deterministically from the pin plan and software plan.');
-  } else {
-    const quality = assessCodeQuality(entryContent);
-    if (!quality.usable) {
-      const balance = braceBalance(entryContent);
-      if (balance > 0 && /void\s+setup\s*\(/.test(entryContent) && /void\s+loop\s*\(/.test(entryContent)) {
-        entryContent = `${entryContent.trimEnd()}\n${'}'.repeat(balance)}\n`;
-        notes.push(`Model source was missing ${balance} closing brace(s); they were appended.`);
-        const reassessed = assessCodeQuality(entryContent);
-        if (!reassessed.usable) {
+  /* --------------------------------------------------------------------- */
+  /* 1. AI-first: the model authors the behaviour, rooting owns the hardware */
+  /* --------------------------------------------------------------------- */
+  const wantsLlm =
+    env().agent.enableLlmCodegen && input.llmProvider !== undefined && typeof input.prompt === 'string' && input.prompt.trim().length > 0;
+
+  if (wantsLlm && input.llmProvider) {
+    const provider = input.llmProvider;
+    const startedAt = Date.now();
+    const call: LlmCallRecord = {
+      id: createId('llm'),
+      op: 'codegen',
+      model: 'unknown',
+      startedAt: nowIso(),
+      status: 'failed',
+    };
+    const llmHandle = input.events?.start('llm_call_started', 'Asking the model to author the firmware logic against the pin plan...', {
+      stage: 'code',
+      metadata: { op: 'codegen' },
+    });
+
+    try {
+      const result = await provider({
+        projectName: input.projectName,
+        projectSummary: input.projectSummary,
+        prompt: input.prompt as string,
+        requirements: input.requirements,
+        selections: input.selections,
+        catalog: input.catalog,
+        assignments: input.assignments,
+        softwarePlan: input.softwarePlan,
+        controllerName: input.controllerName,
+        platformIsEsp32,
+        ...(input.profile ? { profile: input.profile } : {}),
+        revision: input.revision,
+      });
+
+      call.model = result.meta?.model ?? 'unknown';
+      call.finishedAt = nowIso();
+      call.durationMs = Date.now() - startedAt;
+      call.inputTokens = result.meta?.inputTokens;
+      call.outputTokens = result.meta?.outputTokens;
+      input.onLlmCall?.(call);
+
+      if (!result.ok) {
+        call.error = result.error;
+        llmHandle?.fail(`Model sketch authoring failed (${result.error}) — using the deterministic path.`, result.error, {
+          op: 'codegen',
+          model: call.model,
+          ...(result.code ? { code: result.code } : {}),
+        });
+        notes.push(`AI firmware authoring failed (${result.error}); the deterministic generator was used.`);
+      } else {
+        const rootingCtx: RootingContext = {
+          projectName: input.projectName,
+          projectSummary: input.projectSummary,
+          controllerName: input.controllerName,
+          assignments: input.assignments,
+          libraries: input.softwarePlan.libraries,
+          platformIsEsp32,
+          ...(input.profile ? { profile: input.profile } : {}),
+          ...(input.i2cBuses.length > 0
+            ? {
+                i2cInitLines: i2cBusInitLines({
+                  assignments: input.assignments,
+                  buses: input.i2cBuses,
+                  ...(input.profile ? { profile: input.profile } : {}),
+                  linkIdentifier: 'Serial',
+                }),
+              }
+            : {}),
+        };
+        const rooted = rootLlmSketch(result.plan, rootingCtx);
+
+        if (rooted.verdict === 'rooted') {
+          call.status = 'ok';
+          entryContent = rooted.content;
+          source = 'model-rooted';
+          llmHandle?.complete(`The model authored the firmware logic; Wireup rooted it to the pin plan (${rooted.repairs.length} repair(s)).`, {
+            op: 'codegen',
+            model: call.model,
+            repairs: rooted.repairs.length,
+            warnings: rooted.warnings.length,
+            inputTokens: call.inputTokens ?? 0,
+            outputTokens: call.outputTokens ?? 0,
+          });
+          notes.push(
+            `Firmware logic authored by the model and rooted to the pin plan — the includes block and pin map are Wireup's, derived from the wiring graph.`,
+          );
+          for (const repair of rooted.repairs) notes.push(`[rooted] ${repair}`);
+          for (const warning of rooted.warnings) notes.push(`[verify] ${warning}`);
+          for (const modelNote of result.plan.notes.slice(0, 5)) notes.push(`[model] ${truncateLine(modelNote)}`);
+        } else {
+          llmHandle?.fail(
+            `The model's sketch was rejected by the rooting gate: ${rooted.issues[0] ?? 'unspecified'} — using the deterministic path.`,
+            rooted.issues.join('; '),
+            { op: 'codegen', model: call.model, issues: rooted.issues.length },
+          );
+          notes.push(`The model's sketch was rejected by the rooting gate and the deterministic firmware was used instead: ${rooted.issues.join('; ')}.`);
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      call.error = message;
+      call.finishedAt = nowIso();
+      call.durationMs = Date.now() - startedAt;
+      input.onLlmCall?.(call);
+      llmHandle?.fail(`Model sketch authoring threw: ${message} — using the deterministic path.`, message, { op: 'codegen' });
+      notes.push(`AI firmware authoring threw (${message}); the deterministic generator was used.`);
+    }
+  }
+
+  /* --------------------------------------------------------------------- */
+  /* 2/3. Whole-file model code from CALL 1, else the deterministic template */
+  /* --------------------------------------------------------------------- */
+  if (source === 'template') {
+    entryCandidate =
+      modelFiles.find((file) => file.path.toLowerCase() === 'sketch.ino') ??
+      modelFiles.find((file) => file.path.toLowerCase().endsWith('.ino')) ??
+      modelFiles[0];
+
+    entryContent = entryCandidate?.content ?? '';
+
+    if (!entryCandidate) {
+      entryContent = generateSketch(sketchContext);
+      generatedFromTemplate = true;
+      notes.push('The model returned no source file; the firmware was generated deterministically from the pin plan and software plan.');
+    } else {
+      const quality = assessCodeQuality(entryContent);
+      if (!quality.usable) {
+        const balance = braceBalance(entryContent);
+        if (balance > 0 && /void\s+setup\s*\(/.test(entryContent) && /void\s+loop\s*\(/.test(entryContent)) {
+          entryContent = `${entryContent.trimEnd()}\n${'}'.repeat(balance)}\n`;
+          notes.push(`Model source was missing ${balance} closing brace(s); they were appended.`);
+          const reassessed = assessCodeQuality(entryContent);
+          if (!reassessed.usable) {
+            entryContent = generateSketch(sketchContext);
+            generatedFromTemplate = true;
+            notes.push(`Model source was unusable (${reassessed.reasons.join('; ')}) and was replaced by the deterministic sketch.`);
+          }
+        } else {
           entryContent = generateSketch(sketchContext);
           generatedFromTemplate = true;
-          notes.push(`Model source was unusable (${reassessed.reasons.join('; ')}) and was replaced by the deterministic sketch.`);
+          notes.push(`Model source was unusable (${quality.reasons.join('; ')}) and was replaced by the deterministic sketch.`);
         }
       } else {
-        entryContent = generateSketch(sketchContext);
-        generatedFromTemplate = true;
-        notes.push(`Model source was unusable (${quality.reasons.join('; ')}) and was replaced by the deterministic sketch.`);
+        source = 'model-file';
+        notes.push('Model-authored firmware was used as the base and synchronised with the pin plan.');
       }
-    } else {
-      notes.push('Model-authored firmware was used as the base and synchronised with the pin plan.');
     }
   }
 
@@ -491,9 +536,23 @@ export function generateCode(input: CodeGeneratorInput): CodeArtifact {
   };
 
   handle?.complete(
-    `Firmware generated — ${files.length} file(s), ${files[0]?.content.split('\n').length ?? 0} lines in sketch.ino${generatedFromTemplate ? ' (deterministic template)' : ''}`,
-    { files: files.length, lines: files[0]?.content.split('\n').length ?? 0, generatedFromTemplate, syncedConstants: syncResult.synced.length },
+    `Firmware generated — ${files.length} file(s), ${files[0]?.content.split('\n').length ?? 0} lines in sketch.ino${
+      source === 'model-rooted' ? ' (model-authored, rooted)' : generatedFromTemplate ? ' (deterministic template)' : ' (model file)'
+    }`,
+    {
+      files: files.length,
+      lines: files[0]?.content.split('\n').length ?? 0,
+      generatedFromTemplate,
+      source,
+      syncedConstants: syncResult.synced.length,
+    },
   );
 
   return artifact;
+}
+
+/** Keep model remarks inside a single event/note line. */
+function truncateLine(text: string, max = 240): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
 }

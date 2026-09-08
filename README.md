@@ -116,8 +116,13 @@ USER PROMPT
    │                            wire colours, explanations, conflict report
    ├─ software-planner      ── modules, control states, sensor/actuator logic,
    │                            communication command set, safety, loop strategy
-   ├─ code-generator        ── sketch.ino (+ extra files) with a pin-constant
-   │                            block derived from the pin plan
+   ├─ code-generator        ── sketch.ino (+ extra files). AI-first: the model
+   │                            authors the behavioural logic against the
+   │                            grounded pin plan, and the rooting gate
+   │                            assembles it with machine-managed include +
+   │                            pin-map blocks; violations (invented pins,
+   │                            foreign includes) fall back to the
+   │                            deterministic template
    ├─ libraries-generator   ── libraries.json + install commands
    ├─ diagram-generator     ── diagram.json (layout, pin anchors, routed wires)
    ├─ instructions-generator── instructions.md + bill of materials
@@ -442,8 +447,13 @@ src/components/                   PromptForm + workspace (console, cards,
   run.
 * Model quality depends on the configured Bedrock model; with Bedrock disabled
   the deterministic path still produces a complete, internally consistent
-  project, but the design is more conservative.
+  project, but the design is more conservative. On the firmware stage the model
+  authors only the behavioural logic of the sketch — pin constants, includes
+  and bus setup are re-derived from the plan on every generation, and a plan
+  that violates the rooting contract (invented pins, foreign includes, broken
+  structure) is rejected in favour of the deterministic template.
 * The event log is polled (not streamed over a socket) by design, so the UI
   latency is bounded by the poll interval.
 * Catalog coverage is finite by construction: a project needing a part that is
   not seeded will be reported as an uncovered requirement rather than invented.
+l be reported as an uncovered requirement rather than invented.
