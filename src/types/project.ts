@@ -236,7 +236,7 @@ export interface RevisionSnapshot {
 
 export interface ProjectRevision {
   version: number;
-  reason: 'initial_generation' | 'targeted_fix';
+  reason: 'initial_generation' | 'targeted_fix' | 'firmware_edit';
   createdAt: string;
   summary: string;
   stage: GenerationStage;
@@ -254,6 +254,57 @@ export interface ProjectRevision {
 export interface IterationState {
   current: number;
   max: number;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Firmware workbench chat                                                    */
+/* ------------------------------------------------------------------------- */
+
+/** Outcome of one firmware-chat turn (or a manual editor save). */
+export type ChatOutcome =
+  /** The model changed the firmware; `diff` describes the change. */
+  | 'applied'
+  /** The model answered without touching code. */
+  | 'answer'
+  /** A change was proposed but refused by a gate (rooting/compile). */
+  | 'rejected'
+  /** The turn failed (model unavailable, persistence, ...). */
+  | 'failed';
+
+/** One line of a unified, line-based diff (computed server-side, persisted). */
+export interface ChatDiffLine {
+  kind: 'same' | 'add' | 'del';
+  text: string;
+  /** 1-based line in the old file (`del`/`same`). */
+  oldLine?: number;
+  /** 1-based line in the new file (`add`/`same`). */
+  newLine?: number;
+}
+
+export interface ChatDiff {
+  path: string;
+  added: number;
+  removed: number;
+  /** Truncated for storage — very large diffs show the first hunks only. */
+  truncated: boolean;
+  lines: ChatDiffLine[];
+}
+
+/** A message in the firmware workbench chat. */
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  at: string;
+  outcome?: ChatOutcome;
+  /** The revision this turn produced (applied) or inspected. */
+  revision?: number;
+  /** Files touched by an applied change. */
+  files?: string[];
+  /** The unified diff of an applied change (capped). */
+  diff?: ChatDiff;
+  /** Compile/rule diagnostics attached to a rejected or applied turn. */
+  diagnostics?: string[];
 }
 
 /** The serialised project as consumed by the API and the frontend. */
@@ -283,6 +334,8 @@ export interface ProjectState {
     validationModel?: string;
     calls: LlmCallRecord[];
   };
+  /** Firmware workbench conversation (user instructions + agent replies). */
+  chat: ChatMessage[];
   /** Current revision number (1 = initial generation). */
   revision: number;
 }

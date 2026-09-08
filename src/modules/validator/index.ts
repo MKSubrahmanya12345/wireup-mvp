@@ -26,6 +26,7 @@ import { nowIso, nowMs } from '@/lib/validation/time';
 import { groupIssuesByArtifact, runRuleEngine, summariseIssues } from './rules';
 import { issueSignature, runModelReview } from './llm';
 import { evaluateBehavioral } from '@/modules/behaviour-evaluator';
+import { compileFirmware, formatDiagnostic } from '@/modules/firmware-compiler';
 
 export const ENGINE_VERSION = 'wireup-validator/1.0';
 
@@ -136,6 +137,52 @@ export async function validateProject(input: ValidatorInput): Promise<ValidatePr
         : `${report.checks.length} assertion(s) checked (${report.checks.filter((c) => c.status === 'passed').length} passed, ${report.failures + report.warnings} failed)${report.runtimeRan ? ', emulation ran' : ''}.`,
       issueIds: behavioralIssueIds,
     });
+  }
+
+  /* --- 1c. Host compile gate ------------------------------------------------ */
+  /*
+   * The sketch is type-checked against the stub Arduino core with the host
+   * compiler. Every error becomes a `firmware_compile_error` issue whose
+   * details quote the gcc diagnostic, so the LLM fixer (and the workbench)
+   * see exactly what the compiler saw. When no compiler is on PATH the check
+   * reports itself as skipped — validation never pretends to have compiled.
+   */
+  {
+    const artifact = project.artifacts.code;
+    const entry = artifact?.files.find((file) => file.path === artifact.entryPoint) ?? artifact?.files[0];
+    if (artifact && entry) {
+      const compile = compileFirmware({ files: artifact.files, entryPoint: artifact.entryPoint });
+      const compileIssueIds: string[] = [];
+
+      for (const diagnostic of compile.diagnostics.filter((entry) => entry.severity === 'error').slice(0, 20)) {
+        const quoted = formatDiagnostic(diagnostic);
+        const issue: ValidationIssue = {
+          id: `compile.${diagnostic.file}.${diagnostic.line}.${diagnostic.column}`,
+          code: 'firmware_compile_error',
+          severity: 'error',
+          domain: 'code',
+          message: `${diagnostic.file}:${diagnostic.line} — ${diagnostic.message}`,
+          details: quoted,
+          fixHint: `Fix the compiler error at ${diagnostic.file}:${diagnostic.line}:${diagnostic.column}: ${diagnostic.message}.`,
+          target: { artifact: 'code', filePath: diagnostic.file },
+          autoFixable: true,
+          origin: 'rules',
+        };
+        issues.push(issue);
+        compileIssueIds.push(issue.id);
+      }
+
+      checks.push({
+        id: 'code.compile',
+        name: 'Firmware type-check (host shim)',
+        domain: 'code',
+        status: !compile.ran ? 'skipped' : compileIssueIds.length > 0 ? 'failed' : 'passed',
+        message: !compile.ran
+          ? `Not run: ${compile.skippedReason ?? 'compiler unavailable'}.`
+          : `${compileIssueIds.length} error(s) in ${compile.durationMs} ms (${compile.compiler ?? 'host compiler'}).`,
+        issueIds: compileIssueIds,
+      });
+    }
   }
 
   /* --- 2. Model review (additive) ------------------------------------------ */

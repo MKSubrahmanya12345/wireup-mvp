@@ -9,7 +9,7 @@ import type { Types } from 'mongoose';
 
 import { getProjectModel, type ProjectDocument } from '@/models/Project';
 import type { AgentEvent } from '@/types/generation';
-import type { ProjectArtifacts, ProjectState, ProjectStatus } from '@/types/project';
+import type { ChatMessage, ProjectArtifacts, ProjectState, ProjectStatus } from '@/types/project';
 
 import { createLogger, describeError } from '@/lib/logging/logger';
 import { connectMongo } from '@/lib/mongodb/client';
@@ -67,6 +67,7 @@ export function serializeProject(raw: RawProject): ProjectState {
       validationModel: raw.llm?.validationModel,
       calls: Array.isArray(raw.llm?.calls) ? (raw.llm?.calls ?? []) : [],
     },
+    chat: Array.isArray(raw.chat) ? (raw.chat as ChatMessage[]) : [],
     revision: typeof raw.revision === 'number' ? raw.revision : 0,
   };
 }

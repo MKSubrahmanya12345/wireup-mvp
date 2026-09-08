@@ -6,7 +6,7 @@
  */
 
 import type { AgentEvent } from '@/types/generation';
-import type { ProjectState } from '@/types/project';
+import type { ChatDiff, ChatMessage, ProjectState } from '@/types/project';
 
 export interface ApiEnvelope<T> {
   ok?: boolean;
@@ -188,3 +188,38 @@ export function mergeEvents(existing: AgentEvent[], incoming: AgentEvent[]): Age
   if (fresh.length === 0) return existing;
   return [...existing, ...fresh].sort((a, b) => a.seq - b.seq);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Firmware workbench                                                         */
+/* -------------------------------------------------------------------------- */
+
+
+export interface FirmwareTurnPayload {
+  /** The assistant reply (with outcome, diff, diagnostics). */
+  message: ChatMessage;
+  /** The fresh project state, when something was persisted (refused manual edits persist only the transcript). */
+  project: ProjectState | null;
+  /** Problems to render under the editor (manual saves). */
+  diagnostics?: string[];
+}
+
+/** One conversational firmware edit turn (model proposes, Wireup roots + compiles). */
+export async function sendFirmwareChat(id: string, message: string): Promise<FirmwareTurnPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/firmware`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'chat', message }),
+  });
+  return unwrap<FirmwareTurnPayload>(response);
+}
+
+/** Save a hand edit from the editor. The server gates it (sync + compile) before a revision. */
+export async function saveFirmwareFile(id: string, path: string, content: string): Promise<FirmwareTurnPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/firmware`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'manual', path, content }),
+  });
+  return unwrap<FirmwareTurnPayload>(response);
+}
+
