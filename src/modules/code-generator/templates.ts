@@ -17,6 +17,7 @@ import type { McuProfile } from '@/modules/pin-planner/mcu-profiles';
 /* ------------------------------------------------------------------------- */
 
 import { buildAccessControlSketch, detectAccessControl } from './behaviours/access-control';
+import { buildLineFollowerSketch, detectLineFollower } from './behaviours/line-follower';
 import {
   buildIncludesBlock,
   buildPinMapBlock,
@@ -134,6 +135,17 @@ export function generateSketch(ctx: SketchContext): string {
    */
   const accessControl = detectAccessControl(ctx);
   if (accessControl) return buildAccessControlSketch(ctx, accessControl);
+
+  /*
+   * Next: line followers. The generic skeleton below wires a robot's drive
+   * channels and then never reads the track sensors together with them — the
+   * robot could not follow anything. Detection is structural (two reflectance
+   * sensors + a two-channel H-bridge), and it hands the build back here when
+   * the pin plan carries anything it cannot drive, so no assigned pin is ever
+   * left undriven by this dispatch.
+   */
+  const lineFollower = detectLineFollower(ctx);
+  if (lineFollower) return buildLineFollowerSketch(ctx, lineFollower);
 
   const lines: string[] = [];
   const platformIsEsp32 = /esp32/i.test(ctx.controllerName);
