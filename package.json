@@ -10,9 +10,11 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:replit": "next dev --hostname 0.0.0.0 --port ${PORT:-3000}",
     "dev:turbo": "next dev --turbo",
     "build": "next build",
     "start": "next start",
+    "start:replit": "next start --hostname 0.0.0.0 --port ${PORT:-3000}",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed-components.ts",
     "seed:components": "tsx scripts/seed-components.ts",
