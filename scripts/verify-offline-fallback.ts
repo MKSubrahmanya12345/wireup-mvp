@@ -41,7 +41,12 @@ process.env.BEDROCK_MAX_RETRIES = process.env.BEDROCK_MAX_RETRIES ?? '2';
 import { AgentEventLog } from '@/lib/logging/events';
 import { env, resetEnvCache } from '@/lib/validation/env';
 import { nowIso } from '@/lib/validation/time';
+import type { ComponentSelection } from '@/types/component';
 import type { ProjectState } from '@/types/project';
+import type { PinAssignment } from '@/types/wiring';
+import { getMcuProfile } from '@/modules/pin-planner/mcu-profiles';
+import { computePowerBudget } from '@/modules/hardware-planner/power';
+import { planWiring } from '@/modules/wiring-planner';
 
 import { runPipeline } from '@/modules/orchestrator/pipeline';
 import { buildRefreshers, controllerInfo, refreshSoftware } from '@/modules/orchestrator/context';
@@ -240,6 +245,246 @@ async function main(): Promise<number> {
     );
   } else {
     console.log('  · no peripheral ground wire to delete — scenario skipped');
+  }
+
+  /* --- 6. Pin-plan defence rules ------------------------------------------ */
+  /*
+   * The planner and fixer no longer CREATE bad pin plans, but a model-authored
+   * plan can still carry them. Each round sabotages the working project with
+   * one defect, asserts the rule engine reports it, then runs the deterministic
+   * fixer and asserts the defect is gone. Independent rounds keep the sabotage
+   * targets from colliding with each other.
+   */
+  console.log('\n6. pin-plan defence rules (duplicate claims, analog-only pins, UART pins)');
+  const nano = getMcuProfile('arduino-nano');
+  const a6 = nano?.pins.find((spec) => spec.name === 'A6');
+  check(
+    'profile data marks Nano A6/A7 input-only without a digital buffer',
+    Boolean(a6 && a6.capabilities.includes('input-only') && !a6.capabilities.includes('digital')),
+  );
+
+  const sabotageRound = async (label: string, fake: PinAssignment, expectedCode: string): Promise<void> => {
+    const sabotaged = structuredClone(project);
+    sabotaged.revision = project.revision + 1;
+    sabotaged.pinAssignments.push(fake);
+
+    const brokenCheck = await validateProject({
+      project: sabotaged,
+      catalog,
+      catalogContext: pipeline.context.fullCatalogContext,
+      mcuContext: pipeline.context.mcuContext,
+      ...(controller.profile ? { profile: controller.profile } : {}),
+      iteration: 0,
+      events,
+      enableModelReview: false,
+    });
+    const reported = brokenCheck.result.issues.find((issue) => issue.code === expectedCode);
+    check(
+      `${label}: ${expectedCode} reported`,
+      Boolean(reported && reported.severity === 'error'),
+      reported ? reported.message.slice(0, 90) : 'issue absent',
+    );
+    if (!reported) return;
+
+    const roundRefreshers = buildRefreshers({
+      catalog,
+      baseline: { ...sabotaged, validation: brokenCheck.result },
+      analysis: pipeline.analysis,
+      events,
+    });
+    const fixProfile = controllerInfo(sabotaged, catalog).profile;
+    const repair = await fixProject({
+      project: { ...sabotaged, validation: brokenCheck.result },
+      validation: brokenCheck.result,
+      catalog,
+      catalogContext: pipeline.context.fullCatalogContext,
+      mcuContext: pipeline.context.mcuContext,
+      ...(fixProfile ? { profile: fixProfile } : {}),
+      iteration: 0,
+      events,
+      enableLlmFixer: false,
+      refresh: { ...roundRefreshers, software: (candidate) => refreshSoftware(candidate, catalog, events) },
+    });
+    check(
+      `${label}: deterministic repair applied`,
+      repair.result.applied.length > 0,
+      repair.result.applied.slice(0, 2).map((change) => `${change.op}:${change.detail.slice(0, 60)}`).join(' | '),
+    );
+
+    const fixedCheck = await validateProject({
+      project: repair.project,
+      catalog,
+      catalogContext: pipeline.context.fullCatalogContext,
+      mcuContext: pipeline.context.mcuContext,
+      ...(fixProfile ? { profile: fixProfile } : {}),
+      iteration: 0,
+      events,
+      enableModelReview: false,
+    });
+    const remaining = fixedCheck.result.issues.filter((issue) => issue.code === expectedCode);
+    check(`${label}: ${expectedCode} gone after repair`, remaining.length === 0, remaining.map((issue) => issue.message.slice(0, 80)).join(' | '));
+  };
+
+  const i2cAssignment = project.pinAssignments.find((assignment) => assignment.protocol === 'i2c');
+  const buzzerInstance = project.components.flatMap((selection) => selection.instances).find((instance) => instance.componentId.startsWith('buzzer'));
+  if (i2cAssignment && buzzerInstance && controller.profile) {
+    // A second assignment claiming the bus pin for an unrelated peripheral —
+    // the shape that redefined a `const int` in the reported build.
+    await sabotageRound(
+      'duplicate claim on a taken MCU pin',
+      {
+        ...i2cAssignment,
+        id: 'pin-sabotage-duplicate',
+        targetInstanceId: buzzerInstance.instanceId,
+        targetComponentId: buzzerInstance.componentId,
+        targetPin: '-',
+        purpose: 'Sabotage: buzzer claim on a taken pin',
+        signal: 'digital',
+        direction: 'output',
+        protocol: 'gpio',
+        rationale: 'Model-authored plan that double-claims a pin.',
+        source: 'model',
+      },
+      'duplicate_pin_assignment',
+    );
+
+    // A digital signal on an input-only pin with no digital buffer (ESP32
+    // GPIO34–39 here; the same rule covers the Nano's A6/A7).
+    const analogOnlySpec = controller.profile.pins.find(
+      (spec) => spec.capabilities.includes('input-only') && !spec.capabilities.includes('digital'),
+    );
+    if (analogOnlySpec) {
+      await sabotageRound(
+        'digital signal on an analog-only pin',
+        {
+          ...i2cAssignment,
+          id: 'pin-sabotage-analog-only',
+          pin: analogOnlySpec.name,
+          ...(analogOnlySpec.number !== undefined ? { pinNumber: analogOnlySpec.number } : {}),
+          targetInstanceId: buzzerInstance.instanceId,
+          targetComponentId: buzzerInstance.componentId,
+          targetPin: '-',
+          purpose: 'Sabotage: digital drive on an analog-only pin',
+          signal: 'digital',
+          direction: 'output',
+          protocol: 'gpio',
+          rationale: 'Model-authored plan that drives an input-only analog pin.',
+          source: 'model',
+        },
+        'analog_only_pin_driven',
+      );
+    }
+
+    // A GPIO on the USB-serial pins while the sketch starts that port.
+    const serialTx = controller.profile.uarts.find((uart) => uart.id === 'Serial')?.tx;
+    const opensSerial = (project.artifacts.code?.files ?? []).some((file) => /\bSerial\s*\.\s*begin\s*\(/.test(file.content));
+    if (serialTx && opensSerial) {
+      await sabotageRound(
+        'GPIO on a serial pin the firmware uses',
+        {
+          ...i2cAssignment,
+          id: 'pin-sabotage-uart',
+          pin: serialTx,
+          ...(controller.profile.pins.find((spec) => spec.name === serialTx)?.number !== undefined
+            ? { pinNumber: controller.profile.pins.find((spec) => spec.name === serialTx)?.number }
+            : {}),
+          targetInstanceId: buzzerInstance.instanceId,
+          targetComponentId: buzzerInstance.componentId,
+          targetPin: '-',
+          purpose: 'Sabotage: GPIO on the USB serial pins',
+          signal: 'digital',
+          direction: 'output',
+          protocol: 'gpio',
+          rationale: 'Model-authored plan that drives a UART pin as GPIO.',
+          source: 'model',
+        },
+        'uart_pin_used_as_gpio',
+      );
+    }
+  } else {
+    check('pin-plan sabotage scenarios had the parts they need', false, 'missing i2c assignment, buzzer instance or MCU profile');
+  }
+
+  /* --- 7. Power honesty (battery build with a logic-rail servo) ------------ */
+  /*
+   * The user's safe build was battery powered: the wiring planner (correctly)
+   * feeds a 4.8–6 V servo from the regulated 5 V rail while a 9 V pack sits on
+   * VIN. The power budget used to book that servo onto the 9 V rail anyway and
+   * fail the correct design; the bulk capacitor landed on the battery; and no
+   * note said the Nano's linear regulator was burning the 4 V difference.
+   */
+  console.log('\n7. power honesty (9 V battery, servo on the 5 V rail)');
+  const powerCatalog = catalog;
+  const pick = (componentId: string, category: string, role: string) => {
+    const definition = powerCatalog.find((component) => component.id === componentId);
+    if (!definition) throw new Error(`catalog is missing ${componentId}`);
+    return {
+      id: `sel-${componentId}`,
+      componentId,
+      name: definition.name,
+      category,
+      role,
+      quantity: 1,
+      reason: 'Power-honesty scenario.',
+      source: 'planner',
+      required: true,
+      instances: [{ instanceId: `${componentId}-1`, componentId, name: definition.name, label: definition.name }],
+    } as ComponentSelection;
+  };
+  let batteryBuild: ComponentSelection[] | null = null;
+  try {
+    batteryBuild = [
+      pick('arduino-nano', 'microcontroller', 'controller'),
+      pick('battery-9v', 'power', 'power'),
+      pick('servo-motor-sg90', 'motor', 'actuator'),
+      pick('oled-ssd1306-i2c', 'display', 'display'),
+      pick('capacitor-1000uf-electrolytic', 'passive', 'passive'),
+    ];
+  } catch (error) {
+    check('power-honesty scenario parts exist in the catalog', false, (error as Error).message);
+  }
+  if (batteryBuild) {
+    const budget = computePowerBudget({
+      selections: batteryBuild,
+      catalog: powerCatalog,
+      controller: batteryBuild[0] ?? null,
+      profile: getMcuProfile('arduino-nano'),
+    });
+    const powerNotes = budget.notes.join('\n');
+    check('battery build with a logic-rail servo is adequate', budget.adequate === true, (budget.shortfalls ?? []).join(' | ') || 'no shortfalls');
+    check('no false blocking voltage error for the servo', !/accepts at most .* but the supply provides/.test(powerNotes));
+    const servoRail = budget.rails.find((rail) => rail.loads.some((load) => /servo/i.test(load)));
+    check('power budget books the servo on the 5 V rail', servoRail?.rail === '5V', servoRail ? `${servoRail.rail} ${servoRail.voltage} V` : 'no servo rail');
+    check(
+      'bulk-capacitor note names the rail the servo actually sits on',
+      /bulk electrolytic capacitor across the 5 V logic rail/i.test(powerNotes),
+    );
+    check(
+      'linear-regulator dissipation note recommends a buck or 5 V source',
+      /drops 9 V to 5 V linearly/i.test(powerNotes) && /dissipates roughly \d+(\.\d+)? W/i.test(powerNotes) && /buck converter/i.test(powerNotes),
+    );
+    /* mA stays mA across the budget: no rail current was converted between voltages. */
+    check('rail totals are summed in mA, not converted between voltages', budget.rails.every((rail) => typeof rail.peakMa === 'number'));
+
+    const wiring = planWiring({
+      selections: batteryBuild,
+      catalog: powerCatalog,
+      assignments: [],
+      power: budget,
+      controllerInstanceId: 'arduino-nano-1',
+      profile: getMcuProfile('arduino-nano'),
+    });
+    const capPowerWire = wiring.connections.find(
+      (connection) => connection.kind === 'power' && (connection.from.instanceId === 'capacitor-1000uf-electrolytic-1' || connection.to.instanceId === 'capacitor-1000uf-electrolytic-1'),
+    );
+    const capRailEnd = capPowerWire
+      ? [capPowerWire.from, capPowerWire.to].find((endpoint) => endpoint.instanceId !== 'capacitor-1000uf-electrolytic-1')
+      : undefined;
+    check(
+      'bulk capacitor is wired to the 5 V rail that feeds the servo, not the battery',
+      Boolean(capRailEnd && capRailEnd.instanceId === 'arduino-nano-1' && capPowerWire?.voltage === 5),
+      capPowerWire ? `${capPowerWire.from.instanceId}.${capPowerWire.from.pin} → ${capPowerWire.to.instanceId}.${capPowerWire.to.pin} @ ${capPowerWire.voltage} V` : 'no capacitor wire',
+    );
   }
 
   console.log(`\n${failures === 0 ? '✓ all checks passed' : `✕ ${failures} check(s) failed`}`);

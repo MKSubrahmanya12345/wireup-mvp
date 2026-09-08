@@ -1,8 +1,8 @@
 # Handoff — electronic-safe build, firmware behaviours, and quality fixes
 
 **Branch:** `arena/01a07c4a-wireup-mvp` (branched from `acb3350` of `main`)
-**Date:** 2026-09-08
-**Status:** all three verification gates pass; working tree committed. Remaining work is listed in §7.
+**Date:** 2026-09-08 (second pass same day — §2.11–§2.14, §10)
+**Status:** all verification gates pass; §7 items 7.2–7.5 are DONE. Remaining work is listed in §7.
 
 This document is written for an agent (or engineer) picking the work up cold. It records what the
 user reported, what was actually wrong, what was changed and why, how to prove it still works, and
@@ -26,7 +26,7 @@ Useful commands:
 npm install --no-audit --no-fund      # after every sandbox reset
 npx tsc --noEmit                      # typecheck (must stay clean)
 npm run verify:offline                # pipeline + fixer end-to-end, offline
-npm run verify:firmware               # NEW: generate 8 builds, compile-check every sketch
+npm run verify:firmware               # generate 13 builds, compile-check every sketch
 npx tsx scripts/repro-safe.ts         # NEW: the user's "electronic safe" prompt, full artifact dump
 npx tsx scripts/seed-components.ts --dry-run   # catalog integrity + zod schema check
 ```
@@ -228,7 +228,131 @@ graceful path is deliberate, keep it.
 
 ---
 
+### 2.11 Pin-plan defence rules (validator) — **DONE (second pass)**
+
+The planner and fixer no longer *created* the reported pin-plan defects, but a model-authored pin
+plan still could, and nothing reported it. Three new rules in `src/modules/validator/rules.ts`
+(§5 "pins"), codes added to `src/types/validation.ts`, vocabulary in
+`src/lib/bedrock/prompts.ts`:
+
+- `duplicate_pin_assignment` (error, auto-fixable) — two assignments claiming one
+  `mcuInstanceId`+`pin` for different targets. Shared buses are exempt (all members `i2c`/`spi`):
+  an OLED and an LCD on the same A4/A5 is legal. The fixer case mirrors
+  `uniqueCodeAssignments()`: the FIRST assignment is kept, the later one is dropped via
+  `remove_pin_assignment` (which also removes its wire; the freed peripheral pin is re-reported as
+  `floating_required_pin` and fixed in the next pass).
+- `analog_only_pin_driven` (error, auto-fixable) — an assignment on an input-only pin with **no
+  digital capability** (Nano/Uno A6/A7, ESP32 GPIO34–39) whose direction is `output` **or** whose
+  protocol is not `adc`. A digital READ on those pins returns garbage just as surely as a write;
+  the old `input_only_pin_driven` only covered outputs. That code still exists for future
+  digital-capable input-only pins (e.g. RP2040). Fixer: `relocateAssignments` mode `analog-only`.
+- `uart_pin_used_as_gpio` (error, auto-fixable) — a GPIO assignment on a hardware-UART pin while
+  the generated sketch actually starts that port. Gated on the sketch text
+  (`opensSerialPort()` looks for `Serial.begin(` in the code artifact), so plan-only validation
+  never guesses. Fixer: mode `uart`.
+
+Proof: `scripts/verify-offline-fallback.ts` §6 sabotages the working ESP32 project three times
+(independent rounds) — duplicate claim on the I²C pin, GPIO34 as digital output, GPIO1 (Serial TX)
+as GPIO — and asserts each code fires as an error, the deterministic fixer repairs it, and
+re-validation no longer reports it. A profile assertion also pins the Nano A6/A7 facts the rule
+relies on.
+
+### 2.12 Power honesty: rail placement, capacitor rail, regulator heat — **DONE (second pass)**
+
+Empirically re-testing the user's scenario (9 V PP3 + Nano + SG90 + OLED + 1000 µF) showed §2.6's
+"voltage-driven rails" fix only worked in the USB-powered case; **the battery build still failed
+validation**. Three defects, all fixed in `src/modules/hardware-planner/power.ts` +
+`src/modules/wiring-planner/index.ts`:
+
+1. `belongsOnLogicRail()` compared the part's **max** voltage against `logic + 0.6` — no
+   4.8–6 V part can pass that at 5 V logic, so the SG90 was booked onto the 9 V rail the wiring
+   planner had correctly avoided, and the budget emitted the blocking "SG90 accepts at most 6 V
+   but the supply provides 9 V" again. The test now asks whether the logic voltage sits INSIDE the
+   part's window (`logic >= min − 0.6 && logic <= max + 0.6`). The power budget and the wiring
+   graph agree by construction again.
+2. The logic rail's totals excluded `logicSideLoads` (the servo's current), so the moment the
+   servo was classified onto the 5 V rail its stall vanished from the transient-peak math. Rail
+   totals now include them.
+3. **Bulk capacitor placement.** The wiring planner hardcoded the 1000 µF cap across
+   `rails.supply` (the battery in a 9 V build) while the servo pulled from the Nano's 5 V pin —
+   the user's "capacitor on wrong rail". It now reads the power budget's rail membership for the
+   stall-prone loads (majority vote, ties → supply) and wires the cap to THAT rail, with an
+   explanation naming the rail and what it feeds. The power note in `power.ts` uses the same
+   classification: all-logic → "across the 5 V logic rail that feeds the SG90", all-supply →
+   supply wording, mixed → both rails named.
+4. **Linear-regulator dissipation note.** When `supplyVoltage − logicVoltage > 3`, the logic-rail
+   throughput (sustained logic typical + 20 % of logic-rail stall, same convention as the
+   sustained budget) is significant (≥ 0.5 W), and no switching regulator is in the conversion
+   path, the plan now notes the linear burn (9 V → 5 V at ~160 mA ≈ 0.6 W; the mission's 500 mA
+   example ≈ 2 W) and recommends a buck converter or a separate 5 V source. The throughput stays
+   in mA on both sides — a linear regulator passes current through (`I_in ≈ I_out`); only a
+   switching regulator would need a power-based conversion, and that case is skipped.
+
+Proof: `scripts/verify-offline-fallback.ts` §7 builds the synthetic battery scenario from the
+seed catalog, then asserts: adequate = true, no false blocking voltage error, the servo on the 5 V
+rail, the capacitor note naming that rail, the dissipation note with a W figure + buck
+recommendation, mA kept as mA, and — via a real `planWiring` call — the capacitor's power wire
+landing on `arduino-nano-1.5V`, not on the battery.
+
+### 2.13 Compile harness extended + CI — **DONE (second pass)**
+
+`scripts/compile-check.ts` now runs **13** builds. Added (each with case-specific `extraChecks`
+that pin the DEGRADED path the generic checks cannot judge):
+
+- `esp32-oled-i2c` — asserts `Wire.begin(PIN_…_SDA, PIN_…_SCL)`, the remappable path.
+  `scripts/firmware-shim/Wire.h` gained the ESP32 core's `begin(int sda, int scl,
+  uint32_t frequency = 0)` overload; without it every ESP32 I²C sketch failed the shim.
+- `relay-lock-keypad` — access control with a relay lock and NO display (asserts no display
+  header is pulled in and EEPROM is planned). Prompt-writing gotcha recorded in the case comment:
+  never write "no display" in a brief — the feature matcher is keyword-based and the negation
+  still selects the OLED.
+- `safe-no-eeprom` — a lock brief whose wording avoids every persistence AND credential word the
+  planner matches; asserts the managed include block prunes `<EEPROM.h>` and the sketch header
+  warns "the PIN is compiled in".
+- `l298n-two-motor` — asserts the driver + a battery are selected (supply-rail exercise).
+- `line-follower-l298n` — the new behaviour (§2.14); asserts the steer controller exists and
+  `setup()` stops the motors first.
+
+CI landed as `.github/workflows/ci.yml`: typecheck, `verify:offline`, `verify:firmware`,
+`seed-components --dry-run` on every push/PR, ubuntu-latest (g++ preinstalled; the script
+degrades to static-checks-only with a clear message where no compiler exists).
+
+### 2.14 Line-follower behaviour module — **DONE (second pass)**
+
+`src/modules/code-generator/behaviours/line-follower.ts` is the second member of `behaviours/`.
+For a line-follower brief the generic template wired the parts and emitted NO follow logic —
+right parts, wrong program, the safe-build failure class again.
+
+- Detection is structural and catalog-grounded: ≥2 instances of a part the catalog marks as a
+  line/reflectance sensor (keywords include "line follower") with digital input assignments, plus
+  an H-bridge driver with ≥2 `IN`-paired channels. A single sensor cannot steer, so it bails to
+  the generic template rather than faking a follower. A coverage guard bails when the plan
+  contains anything the module cannot drive (display, servo, second button) — invariant 7 holds
+  by construction.
+- Firmware: sensors straddle the line, steer toward the sensor that sees it, pivot on the inner
+  channel; 400 ms lost-line grace then a reported stop; edge-debounced start/stop button; motors
+  stopped before anything else in `setup()`; PWM on enable pins when assigned; LED + mirror LEDs;
+  telemetry `state/left/right/command/speed` at 1 Hz; commands `?`, `S`, `G`, `H` (the
+  `incoming == 'G'` idiom is already accepted by `firmware-signals.ts`).
+- Sensor polarity is ONE constant (`LINE_READS_HIGH`, derived from catalog
+  `metadata.activeLevel`, mixed-polarity builds get a header note) — report the assumption, never
+  fake it.
+- `src/modules/project-understanding/heuristics.ts`: the `line_following` feature rule now emits
+  `ir_sensors` quantities (`quantityKey`/`quantityNouns`), so "two line sensors" actually selects
+  TWO instances — the hardware-planner rule for `line_following` already consumed
+  `quantities.ir_sensors` but nothing produced it.
+- Dispatch in `generateSketch()` sits after access-control; the behaviour module imports
+  primitives from `managed-blocks.ts` and the `SketchContext` TYPE only from `templates.ts`
+  (invariant 3). No new libraries are required (invariant 1 is untouched).
+
+Proof: the `line-follower-l298n` compile case (behaviour `line-follower`, compiles clean, both
+extra checks pass), and the build passes validation with 0 errors / 0 warnings.
+
+---
+
 ## 3. Invariants the next agent must respect
+
+
 
 1. **The managed include block is authoritative.** Any include the firmware needs must exist in
    `softwarePlan.libraries`, or hygiene prunes it. Add libraries in `software-planner`, not in code.
@@ -261,7 +385,7 @@ New:
 | `src/modules/software-generator/firmware-signals.ts` | Reads telemetry keys / command chars / link open out of a generated sketch |
 | `src/lib/text/entities.ts` | `unescapeHtmlEntities()` — decode model-authored entities once, at the boundary |
 | `scripts/firmware-shim/*.h`, `Arduino.cpp` | Host-side stub of the Arduino core + 18 library headers, for type-checking generated firmware |
-| `scripts/compile-check.ts` | `npm run verify:firmware`: 8 representative prompts → generate → static checks → `g++ -fsyntax-only` |
+| `scripts/compile-check.ts` | `npm run verify:firmware`: 13 representative prompts → generate → static checks → `g++ -fsyntax-only` |
 | `scripts/repro-safe.ts` | The user's safe prompt through the whole pipeline, dumping every artifact |
 
 Modified (with the reason in one line):
@@ -287,12 +411,32 @@ Modified (with the reason in one line):
 | `package.json` | `verify:firmware` script |
 | `tsconfig.json` | Excludes `external/` |
 
+Second pass (same day — pin-plan rules, power honesty, harness, line follower):
+
+| Path | What it is / why it changed |
+| --- | --- |
+| `src/modules/code-generator/behaviours/line-follower.ts` | NEW behaviour module: differential-drive line follower (§2.14) |
+| `src/modules/validator/rules.ts` | Three new pin-plan rules + `opensSerialPort` evidence helper (§2.11) |
+| `src/types/validation.ts` | `duplicate_pin_assignment`, `analog_only_pin_driven`, `uart_pin_used_as_gpio` codes |
+| `src/lib/bedrock/prompts.ts` | New codes in the model-review vocabulary |
+| `src/modules/fixer/strategies.ts` | Fixer cases + `relocateAssignments` modes `analog-only`/`uart`; `duplicate_pin_assignment` drops the later claim |
+| `src/modules/hardware-planner/power.ts` | `belongsOnLogicRail` window fix; logic-rail totals include logic-side loads; rail-aware capacitor note; regulator dissipation note (§2.12) |
+| `src/modules/wiring-planner/index.ts` | Bulk capacitor lands on the rail that feeds the stall-prone loads (§2.12) |
+| `src/modules/project-understanding/heuristics.ts` | `line_following` rule now emits `ir_sensors` quantities |
+| `src/modules/code-generator/templates.ts` | Line-follower dispatch after access-control |
+| `scripts/firmware-shim/Wire.h` | `Wire.begin(sda, scl, frequency)` overload (ESP32 remappable cores) |
+| `scripts/compile-check.ts` | 5 new cases (13 total), per-case `extraChecks`, line-follower behaviour tag |
+| `scripts/verify-offline-fallback.ts` | §6 pin-plan sabotage rounds; §7 power-honesty scenario |
+| `scripts/lib/offline.ts` | NEW: shared offline bootstrap (DNS stub, env, `initialProject`) |
+| `scripts/repro-safe.ts`, `scripts/compile-check.ts` | Use `scripts/lib/offline.ts` |
+| `.github/workflows/ci.yml` | NEW: all four gates on push/PR |
+
 ---
 
 ## 5. The firmware compile harness (new capability — use it)
 
-`npm run verify:firmware` runs eight prompts through the deterministic pipeline and type-checks each
-generated sketch:
+`npm run verify:firmware` runs thirteen prompts through the deterministic pipeline and type-checks
+each generated sketch:
 
 ```
 safe-keypad-servo (Nano, keypad+servo+OLED+buzzer+2 LEDs+door switch)   access-control  pass
@@ -303,11 +447,18 @@ servo-sweep-nano (Nano, SG90 sweep + pause button)                      generic 
 ultrasonic-alarm (Uno, HC-SR04 + passive buzzer + LED)                  generic         pass
 neopixel-esp32 (ESP32, WS2812B strip + button)                          generic         pass
 stepper-driver (Uno, 28BYJ-48 + ULN2003 + 2 buttons)                    generic         pass
-=== 8/8 sketches clean ===
+esp32-oled-i2c (ESP32, DHT22 + SSD1306, Wire.begin(sda,scl))            generic         pass
+relay-lock-keypad (Nano, keypad + relay, NO display, EEPROM)            access-control  pass
+safe-no-eeprom (Nano, keypad + servo + OLED, NO EEPROM)                 access-control  pass
+l298n-two-motor (Uno, 2 DC motors + L298N + battery)                    generic         pass
+line-follower-l298n (Nano, 2 line sensors + L298N + button)             line-follower   pass
+=== 13/13 sketches clean ===
 ```
 
 Per case it also asserts: unique constants, `setup()`/`loop()` present, no placeholder text,
-balanced braces, and every pin-map constant used.
+balanced braces, and every pin-map constant used — plus the case-specific `extraChecks` for the
+degraded paths (remappable I²C, no-display lock, no-EEPROM lock, follow logic, motors-stopped-at
+-boot).
 
 It is **not** a real toolchain: `scripts/firmware-shim/` declares the same names as the AVR core
 (plus `min`/`max`/`isnan` macros, `String`, `HardwareSerial`) and stubs 18 libraries
@@ -327,8 +478,9 @@ see no output at all, check the `NOISE` regex in `scripts/compile-check.ts`.
 
 ```
 npx tsc --noEmit                     → clean
-npm run verify:offline               → ✓ all checks passed
-npm run verify:firmware              → 8/8 sketches clean (all compile)
+npm run verify:offline               → ✓ all checks passed (37 checks, incl. pin-plan defence §6
+                                       and power-honesty §7 scenarios; see §2.11/§2.12)
+npm run verify:firmware              → 13/13 sketches clean (all compile; §5 case list)
 npx tsx scripts/seed-components.ts --dry-run
                                      → integrity: ok; schema: all definitions satisfy ComponentDefinitionSchema
 npx tsx scripts/repro-safe.ts        → keypad in BOM; 14 pin assignments, no pin reuse, no duplicate
@@ -342,6 +494,10 @@ npx tsx scripts/repro-safe.ts        → keypad in BOM; 14 pin assignments, no p
                                        software findings: none, passed: true
 ```
 
+The battery variant of the user's own scenario (9 V PP3 + Nano + SG90, §2.12) — which FAILED
+validation before the second pass — now validates clean with the servo on the 5 V rail, the bulk
+capacitor wired to that rail, and the regulator-dissipation note present.
+
 Before this branch the same prompt produced: no keypad (16 pushbuttons), a button-counter sketch,
 `PIN_BUZZER_ACTIVE_5V_1_` (malformed), `power_budget_exceeded` + `dangling_reference`, a Velxio
 project with rejected wires, and a dashboard advertising fields the firmware never printed.
@@ -350,9 +506,11 @@ project with rejected wires, and a dashboard advertising fields the firmware nev
 
 ## 7. Remaining work, in priority order
 
+Everything listed on 2026-09-08 is done. What is left is genuinely new work:
+
 ### 7.1 ~~Velxio board fallback~~ — **DONE (2026-09-08, second commit)**
 
-Both halves landed, verified by `npx tsc --noEmit`, `verify:offline`, `verify:firmware` (8/8) and
+Both halves landed, verified by `npx tsc --noEmit`, `verify:offline`, `verify:firmware` and
 the safe repro (`vlx boards: arduino-nano`, `vlx unsupported: 0`):
 
 1. `src/modules/simulation/velxio-project.ts` gained `BOARD_KIND_BY_CATALOG_ID`
@@ -367,52 +525,39 @@ the safe repro (`vlx boards: arduino-nano`, `vlx unsupported: 0`):
    part is the controller — spelling out that the exported diagram has **no board**, so every wire to
    the MCU is dropped and an embedding simulator will substitute its own default.
 
-### 7.2 Validator rules for the pin-plan defects (defence in depth)
+### 7.2 ~~Validator rules for the pin-plan defects~~ — **DONE (2026-09-08, third commit)**
 
-The planner and fixer no longer *create* these, but a model-authored pin plan can still contain
-them, and nothing currently reports them. Add to `src/modules/validator/rules.ts` (section 5,
-"pins") + new codes in `src/types/validation.ts`:
+See §2.11. `duplicate_pin_assignment`, `analog_only_pin_driven` and `uart_pin_used_as_gpio` are in
+the rule engine and the fixer, all auto-fixable, proven by the sabotage rounds in
+`scripts/verify-offline-fallback.ts` §6. The I²C/SPI shared-bus exemption is the one subtlety — do
+not "simplify" it away.
 
-- `duplicate_pin_assignment` — two assignments claiming the same `mcuInstanceId`+`pin` for
-  different targets (severity `error`, auto-fixable: drop the later one, mirroring
-  `uniqueCodeAssignments()`).
-- `analog_only_pin_driven` — an assignment on an input-only ADC pin (Nano/Uno A6/A7) whose direction
-  is `output` or whose protocol is not `adc` (severity `error`). The data is already there:
-  `profile.pins[].capabilities` / `usablePins` in `mcu-profiles.ts`.
-- Consider `uart_pin_used_as_gpio` for D0/D1 when the plan also opens `Serial` on them (the profile
-  knows both facts).
-- Remember: `AUTO_FIXABLE_CODES` in `rules.ts` decides whether the deterministic fixer will attempt
-  it; a new code that is not fixable must still carry a `fixHint`.
+### 7.3 ~~Power honesty~~ — **DONE (2026-09-08, third commit)**
 
-### 7.3 Power: two honest improvements left
+See §2.12 — and read it before touching `belongsOnLogicRail`: the documented §2.6 behaviour was
+NOT actually implemented for battery builds until the third commit. If you change rail
+classification again, re-run the §7 scenario in `verify-offline-fallback.ts` (it fails fast on
+regression) AND check a battery build end-to-end, not just the USB repro.
 
-- **Bulk capacitor placement.** The wiring planner attaches the 1000 µF cap to a rail; the note says
-  "across the motor supply". Verify which rail it lands on when the servo is (correctly) on the 5 V
-  rail, and make the note match the actual connection — the user's report specifically called out
-  "capacitor on wrong rail".
-- **Linear-regulator dissipation.** When `supplyVoltage - logicVoltage > 3` and the logic rail load
-  is significant, note that the on-board *linear* regulator burns the difference
-  (9 V → 5 V at 500 mA ≈ 2 W) and recommend a buck converter or a 5 V supply for the servo.
-  Note that the sustained-load sum is deliberately **not** converted between rails: a linear
-  regulator passes current through, so `I_in ≈ I_out`. Only a switching regulator would need a
-  power-based conversion — if you add one, add it there.
+### 7.4 ~~Harness + CI~~ — **DONE (2026-09-08, third commit)**
 
-### 7.4 Extend the harness
+13 cases (§5), `.github/workflows/ci.yml` runs all four gates.
 
-- Add cases for: ESP32 + I²C OLED (exercises the new `Wire.begin(sda, scl)` path — `i2cRemappable`),
-  a relay-only lock with no display, a build with **no** EEPROM library (asserts the graceful
-  compiled-in-PIN degradation and its warning note), and a two-motor L298N build (exercises the
-  supply rail).
-- Wire `verify:firmware` into CI (it needs `g++`; the script already degrades to static checks only
-  and says so when no compiler is present).
+### 7.5 Still open
 
-### 7.5 Not started, worth doing
-
-- The access-control behaviour is the only member of `behaviours/`. The same dispatch pattern fits
-  other recognisable structures: line follower, PID temperature controller, RFID door (RC522),
-  robot with H-bridge + ultrasonic. Each should be its own module; do not grow `templates.ts`.
-- `scripts/repro-safe.ts` and `scripts/compile-check.ts` duplicate ~40 lines of offline bootstrap
-  (DNS stub, env vars, `initialProject`). Worth extracting to `scripts/lib/offline.ts`.
+- **More behaviour modules.** `behaviours/` now has `access-control.ts` and `line-follower.ts`.
+  The same pattern fits a PID temperature controller, an RFID (RC522) door, or an H-bridge robot
+  with ultrasonic obstacle handling. One module per behaviour; detection must be structural and
+  must bail (hand back to the generic template) whenever the pin plan contains anything the module
+  will not drive. Do not grow `templates.ts`.
+- **Wiring-level UART check.** `uart_pin_used_as_gpio` lives in the validator's pin section and is
+  gated on the sketch text. A model-authored WIRING plan could still route a signal wire to D0/D1
+  without a pin assignment; `wiring-planner/conflicts.ts` has no UART rule. Low priority — the
+  pin-plan rule catches the build's actual failure mode.
+- **Simulator-side line/IR sensors.** `ir-obstacle-sensor` is `simulator.supported: false`
+  ("represent as a digital input source"). A Wokwi/Velxio representation (two toggleable digital
+  inputs) would let the line-follower case run in the simulator; that is a catalog + exporter
+  change with its own honesty rules, not a firmware change.
 
 ---
 
@@ -430,6 +575,28 @@ them, and nothing currently reports them. Add to `src/modules/validator/rules.ts
 - **Defaulting `simulator.supported` to `false`.** A catalog entry that names a part id is asserting
   the mapping; `layout.ts` now defaults from the presence of the id and only an explicit `false`
   overrides it.
+
+### 8.1 Lessons from the second pass (do not re-learn these the hard way)
+
+- **"A behaviour-matching brief" is not enough to select the right parts.** "two line sensors"
+  selects ONE instance unless a `FEATURE_RULES` entry in
+  `src/modules/project-understanding/heuristics.ts` emits the quantity (`ir_sensors`) — the
+  hardware-planner rule already consumed it, nothing produced it. When a behaviour needs N of a
+  part, check BOTH ends of the quantity pipeline.
+- **Never write a negation in a harness prompt.** "There is no display" selects the OLED —
+  `FEATURE_RULES` patterns are keyword-based (`/\bdisplay\b/`). Say "feedback is by LEDs and the
+  buzzer only" instead.
+- **The compile harness's `unique-constants` check scans every `const` declaration text-wide,
+  including function locals.** Two `const uint32_t now = millis();` in different functions FAIL
+  the check (and would trip a reviewer). Convention: function-local `now` is a plain
+  `uint32_t now = millis();`, as in access-control.
+- **A fix verified only on the USB-powered repro can silently not cover the battery case**
+  (§2.12). When a power change is "verified", name the supply topology you verified with. The
+  §7 power-honesty scenario now pins the battery case permanently.
+- **Feature/negative detection asymmetry**: `needsPersistentStorage()` fires on ANY credential
+  word (safe/lock/pin/code/access) + key input + lock, so a no-EEPROM lock build is reachable
+  only by wording that avoids the whole credential vocabulary — see the `safe-no-eeprom` case
+  comment for the exact word list.
 
 ---
 
@@ -478,3 +645,30 @@ Telemetry (1 Hz, or on demand): `status:{"state":"…","locked":true,"door":"clo
 (`angle` only for a servo lock). Console replies are `ok:…` / `warn:…` / `err:…`. Commands: `?` and
 `S` force a frame, `L` forces lock. The dashboard contract is derived from this text, not from a
 parallel heuristic — keep it that way.
+
+---
+
+## 10. Reference: the line-follower firmware as built
+
+States: `STATE_STOPPED` (motors off, boot state), `STATE_RUNNING` (following),
+`STATE_LINE_LOST` (both sensors off for longer than `LINE_LOST_GRACE_MS` — motors stopped, LEDs
+fast-flash, reported with `warn:line lost - stopped`; recovers automatically when a sensor sees
+the line again).
+
+Steering: sensors straddle the line. `decideCommand(leftOnLine, rightOnLine)` returns LEFT when
+only the left sensor sees the line, RIGHT when only the right does, FORWARD otherwise. Both off
+inside the grace window holds the last steer command (gaps in the tape). Turning is a pivot: the
+inner channel brakes, the outer runs at `SPEED_TURN`.
+
+Polarity: `LINE_READS_HIGH` (derived from the catalog's `metadata.activeLevel`; the common
+active-LOW reflectance module reads HIGH over black). Mixed-polarity sensor sets are impossible to
+configure per-sensor in v1 — detection notes it in the sketch header.
+
+Drive: `CHANNELS[]` from the pin plan (`IN1/IN2`, `IN3/IN4` pairs; `ENA`/`ENB` as PWM when
+assigned, `-1` when the jumper is fitted). `setup()` calls `allMotorsStop()` before anything else.
+
+UI: button edge (debounced by deadline) toggles the run; LED on while running, fast-flash when
+lost; chirps scheduled by deadline (`toneUntil`/`stepChirps`) for passive or active buzzers.
+Telemetry `status:{"state","left","right","command","speed"}` at 1 Hz; commands `?`/`S` (status
+frame), `G` (go), `H` (halt), unknown → `err:unknown command`. The dashboard contract derives from
+this text via `firmware-signals.ts` — the `incoming == 'G'` idiom is already accepted there.
