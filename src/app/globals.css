@@ -3586,3 +3586,183 @@ body {
     font-size: 15px;
   }
 }
+
+/* Reference-inspired landing palette ---------------------------------------
+   Keep the product identity, but trade the flat ink/grid field for the
+   luminous, color-shifting atmosphere from the mobile reference. */
+.landing {
+  isolation: isolate;
+  text-align: center;
+  background:
+    radial-gradient(ellipse 48% 42% at 11% 67%, rgba(255, 203, 0, 0.86), transparent 72%),
+    radial-gradient(ellipse 48% 45% at 35% 44%, rgba(26, 183, 151, 0.72), transparent 70%),
+    radial-gradient(ellipse 50% 54% at 80% 35%, rgba(55, 104, 244, 0.72), transparent 70%),
+    radial-gradient(ellipse 42% 42% at 77% 78%, rgba(128, 53, 201, 0.58), transparent 72%),
+    #10131a;
+}
+
+.landing::before {
+  position: absolute;
+  inset: 17% 7% 0;
+  z-index: -1;
+  content: '';
+  pointer-events: none;
+  opacity: 0.64;
+  filter: blur(58px) saturate(125%);
+  background:
+    radial-gradient(ellipse at 14% 76%, rgba(255, 227, 0, 0.72), transparent 33%),
+    radial-gradient(ellipse at 44% 42%, rgba(39, 210, 158, 0.58), transparent 34%),
+    radial-gradient(ellipse at 86% 28%, rgba(61, 106, 255, 0.62), transparent 35%),
+    radial-gradient(ellipse at 78% 84%, rgba(164, 66, 214, 0.52), transparent 30%);
+  animation: wireup-color-drift 16s ease-in-out infinite alternate;
+}
+
+.landing::after {
+  z-index: -1;
+  opacity: 0.11;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mix-blend-mode: soft-light;
+}
+
+.landing__inner {
+  max-width: 980px;
+}
+
+.landing__signal {
+  justify-content: center;
+}
+
+.landing__title,
+.landing__subtitle {
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.landing__title {
+  max-width: 790px;
+}
+
+.landing__subtitle {
+  max-width: 640px;
+}
+
+.landing__form-label {
+  margin-right: auto;
+  margin-left: auto;
+  text-align: left;
+}
+
+.landing .prompt-form {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(18, 19, 24, 0.94);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38), 0 0 0 7px rgba(255, 255, 255, 0.035);
+  text-align: left;
+  backdrop-filter: blur(10px);
+}
+
+.landing .prompt-form:focus-within {
+  border-color: rgba(185, 216, 62, 0.92);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46), 0 0 0 7px rgba(185, 216, 62, 0.12);
+}
+
+.landing .prompt-form__head {
+  border-bottom-color: rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(245, 240, 230, 0.62);
+}
+
+.landing .prompt-form__textarea {
+  background: transparent;
+  color: #f5f0e6;
+}
+
+.landing .prompt-form__textarea::placeholder {
+  color: rgba(245, 240, 230, 0.43);
+}
+
+.landing .prompt-form__foot {
+  border-top-color: rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.landing .prompt-form__hint {
+  color: rgba(245, 240, 230, 0.6);
+}
+
+.landing .btn--primary {
+  background: #f5f0e6;
+  border-color: #f5f0e6;
+  color: #12141a;
+}
+
+.landing .btn--primary:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+.landing .example {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(15, 16, 21, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.landing .example:hover:not(:disabled) {
+  border-color: rgba(185, 216, 62, 0.72);
+  background: rgba(185, 216, 62, 0.1);
+}
+
+.landing__proof {
+  justify-content: center;
+}
+
+@keyframes wireup-color-drift {
+  0% {
+    transform: scale(0.98) translate3d(-1%, 1%, 0);
+  }
+  100% {
+    transform: scale(1.05) translate3d(2%, -2%, 0);
+  }
+}
+
+@media (max-width: 700px) {
+  .landing {
+    padding-top: 38px;
+    background:
+      radial-gradient(ellipse 78% 34% at 2% 66%, rgba(255, 203, 0, 0.88), transparent 72%),
+      radial-gradient(ellipse 88% 40% at 39% 40%, rgba(26, 183, 151, 0.76), transparent 70%),
+      radial-gradient(ellipse 84% 38% at 100% 26%, rgba(55, 104, 244, 0.8), transparent 70%),
+      radial-gradient(ellipse 76% 32% at 83% 90%, rgba(128, 53, 201, 0.64), transparent 72%),
+      #10131a;
+  }
+
+  .landing::before {
+    inset: 15% -22% 0;
+    opacity: 0.72;
+    filter: blur(46px) saturate(132%);
+  }
+
+  .landing__title {
+    max-width: 9ch;
+    font-size: clamp(43px, 13vw, 62px);
+    line-height: 0.98;
+  }
+
+  .landing__subtitle {
+    max-width: 34ch;
+  }
+
+  .landing__form-label {
+    text-align: left;
+  }
+
+  .landing .prompt-form {
+    border-radius: 14px;
+  }
+
+  .landing__proof {
+    text-align: left;
+  }
+}
