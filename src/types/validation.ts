@@ -15,6 +15,7 @@ export type ValidationDomain =
   | 'diagram'
   | 'libraries'
   | 'instructions'
+  | 'behavior'
   | 'structure';
 
 /** Artifact kinds addressable by a fix change. */
@@ -85,6 +86,7 @@ export type ValidationIssueCode =
   | 'instructions_out_of_sync'
   | 'power_budget_exceeded'
   | 'requirement_uncovered'
+  | 'behavioral_assertion_failed'
   | 'model_review';
 
 export interface ValidationIssue {
