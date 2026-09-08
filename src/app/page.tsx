@@ -13,6 +13,24 @@ export default function HomePage() {
           <span>Wireup</span>
         </Link>
         <span className="topbar__spacer" />
+        <Link
+          href="/admin"
+          className="btn btn--sm"
+          style={{
+            marginRight: 14,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontWeight: 600,
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--border-strong)',
+            color: 'var(--text)',
+            padding: '4px 12px',
+          }}
+        >
+          <span style={{ fontSize: 13 }}>⚙</span>
+          <span>Admin Login</span>
+        </Link>
         <span className="topbar__meta topbar__meta--landing">engineering copilot / ready</span>
       </header>
 
