@@ -92,8 +92,9 @@ export function PromptForm() {
   const tooLong = prompt.length > MAX_LENGTH;
 
   return (
-    <form className="prompt-form" onSubmit={submit}>
+    <form className={`prompt-form${busy ? ' prompt-form--busy' : ''}${error ? ' prompt-form--error' : ''}`} onSubmit={submit}>
       <div className="prompt-form__head">
+        <span className="prompt-form__status-dot" aria-hidden="true" />
         <span>project brief</span>
         <span className="topbar__spacer" />
         <span>
@@ -114,6 +115,7 @@ export function PromptForm() {
         spellCheck
         maxLength={MAX_LENGTH + 200}
         aria-label="Project description"
+        aria-invalid={Boolean(error)}
       />
 
       <div className="prompt-form__foot">
@@ -125,13 +127,13 @@ export function PromptForm() {
             </span>
           ) : (
             <>
-              Name the parts you want, or just the behaviour — the agent grounds everything in the component database.
-              <span className="faint"> ⌘/Ctrl + Enter</span>
+              Name the parts you want, or just the behaviour. Wireup grounds the plan in a component database.
+              <span className="faint"> Cmd/Ctrl + Enter</span>
             </>
           )}
         </span>
         <button type="submit" className="btn btn--primary" disabled={busy || tooLong}>
-          {busy ? 'Creating…' : 'Generate project'}
+          {busy ? 'Opening bench…' : 'Build my plan'}
         </button>
       </div>
 
