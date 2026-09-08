@@ -61,6 +61,7 @@ export const AUTO_FIXABLE_CODES: ValidationIssueCode[] = [
   'instructions_missing_section',
   'instructions_out_of_sync',
   'missing_component',
+  'behavioral_assertion_failed',
 ];
 
 export interface RuleContext {

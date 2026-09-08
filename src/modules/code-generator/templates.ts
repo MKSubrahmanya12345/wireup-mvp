@@ -124,6 +124,20 @@ function hasLibrary(libraries: LibraryRequirement[], header: string): boolean {
   return libraries.some((library) => library.import.toLowerCase() === header.toLowerCase());
 }
 
+/**
+ * Does the brief really ask to count something? Shared with the behavioural
+ * assertion layer so the two can never drift. "pressed" and "counter-clockwise"
+ * are NOT counting words.
+ */
+export function wantsCountingBrief(brief: string): boolean {
+  return /\b(?:count(?:s|er)?(?!\s*[-–]?\s*clock)|tally|tallies|increments?|click(?:s|er)?|presses|press\s*count)\b/i.test(brief);
+}
+
+/** Does the brief ask for a reset/clear/zero action? (Shared with the assertion layer.) */
+export function wantsResetBrief(brief: string): boolean {
+  return /\b(reset|clear|zero)\b/i.test(brief);
+}
+
 /** Generate a complete Arduino sketch from the structured project data. */
 export function generateSketch(ctx: SketchContext): string {
   /*
@@ -187,15 +201,44 @@ export function generateSketch(ctx: SketchContext): string {
    * a display and a servo to drive, so it is not "nothing else to do".
    */
   const brief = `${ctx.projectName} ${ctx.projectSummary} ${ctx.requirements.goal} ${ctx.requirements.behaviors.join(' ')}`;
-  const wantsCounting = /\b(count|counter|tally|press(?:es)?|increment|click)/i.test(brief);
+  /*
+   * Counting words must be real counting words. The loose pattern used to
+   * match "pressed" (any button brief) and "counter-clockwise" (a stepper
+   * direction), which turned a stepper build into a press counter and put a
+   * "Press count" card on its dashboard. `counter` must not be followed by
+   * `-clockwise`, and `press` only counts as a noun ("presses") or the phrase
+   * "press count", never as the verb "pressed".
+   */
+  const wantsCounting = wantsCountingBrief(brief);
+  /*
+   * A motor (servo, stepper, DC motor, or a driver board) is something to
+   * drive, even when this generic template has no channel for it — a stepper
+   * plus buttons is a "step on press" build, not a tally counter. Treating it
+   * as "nothing else to drive" used to turn a 28BYJ-48 stepper build into a
+   * press counter and put a "Press count" card on its dashboard.
+   */
+  const hasMotorActuation = ctx.selections.some(
+    (selection) => selection.category === 'motor' || selection.category === 'motor_driver',
+  );
   const nothingElseToDrive =
     channels.length === 0 &&
     (ctx.softwarePlan.communication?.commandSet?.length ?? 0) === 0 &&
-    !servoActive &&
+    !hasMotorActuation &&
     !oledActive &&
     !lcdActive &&
     ledAssignments.length === 0;
   const counterMode = buttonAssignments.length > 0 && (wantsCounting || nothingElseToDrive);
+  /*
+   * "Press the first button to increase a counter, press the second to reset
+   * it" is the canonical multi-button counter brief. Without special-casing it
+   * every button runs the same `pressCount++`, so the reset button is just
+   * another increment — the exact behaviour the prompt asked to avoid. When the
+   * brief names a reset/clear/zero action, the LAST button zeroes the count and
+   * the remaining buttons increment.
+   */
+  const wantsReset = /\b(reset|clear|zero)\b/i.test(brief);
+  const resetButtonIndex =
+    counterMode && wantsReset && buttonAssignments.length >= 2 ? buttonAssignments.length - 1 : -1;
 
   const trigAssignment = ultrasonic?.instances[0] ? findAssignment(ctx.assignments, ultrasonic.instances[0].instanceId, 'TRIG') : undefined;
   const echoAssignment = ultrasonic?.instances[0] ? findAssignment(ctx.assignments, ultrasonic.instances[0].instanceId, 'ECHO') : undefined;
@@ -553,14 +596,24 @@ export function generateSketch(ctx: SketchContext): string {
   if (commandSet.length > 0) {
     lines.push('bool handleCommand(char command) {');
     lines.push('  switch (command) {');
+    /*
+     * A command set that already uses `+`, `-` or `?` must not collide with
+     * the speed/telemetry built-ins below — two `case` labels for the same
+     * character is a compile error, not a runtime one.
+     */
+    const emitted = new Set<string>();
     for (const entry of commandSet) {
       const character = entry.command.length > 0 ? entry.command.charAt(0) : '?';
       if (character === '?') {
+        if (emitted.has('?')) continue;
+        emitted.add('?');
         lines.push("    case '?':");
         lines.push('      sendTelemetry(true);');
         lines.push('      break;');
         continue;
       }
+      if (emitted.has(character)) continue;
+      emitted.add(character);
       const matched = states.find((state) => state.id === entry.meaning.toLowerCase() || state.name.toLowerCase() === entry.meaning.toLowerCase());
       const escaped = character === "'" ? "\\'" : character;
       lines.push(`    case '${escaped}':`);
@@ -571,20 +624,24 @@ export function generateSketch(ctx: SketchContext): string {
       lines.push(`      controlLink.println("ok:${matched?.id ?? safeIdentifier(entry.meaning).toLowerCase()}");`);
       lines.push('      break;');
     }
-    lines.push("    case '+':");
-    lines.push('      speedPercent = (uint8_t)constrain((int)speedPercent + 10, 0, 100);');
-    lines.push('      applyMovement(currentState);');
-    lines.push('      lastCommandAt = millis();');
-    lines.push('      controlLink.print("ok:speed=");');
-    lines.push('      controlLink.println(speedPercent);');
-    lines.push('      break;');
-    lines.push("    case '-':");
-    lines.push('      speedPercent = (uint8_t)constrain((int)speedPercent - 10, 0, 100);');
-    lines.push('      applyMovement(currentState);');
-    lines.push('      lastCommandAt = millis();');
-    lines.push('      controlLink.print("ok:speed=");');
-    lines.push('      controlLink.println(speedPercent);');
-    lines.push('      break;');
+    if (!emitted.has('+')) {
+      lines.push("    case '+':");
+      lines.push('      speedPercent = (uint8_t)constrain((int)speedPercent + 10, 0, 100);');
+      lines.push('      applyMovement(currentState);');
+      lines.push('      lastCommandAt = millis();');
+      lines.push('      controlLink.print("ok:speed=");');
+      lines.push('      controlLink.println(speedPercent);');
+      lines.push('      break;');
+    }
+    if (!emitted.has('-')) {
+      lines.push("    case '-':");
+      lines.push('      speedPercent = (uint8_t)constrain((int)speedPercent - 10, 0, 100);');
+      lines.push('      applyMovement(currentState);');
+      lines.push('      lastCommandAt = millis();');
+      lines.push('      controlLink.print("ok:speed=");');
+      lines.push('      controlLink.println(speedPercent);');
+      lines.push('      break;');
+    }
     lines.push('    default:');
     lines.push('      controlLink.println("err:unknown command");');
     lines.push('      return false;');
@@ -707,10 +764,16 @@ export function generateSketch(ctx: SketchContext): string {
       const id = buttonIdentifier(assignment);
       lines.push(`  if (${id}Pressed()) {`);
       if (counterMode) {
-        lines.push('    pressCount++;');
-        lines.push('    displayDirty = true;');
-        lines.push('    Serial.print("count=");');
-        lines.push('    Serial.println(pressCount);');
+        if (buttonIndex === resetButtonIndex) {
+          lines.push('    pressCount = 0;');
+          lines.push('    displayDirty = true;');
+          lines.push('    Serial.println("count=0");');
+        } else {
+          lines.push('    pressCount++;');
+          lines.push('    displayDirty = true;');
+          lines.push('    Serial.print("count=");');
+          lines.push('    Serial.println(pressCount);');
+        }
         const led = ledAssignments[buttonIndex] ?? ledAssignments[0];
         if (led) {
           lines.push(`    digitalWrite(${constantName(led)}, HIGH); // brief visual acknowledgement`);

@@ -253,6 +253,7 @@ export const ProjectRequirementsSchema = z.object({
   assumptions: z.array(z.string()),
   ambiguities: z.array(z.string()),
   detectedPlatform: z.string().optional(),
+  behavioralSpec: z.unknown().optional(),
 });
 
 export const ValidationResultSchema = z.object({

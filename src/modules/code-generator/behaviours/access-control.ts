@@ -148,32 +148,39 @@ function isButtonLike(ctx: SketchContext, assignment: PinAssignment): boolean {
   return /button|switch|key/i.test(`${selection.componentId} ${selection.name}`);
 }
 
-/** PIN length the brief asks for ("4-6 digit PIN" → 4..6); defaults to 4..6. */
-function pinLengthFrom(ctx: SketchContext): { min: number; max: number } {
-  const text = [
-    ctx.projectName,
-    ctx.projectSummary,
-    ctx.requirements.goal,
-    ...ctx.requirements.behaviors,
-    ...ctx.requirements.requirements,
-    ...ctx.requirements.constraints,
-    ...ctx.requirements.assumptions,
-  ]
-    .join(' ')
-    .toLowerCase();
+/**
+ * PIN length the brief asks for ("4-6 digit PIN" → 4..6); defaults to 4..6.
+ * Exported so the behavioural assertion layer derives the exact same numbers.
+ */
+export function pinLengthFromText(rawText: string): { min: number; max: number } {
+  const text = rawText.toLowerCase();
 
-  const range = /(\d)\s*(?:-|–|to)\s*(\d)\s*digit/.exec(text);
+  const range = /(\d{1,2})\s*(?:-|–|to)\s*(\d{1,2})\s*digits?/.exec(text);
   if (range) {
     const min = Number.parseInt(range[1] as string, 10);
     const max = Number.parseInt(range[2] as string, 10);
-    if (min > 0 && max >= min) return { min, max: Math.min(max, 12) };
+    if (min > 0 && max >= min) return { min: Math.min(min, 12), max: Math.min(max, 12) };
   }
-  const fixed = /(\d)\s*digit\s*(?:pin|code|password)/.exec(text);
+  const fixed = /(\d{1,2})\s*digits?\s*(?:pin|code|password|passcode)/.exec(text);
   if (fixed) {
     const value = Number.parseInt(fixed[1] as string, 10);
-    if (value > 0) return { min: value, max: Math.min(value, 12) };
+    if (value > 0) return { min: Math.min(value, 12), max: Math.min(value, 12) };
   }
   return { min: 4, max: 6 };
+}
+
+function pinLengthFrom(ctx: SketchContext): { min: number; max: number } {
+  return pinLengthFromText(
+    [
+      ctx.projectName,
+      ctx.projectSummary,
+      ctx.requirements.goal,
+      ...ctx.requirements.behaviors,
+      ...ctx.requirements.requirements,
+      ...ctx.requirements.constraints,
+      ...ctx.requirements.assumptions,
+    ].join(' '),
+  );
 }
 
 function servoAngle(ctx: SketchContext, which: 'locked' | 'unlocked', fallback: number): number {
@@ -333,6 +340,15 @@ export function detectAccessControl(ctx: SketchContext): AccessControlPlan | nul
 
   const lengths = pinLengthFrom(ctx);
   const device = deviceWord(ctx);
+  /*
+   * The factory default PIN must be at least PIN_MIN_LENGTH digits long,
+   * otherwise a brief that asks for a 5+ digit PIN ships a device whose
+   * default PIN can never be accepted: "1234" is rejected as too short, and
+   * a longer entry never matches the stored 4 digits. Derive it from the
+   * requested length instead of a fixed 4-digit literal.
+   */
+  const minDefault = Math.max(lengths.min, 4);
+  const defaultPin = '1234567890'.repeat(Math.ceil(minDefault / 10)).slice(0, minDefault);
 
   return {
     ...(matrix ? { matrix } : {}),
@@ -362,7 +378,7 @@ export function detectAccessControl(ctx: SketchContext): AccessControlPlan | nul
     eeprom,
     minPinLength: lengths.min,
     maxPinLength: Math.max(lengths.max, lengths.min),
-    defaultPin: '1234'.slice(0, Math.max(lengths.min, 4)),
+    defaultPin,
     alarmMs: 10_000,
     maxAttempts: 3,
     words: {

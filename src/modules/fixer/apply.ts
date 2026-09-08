@@ -62,7 +62,7 @@ export interface FixerRefreshers {
   software?: (project: ProjectState) => RefreshResult;
   pins?: (project: ProjectState) => RefreshResult;
   wiring?: (project: ProjectState) => RefreshResult;
-  code?: (project: ProjectState) => RefreshResult;
+  code?: (project: ProjectState, options?: { force?: boolean }) => RefreshResult;
   libraries?: (project: ProjectState) => RefreshResult;
   diagram?: (project: ProjectState) => RefreshResult;
   instructions?: (project: ProjectState) => RefreshResult;
@@ -190,7 +190,10 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
   const rejected: RejectedChange[] = [];
   const notes: string[] = [];
   const touched = new Set<ArtifactKind>();
-  const requestedStages = new Set<RerunStage>();
+  const requestedStages = new Map<RerunStage, boolean>();
+  const requestStage = (stage: RerunStage, force = false): void => {
+    requestedStages.set(stage, requestedStages.get(stage) === true || force);
+  };
   const executedChanges: FixChange[] = [...changes];
 
   let pinsChanged = false;
@@ -432,7 +435,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
             working.pinAssignments[position] = merged;
             pinsChanged = true;
             wiringChanged = true;
-            if (before !== merged.pin) requestedStages.add('wiring');
+            if (before !== merged.pin) requestStage('wiring');
             record(change, `${merged.targetInstanceId}.${merged.targetPin} moved ${before} → ${merged.pin}`);
           } else {
             const mcuInstanceId = patch.mcuInstanceId ?? controllerId ?? '';
@@ -464,7 +467,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
               working.pinAssignments[position] = merged;
               pinsChanged = true;
               wiringChanged = true;
-              if (before !== merged.pin) requestedStages.add('wiring');
+              if (before !== merged.pin) requestStage('wiring');
               record(
                 change,
                 `${merged.targetInstanceId}.${merged.targetPin} is already assigned — updated ${before} → ${merged.pin} instead of adding a duplicate`,
@@ -510,7 +513,7 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
             working.pinAssignments.push(created);
             pinsChanged = true;
             wiringChanged = true;
-            requestedStages.add('wiring');
+            requestStage('wiring');
             record(change, `new assignment ${created.id}: ${mcuInstanceId}.${created.pin} → ${created.targetInstanceId}.${created.targetPin}`);
           }
           break;
@@ -832,8 +835,8 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
 
         /* --------------------------- rerun stage ------------------------ */
         case 'rerun_stage': {
-          requestedStages.add(change.stage);
-          record(change, `queued deterministic re-derivation of ${change.stage}`);
+          requestStage(change.stage, change.force === true);
+          record(change, `queued deterministic re-derivation of ${change.stage}${change.force ? ' (forced)' : ''}`);
           break;
         }
 
@@ -895,10 +898,10 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
    */
   const cascade = (from: RerunStage, to: RerunStage[]) => {
     if (!requestedStages.has(from)) return;
-    for (const stage of to) if (input.refresh?.[stage]) requestedStages.add(stage);
+    for (const stage of to) if (input.refresh?.[stage]) requestStage(stage);
   };
   if (pinsChanged || wiringChanged || componentsChanged) {
-    for (const stage of ['diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[stage]) requestedStages.add(stage);
+    for (const stage of ['diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[stage]) requestStage(stage);
   }
   cascade('pins', ['wiring', 'diagram', 'instructions']);
   cascade('wiring', ['diagram', 'instructions']);
@@ -921,7 +924,9 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
       }
       pinsRederived = false;
     }
-    const outcome = runRefresh(refresher, snapshot(working, input.project), stage);
+    const outcome = runRefresh(refresher, snapshot(working, input.project), stage, {
+      force: requestedStages.get(stage) === true,
+    });
     if (!outcome) {
       pending.push(stage);
       continue;
@@ -932,11 +937,11 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
     if (stage === 'pins') {
       pinsChanged = true;
       pinsRederived = true;
-      for (const next of ['wiring', 'diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[next]) requestedStages.add(next);
+      for (const next of ['wiring', 'diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[next]) requestStage(next);
     }
     if (stage === 'wiring') {
       wiringChanged = true;
-      for (const next of ['diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[next]) requestedStages.add(next);
+      for (const next of ['diagram', 'instructions'] as RerunStage[]) if (input.refresh?.[next]) requestStage(next);
     }
     if (stage === 'diagram') touched.add('diagram');
     if (stage === 'instructions') touched.add('instructions');
@@ -1020,12 +1025,13 @@ function adopt(working: Working, project: ProjectState): void {
 }
 
 function runRefresh(
-  refresher: (project: ProjectState) => RefreshResult,
+  refresher: (project: ProjectState, options?: { force?: boolean }) => RefreshResult,
   project: ProjectState,
   label: string,
+  options?: { force?: boolean },
 ): RefreshResult | undefined {
   try {
-    return refresher(project);
+    return refresher(project, options);
   } catch (error) {
     logger.error({ err: error, stage: label }, 'fixer: deterministic re-derivation failed');
     return undefined;
