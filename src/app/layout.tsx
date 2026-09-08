@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 
 import './globals.css';
+import './control-plane.css';
 
 export const metadata: Metadata = {
-  title: 'Wireup — prompt to wired hardware project',
+  title: 'Wireup — human-directed intelligence workspace',
   description:
-    'Wireup is an agentic hardware engineering platform: describe a project, and an agent selects real catalog components, plans power, pins and wiring, generates firmware, diagram.json, libraries and build instructions, then validates and targeted-fixes the result.',
+    'Wireup turns messy goals into editable decision graphs with doubts, evidence, named real-world stakes and human approval gates — plus a grounded hardware engineering pipeline.',
   applicationName: 'Wireup',
 };
 
