@@ -54,6 +54,7 @@ export const FEATURE_RULES: FeatureRule[] = [
   { feature: 'lighting', pattern: /\b(led|leds|light|lights|lamp|neopixel|ws2812|rgb\s*led)\b/i, quantityKey: 'leds', quantityNouns: ['led', 'rgb led'] },
   { feature: 'sound', pattern: /\b(buzzer|piezo|alarm|beep|tone|speaker|sound)\b/i },
   { feature: 'high_current_switching', pattern: /\b(relay|pump|fan|lamp|mains|220v|110v|ac\s*load|solenoid)\b/i },
+  { feature: 'keypad', pattern: /\b(keypad|key\s*pad|(4\s*[x×*]\s*4|four\s*by\s*four|3\s*[x×*]\s*4|hex)\s*(matrix\s*)?(keypad|keyboard|keys)?|matrix\s*keypad|membrane\s*keypad|pin\s*(entry|pad|code)|code\s*(entry|lock)|numeric\s*(entry|pad)|number\s*pad)\b/i },
   { feature: 'user_input', pattern: /\b(button|push\s*button|pushbutton|switch|potentiometer|knob|joystick|encoder|throttle)\b/i, quantityKey: 'buttons', quantityNouns: ['button', 'push button', 'switch'] },
   { feature: 'battery_power', pattern: /\b(battery|batteries|lipo|li-po|18650|aa\s*cells|9v|power\s*bank|portable)\b/i },
   { feature: 'telemetry', pattern: /\b(telemetry|log(ging)?|readout|report|dashboard|sensor\s*data)\b/i },

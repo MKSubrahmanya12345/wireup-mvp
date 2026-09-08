@@ -615,6 +615,8 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
     );
   };
 
+  const signalOnlyParts: string[] = [];
+
   for (const selection of selections) {
     const definition = catalog.find((component) => component.id === selection.componentId);
     if (!definition) continue;
@@ -649,6 +651,18 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
 
       /* Passive parts are wired by their dedicated rules below. */
       if (definition.category === 'passive') continue;
+
+      /*
+       * A contact- or signal-only part (tactile switch, membrane keypad) has no
+       * supply rail of its own — it is powered through whatever it switches.
+       * Reporting that once per instance buried the wiring notes under sixteen
+       * identical "left unpowered" warnings for a single keypad's worth of
+       * buttons, so these are collected and reported once.
+       */
+      if (definition.metadata.noSupplyPins === true) {
+        if (definition.groundPins.length === 0) signalOnlyParts.push(instance.instanceId);
+        continue;
+      }
 
       /*
        * A USB-powered board that sources the logic rail is the reference for
@@ -761,6 +775,15 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
         connectGround(instance.instanceId, definition, 'Single common ground reference for logic and power.');
       }
     }
+  }
+
+  if (signalOnlyParts.length > 0) {
+    state.notes.push(
+      `${signalOnlyParts.length} contact-only part${signalOnlyParts.length === 1 ? '' : 's'} (${signalOnlyParts
+        .slice(0, 4)
+        .join(', ')}${signalOnlyParts.length > 4 ? ', …' : ''}) need no supply rail: ` +
+        'each sits between a GPIO and ground (or the signal it switches) and is powered through that path.',
+    );
   }
 
   /* --- 4. Passive network --------------------------------------------------- */

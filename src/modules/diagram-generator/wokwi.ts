@@ -134,6 +134,10 @@ const PIN_MAPS: Record<string, PinMapper> = {
   'wokwi-led': table({ A: 'A', C: 'C' }),
   'wokwi-rgb-led': table({ R: 'R', G: 'G', B: 'B', CATHODE: 'COM', COM: 'COM' }),
   'wokwi-resistor': table({ '1': '1', '2': '2', A: '1', B: '2' }),
+  // Wokwi's capacitor is a two-terminal part named 1/2; a polarised entry in
+  // the catalog reaches it through the same two terminals.
+  'wokwi-capacitor': table({ '1': '1', '2': '2', '+': '1', '-': '2', POS: '1', NEG: '2' }),
+  'wokwi-capacitor-electrolytic': table({ '+': '+', '-': '\u2212', POS: '+', NEG: '\u2212', '1': '+', '2': '\u2212' }),
   'wokwi-servo': table({ SIGNAL: 'PWM', VCC: 'V+', GND: 'GND' }),
   'wokwi-hc-sr04': table({ VCC: 'VCC', TRIG: 'TRIG', ECHO: 'ECHO', GND: 'GND' }),
   'wokwi-dht22': table({ VCC: 'VCC', DATA: 'SDA', GND: 'GND' }),
@@ -166,6 +170,10 @@ const PART_SIZE: Record<string, { width: number; height: number }> = {
   'wokwi-servo': { width: 120, height: 90 },
   'wokwi-hc-sr04': { width: 180, height: 100 },
   'wokwi-breadboard': { width: 650, height: 210 },
+  'wokwi-resistor': { width: 70, height: 30 },
+  'wokwi-capacitor': { width: 60, height: 40 },
+  'wokwi-led': { width: 50, height: 50 },
+  'wokwi-pushbutton': { width: 50, height: 50 },
 };
 
 const COLOR_NAMES: { name: string; hexes: string[] }[] = [
@@ -375,6 +383,24 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
     const colour = colourFor(connection.wireColor, connection.kind, signalIndex);
     if (connection.kind === 'signal') signalIndex += 1;
     connections.push([`${from.id}:${fromPin}`, `${to.id}:${toPin}`, colour, []]);
+  }
+
+  /*
+   * A skipped peripheral is an inconvenience; a skipped CONTROLLER means there
+   * is no board on the canvas, no wires to it, and nothing to run the firmware
+   * on. That must never be one line in a list of twenty — it goes first, and it
+   * says what the downstream simulator will do about it.
+   */
+  const skippedController = diagram.components.find(
+    (component) => component.category === 'microcontroller' && skippedParts.some((part) => part.id === component.id),
+  );
+  if (skippedController) {
+    const reason = skippedParts.find((part) => part.id === skippedController.id)?.reason ?? 'no reason recorded';
+    warnings.unshift(
+      `The controller ${skippedController.id} (${skippedController.ref}) is not representable in the target simulator: ${reason} ` +
+        'The exported diagram therefore has NO board — every wire to the MCU is dropped and a simulator embedding this ' +
+        'diagram will substitute its own default board, on which this firmware will not run.',
+    );
   }
 
   if (skippedParts.some((part) => part.reason !== 'Wiring medium — not part of the electrical graph.')) {

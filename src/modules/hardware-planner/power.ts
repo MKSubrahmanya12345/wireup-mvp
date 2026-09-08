@@ -76,6 +76,15 @@ function sumLoads(
     if (!definition || !isElectricallyActive(definition)) continue;
     if (!filter(definition, selection)) continue;
 
+    /*
+     * A part with no supply rail of its own (a tactile switch, a membrane
+     * keypad, a series resistor) does not *draw* from a rail: its catalog
+     * current figure is a contact or absolute maximum rating. Summing sixteen
+     * 50 mA switch ratings once produced a "1025 mA peak" logic rail and a
+     * power-budget error for a build that idles at microamps.
+     */
+    if (definition.metadata.noSupplyPins === true) continue;
+
     for (const instance of selection.instances) {
       if (excludeInstanceId && instance.instanceId === excludeInstanceId) continue;
       const typical = definition.currentRequirements?.typicalMa;
@@ -129,11 +138,41 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
 
   const rails: PowerRail[] = [];
 
-  // Motor / high-current loads run from the raw supply rail.
+  /*
+   * Which rail does a load actually sit on? Category alone gets it wrong: an
+   * SG90 is a "motor" but it is a 4.8–6 V part, so with a 9 V pack in the bill
+   * of materials it belongs on the regulated 5 V rail — which is exactly where
+   * the wiring planner puts it. Judging it against the raw supply instead
+   * produced a blocking "SG90 accepts at most 6 V but the supply provides 9 V"
+   * error on a design that was already correct.
+   */
+  const windowOf = (definition: ComponentDefinition): { min?: number; max?: number } => ({
+    min: definition.motorRequirements?.supplyVoltageMin ?? definition.minVoltage,
+    max: definition.motorRequirements?.supplyVoltageMax ?? definition.maxVoltage,
+  });
+  const belongsOnLogicRail = (definition: ComponentDefinition): boolean => {
+    if (mcuLogic === undefined) return false;
+    const { min, max } = windowOf(definition);
+    if (max === undefined) return false;
+    // Comfortable on the raw supply? Then it is a supply-rail load.
+    if (supplyVoltage !== undefined && max >= supplyVoltage - 0.5 && (min === undefined || min <= supplyVoltage)) return false;
+    return max <= mcuLogic + 0.6 && (min === undefined || min >= mcuLogic - 0.6 || mcuLogic >= min);
+  };
+  const isLoad = (definition: ComponentDefinition): boolean =>
+    ['motor', 'motor_driver', 'actuator'].includes(definition.category);
+
+  // Motor / high-current loads that can take the raw supply rail.
   const motorRail = sumLoads(
     selections,
     catalog,
-    (definition) => definition.category === 'motor' || definition.category === 'motor_driver' || definition.category === 'actuator',
+    (definition) => isLoad(definition) && !belongsOnLogicRail(definition),
+    supplySelection?.instances[0]?.instanceId,
+  );
+  // Loads the wiring planner will hang off the regulated logic rail.
+  const logicSideLoads = sumLoads(
+    selections,
+    catalog,
+    (definition) => isLoad(definition) && belongsOnLogicRail(definition),
     supplySelection?.instances[0]?.instanceId,
   );
   if (motorRail.loads.length > 0 && supplyVoltage !== undefined) {
@@ -147,13 +186,20 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
     });
   }
 
-  // Logic rail: MCU + sensors + communication.
-  const logicRail = sumLoads(
+  // Logic rail: MCU + sensors + communication + anything that only tolerates logic voltage.
+  const logicOnly = sumLoads(
     selections,
     catalog,
-    (definition) => ['microcontroller', 'sensor', 'communication', 'display', 'input_device'].includes(definition.category),
+    (definition) =>
+      ['microcontroller', 'sensor', 'communication', 'display', 'input_device'].includes(definition.category) ||
+      belongsOnLogicRail(definition),
     supplySelection?.instances[0]?.instanceId,
   );
+  const logicRail: LoadTotals = {
+    typicalMa: logicOnly.typicalMa,
+    peakMa: logicOnly.peakMa,
+    loads: [...new Set([...logicOnly.loads, ...logicSideLoads.loads])],
+  };
   if (logicRail.loads.length > 0) {
     rails.push({
       rail: mcuLogic === 3.3 ? '3V3' : '5V',
@@ -221,8 +267,28 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
    * ~2 ms Wi-Fi TX burst that bulk capacitance absorbs. Judging adequacy on
    * the raw peak made every radio-equipped board "inadequate" on USB.
    */
-  const sustainedPeakMa =
-    (motorRail.loads.length > 0 ? motorRail.peakMa : 0) + (logicRail.loads.length > 0 ? logicRail.typicalMa : 0);
+  const sustainedSupplyMa = sumLoads(
+    selections,
+    catalog,
+    (definition) => isLoad(definition) && !belongsOnLogicRail(definition) && definition.metadata.stallIsTransient !== true,
+    supplySelection?.instances[0]?.instanceId,
+  ).peakMa;
+  const sustainedLogicMa = sumLoads(
+    selections,
+    catalog,
+    (definition) =>
+      (['microcontroller', 'sensor', 'communication', 'display', 'input_device'].includes(definition.category) ||
+        belongsOnLogicRail(definition)) &&
+      definition.metadata.stallIsTransient !== true,
+    supplySelection?.instances[0]?.instanceId,
+  ).typicalMa;
+  const transientStallMa = sumLoads(
+    selections,
+    catalog,
+    (definition) => isLoad(definition) && definition.metadata.stallIsTransient === true,
+    supplySelection?.instances[0]?.instanceId,
+  ).peakMa;
+  const sustainedPeakMa = sustainedSupplyMa + sustainedLogicMa + Math.round(transientStallMa * 0.2);
 
   // Adequacy analysis.
   let adequate = true;
@@ -275,6 +341,22 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
       const max = motor?.supplyVoltageMax ?? definition.maxVoltage;
       const consumesSupplyRail = definition.category === 'motor' || definition.category === 'motor_driver';
       if (!consumesSupplyRail) continue;
+
+      // A part that cannot tolerate the raw supply is fed from the regulated
+      // logic rail; check it against THAT rail and say so, instead of failing
+      // the whole budget for a wiring choice the planner already made.
+      if (belongsOnLogicRail(definition) && mcuLogic !== undefined) {
+        if (max !== undefined && mcuLogic > max + 0.001) {
+          adequate = false;
+          notes.push(`${definition.name} accepts at most ${max} V but the logic rail provides ${mcuLogic} V.`);
+        } else {
+          notes.push(
+            `${definition.name} is a ${min ?? '?'}–${max ?? '?'} V part: feed it from the ${mcuLogic} V logic rail, never from the raw ${supplyVoltage} V supply.`,
+          );
+        }
+        continue;
+      }
+
       if (min !== undefined && supplyVoltage < min) {
         adequate = false;
         notes.push(`${definition.name} needs at least ${min} V but the supply provides ${supplyVoltage} V.`);

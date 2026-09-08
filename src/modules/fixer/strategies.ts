@@ -12,7 +12,7 @@ import type { AddConnectionChange, FixChange, RerunStageChange } from '@/types/g
 import type { ProjectState } from '@/types/project';
 import type { ValidationIssue, ValidationIssueCode } from '@/types/validation';
 import type { PinAssignment, SignalType, WiringConnection } from '@/types/wiring';
-import type { McuPinSpec, McuProfile } from '@/modules/pin-planner/mcu-profiles';
+import type { McuPinSpec, McuProfile, PinCapability } from '@/modules/pin-planner/mcu-profiles';
 
 import { changeId } from '@/lib/validation/ids';
 import { reassignPin } from '@/modules/pin-planner';
@@ -174,13 +174,16 @@ function usedPins(ctx: Ctx): Set<string> {
   return used;
 }
 
-function freePin(ctx: Ctx, options: { direction: 'input' | 'output'; capabilities?: ('adc' | 'pwm')[] }): McuPinSpec | undefined {
+function freePin(ctx: Ctx, options: { direction: 'input' | 'output'; capabilities?: PinCapability[]; signal?: SignalType }): McuPinSpec | undefined {
   if (!ctx.profile) return undefined;
   const exclude = usedPins(ctx);
-  const attempts: { allowStrapping: boolean; capabilities: ('adc' | 'pwm')[] }[] = [
-    { allowStrapping: false, capabilities: options.capabilities ?? [] },
-    { allowStrapping: true, capabilities: options.capabilities ?? [] },
-    { allowStrapping: true, capabilities: [] },
+  const floor: PinCapability[] = options.signal ? hardCapabilitiesFor(options.signal) : ['digital'];
+  const wanted = options.capabilities ?? floor;
+  const attempts: { allowStrapping: boolean; capabilities: PinCapability[] }[] = [
+    { allowStrapping: false, capabilities: wanted },
+    { allowStrapping: true, capabilities: wanted },
+    // Last resort relaxes the *soft* capability only — never the hard floor.
+    { allowStrapping: true, capabilities: floor },
   ];
   for (const attempt of attempts) {
     const candidates = usablePins(ctx.profile, {
@@ -195,10 +198,22 @@ function freePin(ctx: Ctx, options: { direction: 'input' | 'output'; capabilitie
   return undefined;
 }
 
-function capabilitiesFor(signal: SignalType): ('adc' | 'pwm')[] {
+/**
+ * Capabilities a replacement pin must have for this signal.
+ *
+ * `digital` is always in the list: an AVR analog-only pin (A6/A7 on a Nano) has
+ * no digital input buffer, so "the next free pin" must never be one of those
+ * for a GPIO signal, no matter how free it looks.
+ */
+function capabilitiesFor(signal: SignalType): PinCapability[] {
   if (signal === 'analog') return ['adc'];
-  if (signal === 'pwm') return ['pwm'];
-  return [];
+  if (signal === 'pwm') return ['pwm', 'digital'];
+  return ['digital'];
+}
+
+/** The part of the capability list that may never be relaxed. */
+function hardCapabilitiesFor(signal: SignalType): PinCapability[] {
+  return signal === 'analog' ? ['adc'] : ['digital'];
 }
 
 function signalColor(ctx: Ctx): string {
@@ -319,6 +334,9 @@ function relocateAssignments(
       assignments: ctx.project.pinAssignments,
       profile: ctx.profile,
       pin,
+      // Moves already planned in this pass are not in `pinAssignments` yet;
+      // without them every issue in the pass picks the same "free" pin.
+      alsoExclude: ctx.plannedPins,
       ...(options.keepAssignmentId ? { keepAssignmentId: options.keepAssignmentId } : {}),
     });
     if (result.moves.length === 0) {
@@ -353,7 +371,8 @@ function relocateAssignments(
   for (const assignment of onPin) {
     const replacement = freePin(ctx, {
       direction: assignment.direction,
-      capabilities: options.mode === 'capability' ? capabilitiesFor(assignment.signal) : [],
+      capabilities: options.mode === 'capability' ? capabilitiesFor(assignment.signal) : hardCapabilitiesFor(assignment.signal),
+      signal: assignment.signal,
     });
     if (!replacement) {
       giveUp(ctx, issue, `No free ${assignment.direction} pin${options.mode === 'capability' ? ` with ${capabilitiesFor(assignment.signal).join('/') || 'gpio'} capability` : ''} remains on ${ctx.profile.name}.`);
@@ -610,9 +629,24 @@ function fixFloatingPin(ctx: Ctx, issue: ValidationIssue): boolean {
     return false;
   }
 
+  // Never invent a second assignment for a pin the plan already covers: two
+  // assignments for one peripheral pin become two `const int` declarations with
+  // the SAME name in the sketch, which is a hard compile error.
+  const alreadyAssigned = ctx.project.pinAssignments.find(
+    (assignment) => assignment.targetInstanceId === instanceId && assignment.targetPin.toLowerCase() === pinName.toLowerCase(),
+  );
+  if (alreadyAssigned) {
+    giveUp(
+      ctx,
+      issue,
+      `${entry.label} ${pinName} is already assigned to ${alreadyAssigned.pin} (assignment ${alreadyAssigned.id}); the reported floating pin is stale rather than real.`,
+    );
+    return false;
+  }
+
   const direction: 'input' | 'output' = pin.direction === 'input' ? 'output' : 'input';
   const signal: SignalType = pin.type === 'analog' ? 'analog' : pin.type === 'pwm' ? 'pwm' : pin.type === 'enable' ? 'enable' : 'digital';
-  const replacement = freePin(ctx, { direction, capabilities: capabilitiesFor(signal) });
+  const replacement = freePin(ctx, { direction, capabilities: capabilitiesFor(signal), signal });
   if (!replacement) {
     giveUp(ctx, issue, `No free ${direction} pin remains on ${ctx.profile.name} for ${entry.label} ${pinName}.`);
     return false;

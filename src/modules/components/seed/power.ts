@@ -227,6 +227,6 @@ export const POWER: ComponentDefinition[] = [
     ],
     keywords: ['diode', 'flyback', 'freewheeling', '1n4007', 'protection', 'back emf'],
     aliases: ['1n4007', 'flyback diode', 'rectifier diode', 'freewheel diode'],
-    metadata: { electrical: true, forwardVoltageV: 0.7, peakReverseVoltageV: 1000, useCase: 'Flyback clamp across inductive loads' },
+    metadata: { electrical: true, noSupplyPins: true, forwardVoltageV: 0.7, peakReverseVoltageV: 1000, useCase: 'Flyback clamp across inductive loads' },
   }),
 ];

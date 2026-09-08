@@ -170,6 +170,15 @@ const FEATURE_PART_RULES: FeaturePartRule[] = [
     reason: 'A high-current/AC load was requested; an opto-isolated relay module keeps that load off the MCU pin.',
   },
   {
+    feature: 'keypad',
+    candidates: ['keypad-4x4-membrane'],
+    category: 'input_device',
+    coveredBy: /keypad|matrix|membrane|4x4/i,
+    role: 'input',
+    reason:
+      'A keypad was requested; one 4x4 membrane keypad costs 8 GPIO (4 row drives + 4 column senses) instead of one pin per key, and it is the part simulators actually model.',
+  },
+  {
     feature: 'user_input',
     candidates: ['pushbutton-6mm'],
     category: 'input_device',
