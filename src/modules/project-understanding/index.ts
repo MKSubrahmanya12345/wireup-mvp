@@ -15,6 +15,7 @@ import type { ProjectRequirements } from '@/types/project';
 import type { AgentEventLog } from '@/lib/logging/events';
 
 import { analyzePrompt, FEATURE_RULES, formatAnalysisForPrompt, type PromptAnalysis } from './heuristics';
+import { deriveBehavioralSpec, mergeBehavioralSpecs, normalizeAssertionPayload } from '@/modules/behaviour-evaluator/derive';
 
 const FlexibleStringArray = z
   .array(z.union([z.string(), z.number(), z.boolean()]))
@@ -50,6 +51,7 @@ const RequirementsRawSchema = z
     assumptions: FlexibleStringArray.optional(),
     ambiguities: FlexibleStringArray.optional(),
     detectedPlatform: z.string().optional().catch(undefined),
+    behavioralSpec: z.unknown().optional(),
   })
   .passthrough();
 
@@ -115,6 +117,7 @@ export function buildRequirementsDraft(prompt: string, analysis: PromptAnalysis)
     assumptions: [],
     ambiguities: uniqueStrings(analysis.notes),
     ...(analysis.detectedPlatform ? { detectedPlatform: analysis.detectedPlatform } : {}),
+    behavioralSpec: deriveBehavioralSpec(prompt, analysis),
   };
 }
 
@@ -177,6 +180,10 @@ export function normalizeRequirements(
     assumptions: uniqueStrings(value.assumptions ?? []),
     ambiguities: uniqueStrings([...(value.ambiguities ?? []), ...context.draft.ambiguities]),
     detectedPlatform: context.analysis.detectedPlatform ?? value.detectedPlatform ?? context.draft.detectedPlatform,
+    behavioralSpec: mergeBehavioralSpecs(
+      context.draft.behavioralSpec ?? deriveBehavioralSpec(context.prompt, context.analysis),
+      normalizeAssertionPayload(value.behavioralSpec),
+    ),
   };
 
   if (!parsed.success) {

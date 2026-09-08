@@ -88,6 +88,11 @@ attempts, a green LED and a red LED show granted and denied, and a 1602 I2C LCD 
 Remember the code after a reset.`,
   },
   {
+    name: 'safe-keypad-servo-6pin',
+    prompt: `Arduino Nano electronic safe with a 6 digit PIN, a 4x4 matrix keypad, a micro servo
+bolt, a green LED and a red LED. Remember the PIN after a power cycle.`,
+  },
+  {
     name: 'led-button-counter',
     prompt: `Arduino Nano with two pushbuttons and one LED: press the first button to increase a
 counter shown on the serial monitor, press the second to reset it, and blink the LED once per press.`,
@@ -170,7 +175,7 @@ interface SourceCheck {
 }
 
 /** Static checks that do not need a compiler. */
-function sourceChecks(sketch: string): SourceCheck[] {
+function sourceChecks(sketch: string, prompt: string): SourceCheck[] {
   const checks: SourceCheck[] = [];
 
   const constants = [...sketch.matchAll(/^\s*(?:const\s+\w+\s+|static\s+const\s+\w+\s+)([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*=/gm)].map(
@@ -215,6 +220,39 @@ function sourceChecks(sketch: string): SourceCheck[] {
     ok: unused.length === 0,
     detail: unused.length === 0 ? `${declared.length} pin constant(s), all used` : `declared but never used: ${unused.join(', ')}`,
   });
+
+  /*
+   * A PIN-lock build must never ship a factory default shorter than its own
+   * minimum length: the default could then never be accepted, leaving the
+   * device permanently locked. A compiler cannot see this.
+   */
+  const pinMin = /const\s+uint8_t\s+PIN_MIN_LENGTH\s*=\s*(\d+)\s*;/.exec(sketch)?.[1];
+  const fallback = /const\s+char\s*\*\s*fallback\s*=\s*"(\d+)"/.exec(sketch)?.[1];
+  if (pinMin !== undefined && fallback !== undefined) {
+    const min = Number(pinMin);
+    checks.push({
+      id: 'default-pin-length',
+      ok: fallback.length >= min,
+      detail:
+        fallback.length >= min
+          ? `default PIN (${fallback.length} digit(s)) covers PIN_MIN_LENGTH ${min}`
+          : `default PIN "${fallback}" is shorter than PIN_MIN_LENGTH ${min} — the device would be permanently locked`,
+    });
+  }
+
+  /*
+   * "Press one button to count, another to reset" is the canonical counter
+   * brief; the reset button must zero the count, not increment it.
+   */
+  if (/\b(reset|clear|zero)\b/i.test(prompt) && /\bpressCount\s*\+\+\s*;/.test(sketch)) {
+    checks.push({
+      id: 'counter-reset',
+      ok: /\bpressCount\s*=\s*0\s*;/.test(sketch),
+      detail: /\bpressCount\s*=\s*0\s*;/.test(sketch)
+        ? 'the reset button zeroes the count'
+        : 'the brief asks for a reset but every button only increments',
+    });
+  }
 
   return checks;
 }
@@ -304,7 +342,7 @@ async function main() {
       result = {
         name: entry.name,
         files: (code?.files ?? []).map((candidate) => `${candidate.path}(${candidate.content.length}b)`).join(' '),
-        checks: sourceChecks(sketch),
+        checks: sourceChecks(sketch, entry.prompt),
         compiled,
         errors,
         controller: project.hardwarePlan?.controller?.componentId ?? '?',

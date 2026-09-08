@@ -4,6 +4,7 @@
  */
 
 import type { ComponentSelection, LibraryRequirement, PowerBudget } from './component';
+import type { BehavioralSpec } from './behavioral';
 import type { Diagram } from './diagram';
 import type { AgentEvent } from './generation';
 import type { ValidationResult } from './validation';
@@ -60,6 +61,12 @@ export interface ProjectRequirements {
   ambiguities: string[];
   /** Platform detected in the prompt, when any (`esp32`, `arduino-uno` …). */
   detectedPlatform?: string;
+  /**
+   * Checkable behaviours derived from the prompt (same tier as the prose
+   * `requirements`/`behaviors` above). Populated at decomposition, verified
+   * statically and against the emulated firmware by the behaviour evaluator.
+   */
+  behavioralSpec?: BehavioralSpec;
 }
 
 export interface HardwareBlock {

@@ -324,7 +324,7 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
       };
     },
 
-    code: (project) => {
+    code: (project, options) => {
       const controller = controllerInfo(project, catalog);
       const entry = project.artifacts.code?.files.find((file) => file.path === project.artifacts.code?.entryPoint);
       const broken =
@@ -334,8 +334,11 @@ export function buildRefreshers(deps: RefresherDeps): FixerRefreshers {
         (entry.content.match(/\{/g) ?? []).length !== (entry.content.match(/\}/g) ?? []).length;
 
       /* Conservative: only rebuild the sketch when it is structurally broken.
-         Otherwise re-sync the machine-managed blocks in place. */
-      if (!broken && project.artifacts.code) {
+         Otherwise re-sync the machine-managed blocks in place. A `force`
+         re-derivation (the behavioural fixer) skips this shortcut: the sketch
+         may compile yet still violate a checked behaviour, so it is regenerated
+         from the deterministic template. */
+      if (!broken && !options?.force && project.artifacts.code) {
         let changed = 0;
         const files = project.artifacts.code.files.map((file) => {
           if (!/\.(ino|cpp|c|h|hpp)$/i.test(file.path)) return file;
