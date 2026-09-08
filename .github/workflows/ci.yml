@@ -1,0 +1,39 @@
+# Quality gates for the deterministic pipeline.
+#
+# verify:firmware type-checks every generated sketch with the host C++ compiler
+# against scripts/firmware-shim/. When no g++/clang++ is on PATH the script
+# degrades to static checks only and says so — the gate still runs everywhere,
+# it just proves less. ubuntu-latest ships g++, so here it compiles.
+
+name: quality-gates
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No lockfile is tracked, so this is install, not ci.
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Offline pipeline + fixer + validator rules
+        run: npm run verify:offline
+
+      - name: Firmware compile harness (12 sketches through g++)
+        run: npm run verify:firmware
+
+      - name: Component catalog integrity + schema
+        run: npx tsx scripts/seed-components.ts --dry-run
