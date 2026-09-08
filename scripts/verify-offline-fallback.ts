@@ -79,6 +79,7 @@ function initialProject(prompt: string): ProjectState {
     events: [],
     iteration: { current: 0, max: env().agent.maxFixIterations },
     llm: { calls: [] },
+    chat: [],
     revision: 0,
   };
 }

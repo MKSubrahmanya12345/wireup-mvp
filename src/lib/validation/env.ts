@@ -60,6 +60,7 @@ const ServerEnvSchema = z.object({
   BEDROCK_MODEL_ID: optionalString,
   BEDROCK_VALIDATION_MODEL_ID: optionalString,
   BEDROCK_FIXER_MODEL_ID: optionalString,
+  BEDROCK_CODEGEN_MODEL_ID: optionalString,
   BEDROCK_MAX_TOKENS: intFrom(8000),
   // Upper bound the structured caller may raise maxTokens to after a response
   // is cut short (stopReason "max_tokens"). Kimi K2.5 caps output at 16k.
@@ -73,6 +74,14 @@ const ServerEnvSchema = z.object({
   WIREUP_MAX_FIX_ITERATIONS: intFrom(3),
   WIREUP_ENABLE_LLM_FIXER: boolFrom(true),
   WIREUP_ENABLE_LLM_VALIDATION: boolFrom(true),
+  // AI-first firmware authoring: the model writes the sketch logic against the
+  // grounded pin plan; the rooting gate keeps the managed blocks authoritative
+  // and falls back to the deterministic template on any violation.
+  WIREUP_ENABLE_LLM_CODEGEN: boolFrom(true),
+  // Host compile gate: type-check generated/edited firmware against the stub
+  // Arduino core with g++/clang++ before a revision is frozen. Skipped
+  // honestly when no compiler is on PATH.
+  WIREUP_ENABLE_FIRMWARE_COMPILE: boolFrom(true),
   WIREUP_AUTOSEED_COMPONENTS: boolFrom(true),
   WIREUP_MAX_REVISIONS: intFrom(12),
   WIREUP_MAX_EVENTS: intFrom(1500),
@@ -96,6 +105,7 @@ export interface ServerEnv {
     modelId?: string;
     validationModelId?: string;
     fixerModelId?: string;
+    codegenModelId?: string;
     maxTokens: number;
     maxTokensCeiling: number;
     temperature: number;
@@ -107,6 +117,8 @@ export interface ServerEnv {
     maxFixIterations: number;
     enableLlmFixer: boolean;
     enableLlmValidation: boolean;
+    enableLlmCodegen: boolean;
+    enableFirmwareCompile: boolean;
     autoseedComponents: boolean;
     maxRevisions: number;
     maxEvents: number;
@@ -148,6 +160,7 @@ function read(): ServerEnv {
       modelId: parsed.BEDROCK_MODEL_ID,
       validationModelId: parsed.BEDROCK_VALIDATION_MODEL_ID,
       fixerModelId: parsed.BEDROCK_FIXER_MODEL_ID,
+      codegenModelId: parsed.BEDROCK_CODEGEN_MODEL_ID,
       maxTokens: parsed.BEDROCK_MAX_TOKENS,
       maxTokensCeiling: Math.max(parsed.BEDROCK_MAX_TOKENS, parsed.BEDROCK_MAX_TOKENS_CEILING),
       temperature: parsed.BEDROCK_TEMPERATURE,
@@ -159,6 +172,8 @@ function read(): ServerEnv {
       maxFixIterations: Math.max(0, parsed.WIREUP_MAX_FIX_ITERATIONS),
       enableLlmFixer: parsed.WIREUP_ENABLE_LLM_FIXER,
       enableLlmValidation: parsed.WIREUP_ENABLE_LLM_VALIDATION,
+      enableLlmCodegen: parsed.WIREUP_ENABLE_LLM_CODEGEN,
+      enableFirmwareCompile: parsed.WIREUP_ENABLE_FIRMWARE_COMPILE,
       autoseedComponents: parsed.WIREUP_AUTOSEED_COMPONENTS,
       maxRevisions: Math.max(1, parsed.WIREUP_MAX_REVISIONS),
       maxEvents: Math.max(50, parsed.WIREUP_MAX_EVENTS),

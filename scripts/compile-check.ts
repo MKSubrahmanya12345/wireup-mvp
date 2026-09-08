@@ -152,6 +152,7 @@ function initialProject(id: string, prompt: string): ProjectState {
     events: [],
     iteration: { current: 0, max: 3 },
     llm: { calls: [] },
+    chat: [],
     revision: 0,
   };
 }

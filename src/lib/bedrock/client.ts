@@ -18,7 +18,7 @@ import { env, requireBedrockEnv } from '@/lib/validation/env';
 
 const logger = createLogger('bedrock');
 
-export type BedrockOp = 'generation' | 'validation' | 'fix';
+export type BedrockOp = 'generation' | 'validation' | 'fix' | 'codegen';
 
 export interface TokenUsage {
   inputTokens?: number;
@@ -96,6 +96,7 @@ export function resolveModel(op: BedrockOp): string {
   const model =
     (op === 'validation' ? config.validationModelId : undefined) ??
     (op === 'fix' ? config.fixerModelId : undefined) ??
+    (op === 'codegen' ? config.codegenModelId : undefined) ??
     config.modelId;
 
   if (!model) {

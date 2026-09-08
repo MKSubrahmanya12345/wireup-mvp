@@ -12,6 +12,7 @@ import mongoose, { type Model, type Types } from 'mongoose';
 import type { ComponentSelection } from '@/types/component';
 import type { AgentEvent } from '@/types/generation';
 import type {
+  ChatMessage,
   GenerationError,
   GenerationStage,
   HardwarePlan,
@@ -54,6 +55,7 @@ export interface ProjectDocument {
     validationModel?: string;
     calls: LlmCallRecord[];
   };
+  chat: ChatMessage[];
   revision: number;
 }
 
@@ -99,6 +101,7 @@ const ProjectSchema = new mongoose.Schema(
     events: { type: Mixed, default: [] },
     iteration: { type: Mixed, default: { current: 0, max: 0 } },
     llm: { type: Mixed, default: { calls: [] } },
+    chat: { type: Mixed, default: [] },
     revision: { type: Number, default: 0 },
   },
   {
