@@ -30,14 +30,14 @@ export default function HomePage() {
             <span className="landing__signal-line landing__signal-line--short" />
           </div>
           <p className="landing__eyebrow">BRIEF / PARTS / WIRING / FIRMWARE / VALIDATION</p>
-          <h1 className="landing__title">From “what if?” to wires on the bench.</h1>
+          <h1 className="landing__title">From "what if?" to wires on the bench.</h1>
           <p className="landing__subtitle">
             Give Wireup the messy version of your hardware idea. Get back a grounded build plan with real parts,
             power, pins, firmware, and the next move worth making.
           </p>
 
           <div className="landing__form-label">
-            <span>Tell the bench what you’re making</span>
+            <span>Tell the bench what you're making</span>
             <span className="landing__form-label-detail">one brief in / one build plan out</span>
           </div>
           <PromptForm />
