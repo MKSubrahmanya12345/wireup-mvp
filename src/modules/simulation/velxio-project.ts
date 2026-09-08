@@ -130,6 +130,7 @@ const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
   'wokwi-pushbutton': 'pushbutton',
   'wokwi-potentiometer': 'potentiometer',
   'wokwi-resistor': 'resistor',
+  'wokwi-capacitor': 'capacitor',
   'wokwi-servo': 'servo',
   'wokwi-stepper-motor': 'stepper-motor',
   'wokwi-dht22': 'dht22',
@@ -163,11 +164,36 @@ const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
   'wokwi-ili9341': 'ili9341',
   'wokwi-breadboard': 'breadboard',
   'wokwi-breadboard-mini': 'breadboard-mini',
-  // NOTE deliberately absent: 'wokwi-ds18b20', 'wokwi-l298n', 'wokwi-capacitor'.
-  // The pinned Velxio catalog has no model for them, and putting a lookalike
-  // on the canvas (an L293D standing in for an L298N, say) would wire the
-  // firmware to pins that do not exist on the real part. They stay unsupported.
+  // NOTE deliberately absent: 'wokwi-ds18b20', 'wokwi-l298n'. The pinned
+  // Velxio catalog has no model for them, and putting a lookalike on the canvas
+  // (an L293D standing in for an L298N, say) would wire the firmware to pins
+  // that do not exist on the real part. They stay unsupported.
 };
+
+/**
+ * Parts whose Velxio model depends on which catalog entry the instance came
+ * from, not just on its Wokwi element.
+ *
+ * Velxio separates a polarised capacitor (`capacitor-electrolytic`, terminals
+ * `+` and `\u2212`, and it verifies the polarity against the rail voltage) from a
+ * plain one (`capacitor`, terminals `1`/`2`). Both reach the Wokwi projection as
+ * `wokwi-capacitor`, so the instance id decides, and the terminals are renamed
+ * to the polarised part's own names — Velxio's minus is U+2212, not a hyphen.
+ */
+const METADATA_REFINEMENTS: {
+  matches: RegExp;
+  metadataId: string;
+  pins?: Record<string, string>;
+}[] = [
+  { matches: /^capacitor-[\w-]*electrolytic/i, metadataId: 'capacitor-electrolytic', pins: { '1': '+', '2': '\u2212' } },
+];
+
+function refinePart(partId: string, metadataId: string): { metadataId: string; pins?: Record<string, string> } {
+  for (const refinement of METADATA_REFINEMENTS) {
+    if (refinement.matches.test(partId)) return { metadataId: refinement.metadataId, pins: refinement.pins };
+  }
+  return { metadataId };
+}
 
 /** The inverse table, used by the canvas→diagram sync. Kept adjacent on purpose. */
 export const WOKWI_TYPE_BY_METADATA: Record<string, string> = Object.fromEntries(
@@ -219,6 +245,22 @@ function classifyWire(boardPin: string, partPin: string): { color: string; signa
   // single-wire data line and must not be labelled I²C.
   if (pin === 'SCL') return { color: '#f5a623', signalType: 'i2c' };
   if (/^A\d+$/.test(boardPin)) return { color: '#7ed321', signalType: 'analog' };
+  return { color: '#5c9ded', signalType: 'digital' };
+}
+
+/**
+ * Classify a wire between two peripheral pins (no board net involved).
+ *
+ * Velxio re-derives signal types from board pin metadata on import, so this is
+ * a best-effort colour: a named supply leg is a supply leg, anything else is a
+ * signal. A series resistor between a pin and an LED anode has no polarity of
+ * its own, and claiming one would colour the canvas wrongly.
+ */
+function classifyPartWire(fromPin: string, toPin: string): { color: string; signalType: VlxSignalType } {
+  const supply = /^(VCC|VDD|V\+|\+|5V|3V3|3V|VIN|V_IN|VBAT|VBUS)$/i;
+  const ground = /^(GND|GND\d*|VSS|V-|-|COM)$/i;
+  if (supply.test(fromPin) || supply.test(toPin)) return { color: '#d32f2f', signalType: 'power-vcc' };
+  if (ground.test(fromPin) || ground.test(toPin)) return { color: '#3b3b3b', signalType: 'power-gnd' };
   return { color: '#5c9ded', signalType: 'digital' };
 }
 
@@ -298,20 +340,25 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
   /* Components ------------------------------------------------------------- */
   const components: VlxComponent[] = [];
   const positions = new Map<string, { x: number; y: number }>();
+  /** Per-part Wokwi pin name → Velxio pin name, where the models disagree. */
+  const pinRenames = new Map<string, Record<string, string>>();
   let row = 0;
   for (const part of wokwi.parts) {
     if (boardPartIds.has(part.id)) continue;
-    const metadataId = METADATA_BY_WOKWI_TYPE[part.type];
-    if (!metadataId) {
+    const mapped = METADATA_BY_WOKWI_TYPE[part.type];
+    if (!mapped) {
       if (!unsupported.includes(part.type)) unsupported.push(part.type);
       continue;
     }
+    const refined = refinePart(part.id, mapped);
     const position = { x: PART_COLUMN_X, y: PART_ROW_Y + row * PART_ROW_HEIGHT };
     row += 1;
     positions.set(part.id, position);
-    components.push({ id: part.id, metadataId, ...position, properties: { ...part.attrs } });
+    if (refined.pins) pinRenames.set(part.id, refined.pins);
+    components.push({ id: part.id, metadataId: refined.metadataId, ...position, properties: { ...part.attrs } });
   }
   const placed = new Set(components.map((component) => component.id));
+  const renamePin = (partId: string, pin: string): string => pinRenames.get(partId)?.[pin] ?? pin;
 
   /* Wires ------------------------------------------------------------------ */
   const wires: VlxWire[] = [];
@@ -324,8 +371,38 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
     const fromIsBoard = boardPartIds.has(fromId);
     const toIsBoard = boardPartIds.has(toId);
     if (fromIsBoard === toIsBoard) {
-      // part↔part (a pull-up between two legs) or board↔board: the canvas has
-      // no board-net name for it, so it stays in diagram.json only.
+      /*
+       * part↔part: a Velxio wire is just two component pins
+       * (`start.componentId/pinName` → `end.componentId/pinName`), so a series
+       * resistor feeding an LED anode is fully representable. Dropping these
+       * used to lose every current-limiting resistor from the canvas — Velxio's
+       * own gallery test flags exactly that as an unprotected LED.
+       */
+      if (!fromIsBoard && placed.has(fromId) && placed.has(toId)) {
+        const fromAnchor = positions.get(fromId) ?? { x: PART_COLUMN_X, y: PART_ROW_Y };
+        const toAnchor = positions.get(toId) ?? { x: PART_COLUMN_X, y: PART_ROW_Y };
+        const { color, signalType } = classifyPartWire(fromPin, toPin);
+        wires.push({
+          id: `wire-${index + 1}`,
+          start: {
+            componentId: fromId,
+            pinName: renamePin(fromId, fromPin),
+            x: fromAnchor.x + PIN_OFFSET.x,
+            y: fromAnchor.y + PIN_OFFSET.y,
+          },
+          end: {
+            componentId: toId,
+            pinName: renamePin(toId, toPin),
+            x: toAnchor.x + PIN_OFFSET.x,
+            y: toAnchor.y + PIN_OFFSET.y + 12,
+          },
+          waypoints: [],
+          color,
+          signalType,
+        });
+        return;
+      }
+      // board↔board, or a part Velxio has no model for: nothing to draw.
       if (!unsupported.includes(`wire:${from}->${to}`)) unsupported.push(`wire:${from}->${to}`);
       return;
     }
@@ -345,7 +422,7 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
       id: `wire-${index + 1}`,
       start: {
         componentId: partEnd.id,
-        pinName: partEnd.pin,
+        pinName: renamePin(partEnd.id, partEnd.pin),
         x: anchor.x + PIN_OFFSET.x,
         y: anchor.y + PIN_OFFSET.y,
       },

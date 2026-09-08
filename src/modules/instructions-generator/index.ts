@@ -20,6 +20,8 @@ import type { Diagram } from '@/types/diagram';
 import type { AgentEventLog } from '@/lib/logging/events';
 import { nowIso } from '@/lib/validation/time';
 
+import { unescapeHtmlEntities } from '@/lib/text/entities';
+
 export interface InstructionsGeneratorInput {
   projectName: string;
   projectSummary: string;
@@ -94,7 +96,12 @@ export function buildWiringTree(wiring: WiringPlan | null, selections: Component
 function extractModelMarkdown(raw: unknown): { markdown?: string; sections: Section[] } {
   if (!raw || typeof raw !== 'object') return { sections: [] };
   const record = raw as Record<string, unknown>;
-  const markdown = typeof record.markdown === 'string' ? record.markdown : undefined;
+  /*
+   * Model prose arrives HTML-escaped ("temperature &amp; humidity sensor").
+   * Decoding it here, once, stops the guide page from showing entities: React
+   * escapes again at render time, so nothing becomes raw HTML.
+   */
+  const markdown = typeof record.markdown === 'string' ? unescapeHtmlEntities(record.markdown) : undefined;
   const rawSections = Array.isArray(record.sections) ? record.sections : [];
   const sections: Section[] = [];
 
@@ -102,8 +109,8 @@ function extractModelMarkdown(raw: unknown): { markdown?: string; sections: Sect
     if (!entry || typeof entry !== 'object') continue;
     const sectionRecord = entry as Record<string, unknown>;
     const id = String(sectionRecord.id ?? '').trim();
-    const title = String(sectionRecord.title ?? '').trim();
-    const body = String(sectionRecord.body ?? '').trim();
+    const title = unescapeHtmlEntities(String(sectionRecord.title ?? '')).trim();
+    const body = unescapeHtmlEntities(String(sectionRecord.body ?? '')).trim();
     if (!id || !title || !body) continue;
     sections.push({ id, title, body, order: typeof sectionRecord.order === 'number' ? sectionRecord.order : sections.length + 1 });
   }

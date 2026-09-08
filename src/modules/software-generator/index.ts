@@ -113,6 +113,7 @@ export function generateSoftware(input: SoftwareGeneratorInput): SoftwareArtifac
     assignments: input.assignments,
     softwarePlan: input.softwarePlan,
     hasCounter: firmwareHasCounter(input.firmware),
+    firmware: input.firmware,
   });
 
   const files: SoftwareFile[] = [

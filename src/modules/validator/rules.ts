@@ -460,7 +460,11 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
     })) {
       const code = conflict.code as ValidationIssueCode;
       add('wiring', {
-        code: AUTO_FIXABLE_CODES.includes(code) ? code : 'dangling_reference',
+        // Every wiring conflict code is also a valid validation code, so the
+        // conflict keeps its identity. Relabelling anything unfixable as
+        // `dangling_reference` told the user a power-budget shortfall was a
+        // missing reference, and pointed the fixer at the wrong artifact.
+        code,
         severity: conflict.severity,
         domain: 'wiring',
         message: conflict.message,

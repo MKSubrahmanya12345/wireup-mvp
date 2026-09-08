@@ -18,7 +18,7 @@ export const GENERAL: ComponentDefinition[] = [
     keywords: ['resistor', '220 ohm', 'led resistor', 'current limiting'],
     aliases: ['220r', '220 ohm resistor', 'resistor 220'],
     simulator: { part: 'wokwi-resistor', supported: true, attrs: { value: '220' } },
-    metadata: { electrical: true, resistanceOhm: 220, tolerancePercent: 5, powerRatingW: 0.25, inSeriesWith: 'LED anode from a 5 V pin' },
+    metadata: { electrical: true, noSupplyPins: true, resistanceOhm: 220, tolerancePercent: 5, powerRatingW: 0.25, inSeriesWith: 'LED anode from a 5 V pin' },
   }),
 
   def({
@@ -33,7 +33,7 @@ export const GENERAL: ComponentDefinition[] = [
     keywords: ['resistor', '1k', '1 kohm', 'current limiting'],
     aliases: ['1k resistor', '1kohm', 'resistor 1k'],
     simulator: { part: 'wokwi-resistor', supported: true, attrs: { value: '1k' } },
-    metadata: { electrical: true, resistanceOhm: 1000, tolerancePercent: 5, powerRatingW: 0.25 },
+    metadata: { electrical: true, noSupplyPins: true, resistanceOhm: 1000, tolerancePercent: 5, powerRatingW: 0.25 },
   }),
 
   def({
@@ -49,7 +49,7 @@ export const GENERAL: ComponentDefinition[] = [
     keywords: ['resistor', '10k', 'pullup', 'pull-up', 'pull-down', 'voltage divider'],
     aliases: ['10k resistor', '10kohm', 'resistor 10k'],
     simulator: { part: 'wokwi-resistor', supported: true, attrs: { value: '10k' } },
-    metadata: { electrical: true, resistanceOhm: 10000, tolerancePercent: 5, powerRatingW: 0.25 },
+    metadata: { electrical: true, noSupplyPins: true, resistanceOhm: 10000, tolerancePercent: 5, powerRatingW: 0.25 },
   }),
 
   def({
@@ -63,7 +63,12 @@ export const GENERAL: ComponentDefinition[] = [
     ],
     keywords: ['capacitor', 'decoupling', 'bypass', '100nf', '0.1uf', 'ceramic'],
     aliases: ['100nf capacitor', '0.1uf capacitor', 'decoupling capacitor', 'bypass capacitor'],
-    simulator: { part: 'wokwi-capacitor', supported: false, notes: 'Part id unverified.' },
+    simulator: {
+      part: 'wokwi-capacitor',
+      supported: true,
+      attrs: { value: '100n' },
+      notes: 'Two-terminal capacitor; both simulators model its value, not its ESR.',
+    },
     metadata: { electrical: true, capacitanceF: 1e-7, voltageRatingV: 50, polarity: 'non-polar' },
   }),
 
@@ -79,7 +84,13 @@ export const GENERAL: ComponentDefinition[] = [
     ],
     keywords: ['capacitor', 'electrolytic', 'bulk', '1000uf', 'reservoir', 'smoothing'],
     aliases: ['1000uf capacitor', 'electrolytic capacitor', 'bulk capacitor'],
-    simulator: { part: 'wokwi-capacitor', supported: false, notes: 'Part id unverified.' },
+    simulator: {
+      part: 'wokwi-capacitor',
+      supported: true,
+      attrs: { value: '1000u', voltage: '16' },
+      notes:
+        'Simulated as a two-terminal capacitor. Polarity is NOT modelled: on the bench the long leg goes to the supply and the striped leg to ground, or the part vents.',
+    },
     metadata: { electrical: true, capacitanceF: 0.001, voltageRatingV: 16, polarity: 'polarised' },
   }),
 
@@ -99,7 +110,52 @@ export const GENERAL: ComponentDefinition[] = [
     keywords: ['button', 'pushbutton', 'push button', 'switch', 'tactile', 'input', 'key'],
     aliases: ['pushbutton', 'push button', 'tact switch', 'momentary switch', 'button'],
     simulator: { part: 'wokwi-pushbutton', supported: true },
-    metadata: { electrical: true, momentary: true, requiresPullup: true, recommendedDebounceMs: 20, internalLegPairs: 'legs 1-2 and 3-4 are bridged' },
+    metadata: { electrical: true, noSupplyPins: true, momentary: true, requiresPullup: true, recommendedDebounceMs: 20, internalLegPairs: 'legs 1-2 and 3-4 are bridged' },
+  }),
+
+  def({
+    id: 'keypad-4x4-membrane',
+    name: '4x4 membrane keypad',
+    category: 'input_device',
+    description:
+      '16-key membrane matrix keypad (1-9, 0, *, #, A-D). Eight pins, not sixteen: the MCU drives the four row lines (R1-R4) low one at a time and reads the four column lines (C1-C4) through its internal pull-ups. A pressed key shorts one row to one column, so the firmware resolves the key from the (row, column) pair.',
+    minVoltage: 0,
+    maxVoltage: 5,
+    currentRequirements: { typicalMa: 0, maxMa: 5 },
+    pins: [
+      pin('R1', 'digital', 'input', { required: true, signal: 'Row 1 drive (top row)', aliases: ['ROW1', '1'] }),
+      pin('R2', 'digital', 'input', { required: true, signal: 'Row 2 drive', aliases: ['ROW2', '2'] }),
+      pin('R3', 'digital', 'input', { required: true, signal: 'Row 3 drive', aliases: ['ROW3', '3'] }),
+      pin('R4', 'digital', 'input', { required: true, signal: 'Row 4 drive (bottom row)', aliases: ['ROW4', '4'] }),
+      pin('C1', 'digital', 'output', { required: true, signal: 'Column 1 sense (left column)', aliases: ['COL1', '5'] }),
+      pin('C2', 'digital', 'output', { required: true, signal: 'Column 2 sense', aliases: ['COL2', '6'] }),
+      pin('C3', 'digital', 'output', { required: true, signal: 'Column 3 sense', aliases: ['COL3', '7'] }),
+      pin('C4', 'digital', 'output', { required: true, signal: 'Column 4 sense (right column)', aliases: ['COL4', '8'] }),
+    ],
+    keywords: ['keypad', '4x4 keypad', 'matrix keypad', 'membrane keypad', 'keyboard', 'pin entry', 'code entry', 'keys', 'hex keypad'],
+    aliases: ['4x4 keypad', '4x4 matrix keypad', 'matrix keypad', 'membrane keypad', 'keypad', '16 key keypad'],
+    simulator: {
+      part: 'wokwi-membrane-keypad',
+      supported: true,
+      notes: 'Wokwi/Velxio pins: R1-R4 (rows, driven low by the MCU) and C1-C4 (columns, read with pull-ups).',
+    },
+    metadata: {
+      electrical: true,
+      noSupplyPins: true,
+      requiresPullup: true,
+      recommendedDebounceMs: 20,
+      scanStyle: 'row-drive-column-sense',
+      keypadMatrix: {
+        rows: ['R1', 'R2', 'R3', 'R4'],
+        columns: ['C1', 'C2', 'C3', 'C4'],
+        keyMap: [
+          ['1', '2', '3', 'A'],
+          ['4', '5', '6', 'B'],
+          ['7', '8', '9', 'C'],
+          ['*', '0', '#', 'D'],
+        ],
+      },
+    },
   }),
 
   def({

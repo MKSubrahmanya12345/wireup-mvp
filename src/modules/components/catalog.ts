@@ -67,8 +67,17 @@ export function checkCatalogIntegrity(components: ComponentDefinition[] = SEED_C
     const hasPower = component.powerPins.length > 0;
     const hasGround = component.groundPins.length > 0;
     const isStructural = component.metadata.electrical === false || component.metadata.integrated === true;
+    /*
+     * Two-terminal series elements (resistor, diode, DC motor, tactile switch)
+     * and passive matrices (a membrane keypad) carry current but have no supply
+     * rail of their own — they are wired *into* someone else's circuit. They
+     * declare `noSupplyPins: true` so this check does not reject a catalog that
+     * is actually correct. Without that escape hatch `pnpm seed` refuses to run
+     * on a clean checkout and databases stay stuck on whatever was seeded last.
+     */
+    const isSupplyless = component.metadata.noSupplyPins === true;
 
-    if (!isStructural && component.pins.length > 0) {
+    if (!isStructural && !isSupplyless && component.pins.length > 0) {
       if (!hasPower && !hasGround) {
         problems.push(`${component.id}: electrical component with no power or ground pin declared`);
       }

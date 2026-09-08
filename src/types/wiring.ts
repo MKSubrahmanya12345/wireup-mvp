@@ -69,7 +69,8 @@ export type WiringConflictCode =
   | 'duplicate_connection'
   | 'floating_required_pin'
   | 'dangling_reference'
-  | 'capability_mismatch';
+  | 'capability_mismatch'
+  | 'power_budget_exceeded';
 
 export interface WiringConflict {
   id: string;

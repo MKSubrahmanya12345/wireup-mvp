@@ -444,8 +444,17 @@ export function detectConflicts(input: ConflictInput): WiringConflict[] {
 
   /* --- Power budget -------------------------------------------------------- */
   if (power && !power.adequate) {
+    /*
+     * Report the actual shortfall, not the last note in the list: the notes
+     * array ends with generic advice ("add a bulk capacitor"), so quoting it
+     * produced a "Power budget check failed: Add a bulk electrolytic capacitor"
+     * message that named no failing quantity — and it was tagged
+     * `invalid_voltage`, which the validator then relabelled
+     * `dangling_reference`. Neither code described a current shortfall.
+     */
+    const reason = power.shortfalls?.[0] ?? 'the supply cannot serve the calculated load.';
     conflicts.push(
-      conflict('invalid_voltage', 'warning', `Power budget check failed: ${power.notes[power.notes.length - 1] ?? 'the supply cannot serve the calculated load.'}`, {
+      conflict('power_budget_exceeded', 'error', `Power budget check failed: ${reason}`, {
         instanceIds: power.supplyInstanceId ? [power.supplyInstanceId] : [],
         suggestion: 'Increase supply capability, add a regulator with headroom, or stagger the loads.',
       }),

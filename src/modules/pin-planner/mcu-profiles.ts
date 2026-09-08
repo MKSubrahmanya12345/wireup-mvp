@@ -50,6 +50,12 @@ export interface McuProfile {
   pins: McuPinSpec[];
   reserved: { pin: string; reason: string }[];
   i2c: { sda: string; scl: string };
+  /**
+   * True when the core lets firmware route I2C to any GPIO (ESP32, RP2040,
+   * SAMD). On AVR the bus pins are hard-wired and `Wire.begin()` takes no
+   * argument, so generated sketches must not pass pins there.
+   */
+  i2cRemappable?: boolean;
   spi: { mosi: string; miso: string; sck: string; cs: string };
   uarts: McuUartPort[];
   maxGpioSinkMa: number;
@@ -117,6 +123,7 @@ export const MCU_PROFILES: McuProfile[] = [
       { pin: 'GPIO11', reason: 'Wired to the SPI flash (SPICLK)' },
     ],
     i2c: { sda: 'GPIO21', scl: 'GPIO22' },
+    i2cRemappable: true,
     spi: { mosi: 'GPIO23', miso: 'GPIO19', sck: 'GPIO18', cs: 'GPIO5' },
     uarts: [
       { id: 'Serial', tx: 'GPIO1', rx: 'GPIO3', recommended: false, note: 'USB serial bridge / bootloader logs' },
