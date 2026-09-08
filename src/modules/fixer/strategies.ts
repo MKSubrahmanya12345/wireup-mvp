@@ -1117,6 +1117,16 @@ function planForIssue(ctx: Ctx, issue: ValidationIssue): void {
       return;
     }
 
+    case 'firmware_compile_error': {
+      /* The gcc diagnostic travels in issue.details verbatim. There is no
+         deterministic patch on purpose: the sketch may be model-authored or
+         hand-edited in the workbench, and a template rebuild would discard
+         it. The LLM fixer receives the diagnostic as structured input; when
+         it is unavailable the issue stays unresolved with this reason. */
+      giveUp(ctx, issue, `The host compiler reported: ${issue.details ?? issue.message} — this needs the model fixer or a hand edit in the firmware workbench.`);
+      return;
+    }
+
     case 'behavioral_assertion_failed': {
       const failure = parseBehavioralFailure(issue);
       const path = issue.target?.filePath ?? ctx.project.artifacts.code?.entryPoint ?? 'sketch.ino';

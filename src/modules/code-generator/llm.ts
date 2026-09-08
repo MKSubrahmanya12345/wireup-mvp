@@ -299,3 +299,136 @@ export function bedrockSketchPlanProvider(): SketchPlanProvider {
     return { ok: true, plan: normalizePlan(parsed.data), meta };
   };
 }
+
+/* ------------------------------------------------------------------------- */
+/* Conversational firmware editing (the workbench chat)                       */
+/* ------------------------------------------------------------------------- */
+
+export interface LlmEditRequest {
+  projectName: string;
+  /** The full current sketch (rooted form) the edit applies to. */
+  currentSketch: string;
+  /** The same grounded context as generation, condensed. */
+  grounding: string;
+  /** The user's instruction for THIS turn. */
+  instruction: string;
+  /** Previous turns (already trimmed by the caller). */
+  recentMessages: { role: 'user' | 'assistant'; text: string }[];
+  /** Compiler diagnostics from a previous attempt, when repairing. */
+  diagnostics?: string[];
+}
+
+export interface LlmEditTurn {
+  decision: 'answer' | 'revise';
+  reply: string;
+  plan?: LlmSketchPlan;
+}
+
+const EDIT_PERSONA = `${SKETCH_PERSONA}
+
+You are now in CONVERSATION mode: the user iterates on an existing project with you.
+For every turn you first decide:
+- "answer" — the question needs no code change (explanations, trade-offs, "what if"). Reply helpfully.
+- "revise" — the user asked for a change to the firmware. Return the COMPLETE updated behavioural
+  sections for the whole sketch (not just the edited lines): constants, globals, setup, loop, functions.
+  Everything not affected by the request must stay exactly as it is — the same pin references, the same
+  style, the same variable names unless the change requires otherwise.
+The same fixed-context rules apply: no pin declarations, no #include, no raw pin numbers, only the
+peripherals that exist. If the request is electrically impossible for this build (a part that is not in
+the bill of materials, a pin that does not exist), do not fake it: decide "answer" and explain what the
+user would need to change (parts, wiring) for it to work.`;
+
+const EDIT_JSON_CONTRACT = `Return a single JSON object with EXACTLY this shape:
+
+{
+  "decision": "answer" | "revise",
+  "reply": "<what you tell the user — one short paragraph>",
+  "plan": { ... }  // REQUIRED when decision is "revise", same shape as the sketch contract
+}`;
+
+export function buildEditUserPrompt(request: LlmEditRequest): string {
+  const parts: string[] = [];
+
+  parts.push(`=== PROJECT: ${request.projectName} ===`);
+  parts.push(request.grounding);
+
+  parts.push('');
+  parts.push('=== CURRENT SKETCH (rooted form — your baseline) ===');
+  parts.push('```cpp');
+  parts.push(request.currentSketch);
+  parts.push('```');
+
+  if (request.recentMessages.length > 0) {
+    parts.push('');
+    parts.push('=== RECENT CONVERSATION ===');
+    for (const message of request.recentMessages) {
+      parts.push(`${message.role === 'user' ? 'USER' : 'YOU'}: ${truncate(message.text, 700)}`);
+    }
+  }
+
+  if (request.diagnostics && request.diagnostics.length > 0) {
+    parts.push('');
+    parts.push('=== YOUR PREVIOUS VERSION FAILED TO COMPILE — FIX THESE ERRORS ===');
+    for (const diagnostic of request.diagnostics.slice(0, 12)) parts.push(`- ${diagnostic}`);
+    parts.push('Return the complete corrected plan.');
+  }
+
+  parts.push('');
+  parts.push('=== USER REQUEST (this turn) ===');
+  parts.push(truncate(request.instruction, 4000));
+
+  parts.push('');
+  parts.push(EDIT_JSON_CONTRACT);
+  return parts.join('\n\n');
+}
+
+const EditTurnSchema = z.object({
+  decision: z.union([z.literal('answer'), z.literal('revise')]).catch('answer'),
+  reply: z.string().catch(''),
+  plan: SketchPlanSchema.optional().catch(undefined),
+});
+
+/** The result of a conversational edit turn. */
+export type LlmEditProviderResult =
+  | { ok: false; error: string; code?: string; meta?: LlmSketchMeta }
+  | { ok: true; turn: LlmEditTurn; meta: LlmSketchMeta };
+
+/** The provider for workbench chat turns (same 'codegen' model role). */
+export function bedrockSketchEditProvider(): (request: LlmEditRequest) => Promise<LlmEditProviderResult> {
+  return async (request: LlmEditRequest) => {
+    const result = await runStructuredCall({
+      op: 'codegen',
+      system: [EDIT_PERSONA],
+      user: buildEditUserPrompt(request),
+      temperature: 0.2,
+    });
+
+    const meta: LlmSketchMeta = {
+      model: result.model,
+      durationMs: result.durationMs,
+      attempts: result.attempts,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      repaired: result.repaired,
+    };
+
+    if (!result.ok) {
+      return { ok: false, error: result.error ?? 'the model call failed', ...(result.code ? { code: result.code } : {}), meta };
+    }
+
+    const parsed = EditTurnSchema.safeParse(result.payload);
+    if (!parsed.success) {
+      return { ok: false, error: "the model's reply did not match the conversation contract", code: 'schema_mismatch', meta };
+    }
+
+    const turn: LlmEditTurn = {
+      decision: parsed.data.decision,
+      reply: parsed.data.reply.trim(),
+      ...(parsed.data.plan ? { plan: normalizePlan(parsed.data.plan) } : {}),
+    };
+    if (turn.decision === 'revise' && !turn.plan) {
+      return { ok: false, error: 'the model decided to revise but returned no plan', code: 'schema_mismatch', meta };
+    }
+    return { ok: true, turn, meta };
+  };
+}

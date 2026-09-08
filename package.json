@@ -2,7 +2,7 @@
   "name": "wireup",
   "version": "0.1.0",
   "private": true,
-  "description": "Wireup — agentic hardware engineering platform that turns a prompt into a validated, simulator-ready embedded project.",
+  "description": "Wireup \u2014 agentic hardware engineering platform that turns a prompt into a validated, simulator-ready embedded project.",
   "packageManager": "pnpm@9.15.4",
   "engines": {
     "node": ">=20.11.0",
@@ -22,7 +22,8 @@
     "verify:offline": "tsx scripts/verify-offline-fallback.ts",
     "verify:firmware": "tsx scripts/compile-check.ts",
     "verify:behavioral": "tsx scripts/verify-behavioral.ts",
-    "verify:llm-codegen": "tsx scripts/verify-llm-codegen.ts"
+    "verify:llm-codegen": "tsx scripts/verify-llm-codegen.ts",
+    "verify:workbench": "tsx scripts/verify-firmware-workbench.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.699.0",
