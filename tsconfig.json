@@ -17,12 +17,11 @@
     "plugins": [{ "name": "next" }],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "cad-helper": ["./cad-helper/index.ts"],
+      "@cad-helper/*": ["./cad-helper/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  // `external/velxio` is a vendored third-party app with its own tsconfig and
-  // its own dependencies; type-checking it here only reports missing modules
-  // from a tree this repo never compiles, which hides real errors in `src/`.
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "cad-helper/**/*.ts"],
   "exclude": ["node_modules", "external"]
 }

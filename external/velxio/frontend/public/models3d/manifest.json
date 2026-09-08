@@ -87,6 +87,28 @@
         ],
         "scale": 1
       }
+    },
+    "hc-sr04-ultrasonic": {
+      "file": "hc-sr04-ultrasonic/hc-sr04-ultrasonic.glb",
+      "pinNodes": [
+        "VCC",
+        "TRIG",
+        "ECHO",
+        "GND"
+      ],
+      "bench": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 1
+      }
     }
   }
 }
