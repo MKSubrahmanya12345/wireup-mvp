@@ -72,11 +72,13 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
     <HubContext.Provider value={value}>
       <header className="topbar">
         <Link href="/" className="topbar__brand">
-          <span className="topbar__mark">⌁</span>
+          <span className="topbar__mark">W</span>
           <span className="topbar__title">Wireup</span>
         </Link>
 
         <span className="topbar__meta hub__crumb">
+          <span className="hub__crumb-label">active bench</span>
+          <span className="hub__crumb-divider" aria-hidden="true" />
           {project?.name ?? 'Project'}
           {details ? <span className="faint mono-sm">{project?.id}</span> : null}
         </span>
@@ -107,8 +109,12 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
         </span>
       </header>
 
-      <div className="hub__status">
+       <div className={`hub__status${inProgress ? ' hub__status--working' : ''}${status === 'failed' ? ' hub__status--failed' : ''}`}>
         <div className="hub__inner">
+           <div className="hub__kicker">
+             <span className="hub__kicker-line" aria-hidden="true" />
+             build handoff
+           </div>
           <div className="hub__headline">
             <h1 className="hub__title">{headline}</h1>
             <p className="hub__sub">{subhead}</p>

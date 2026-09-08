@@ -44,6 +44,10 @@ export function OverviewPanel() {
 
       <Card title="What you got" wide flush>
         <div className="overview__hero">
+          <div className="overview__hero-topline">
+            <span className="overview__hero-marker" aria-hidden="true" />
+            <span>your build brief, made concrete</span>
+          </div>
           <p className="overview__headline">{overview.headline}</p>
           {overview.subhead ? <p className="overview__subhead">{overview.subhead}</p> : null}
 
@@ -77,10 +81,14 @@ export function OverviewPanel() {
 
       <Card title="Dig in">
         <div className="overview__links">
-          {LINKS.map((link) => (
+          {LINKS.map((link, index) => (
             <Link key={link.href} href={`/project/${project?.id ?? ''}/${link.href}`} className="overview__link">
-              <span className="overview__link-label">{link.label}</span>
-              <span className="overview__link-blurb">{link.blurb}</span>
+              <span className="overview__link-index">{String(index + 1).padStart(2, '0')}</span>
+              <span className="overview__link-copy">
+                <span className="overview__link-label">{link.label}</span>
+                <span className="overview__link-blurb">{link.blurb}</span>
+              </span>
+              <span className="overview__link-arrow">open</span>
             </Link>
           ))}
         </div>
