@@ -870,22 +870,56 @@ export function planWiring(input: WiringPlannerInput): WiringPlan {
     }
   }
 
-  // Bulk capacitance across the motor/supply rail.
+  /*
+   * Which rail do the stall-prone loads sit on? The power budget already made
+   * that call voltage-driven (matching the wiring emitted above), so read its
+   * rail membership instead of assuming the raw supply: in a battery build the
+   * servo is fed from the regulated logic rail, and a capacitor across the pack
+   * would sit on the wrong side of the linear regulator for its transients.
+   */
+  const stallProneIds = new Set<string>();
+  for (const selection of selections) {
+    const definition = catalog.find((component) => component.id === selection.componentId);
+    if (!definition || !['motor', 'motor_driver'].includes(definition.category)) continue;
+    for (const instance of selection.instances) stallProneIds.add(instance.instanceId);
+  }
+  const railNameForLoad = (instanceId: string): 'supply' | 'logic' => {
+    for (const rail of power.rails) {
+      const member = rail.loads.some((load) => /\(([^)]+)\)\s*$/.exec(load)?.[1] === instanceId);
+      if (member) return rail.rail === '3V3' || rail.rail === '5V' ? 'logic' : 'supply';
+    }
+    return 'supply';
+  };
+  let logicVotes = 0;
+  let supplyVotes = 0;
+  for (const instanceId of stallProneIds) {
+    if (railNameForLoad(instanceId) === 'logic') logicVotes += 1;
+    else supplyVotes += 1;
+  }
+  const bulkRail: RailSource | undefined = logicVotes > supplyVotes ? rails.logic : rails.supply;
+  const stallProneNames = selections
+    .filter((selection) => selection.instances.some((instance) => stallProneIds.has(instance.instanceId)))
+    .map((selection) => selection.name)
+    .join(', ');
+
+  // Bulk capacitance across the rail that carries the stall-prone loads.
   for (const capacitor of passives.bulkCapacitors) {
     const definition = index.get(capacitor.instanceId)?.definition;
-    if (!definition || !rails.supply || !ground) continue;
+    if (!definition || !bulkRail || !ground) continue;
     const pins = definition.pins.map((entry) => entry.name);
     addConnection(
       state,
-      { componentId: rails.supply.instanceId, instanceId: rails.supply.instanceId, pin: rails.supply.pin },
+      { componentId: bulkRail.definition?.id ?? bulkRail.instanceId, instanceId: bulkRail.instanceId, pin: bulkRail.pin },
       { componentId: capacitor.componentId, instanceId: capacitor.instanceId, pin: pins[0] ?? '+' },
       {
         kind: 'power',
         signal: 'power',
         protocol: 'power',
         direction: 'bidirectional',
-        voltage: rails.supply.voltage,
-        explanation: `Bulk reservoir capacitor across the ${rails.supply.label}: absorbs motor inrush and stall transients so the logic rail does not brown out.`,
+        voltage: bulkRail.voltage,
+        explanation: `Bulk reservoir capacitor across the ${bulkRail.label}${
+          stallProneNames ? ` — the rail that feeds ${stallProneNames}` : ''
+        }: absorbs motor inrush and stall transients so the rail does not brown out.`,
       },
     );
     addConnection(

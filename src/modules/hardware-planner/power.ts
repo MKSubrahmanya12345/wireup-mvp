@@ -156,7 +156,15 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
     if (max === undefined) return false;
     // Comfortable on the raw supply? Then it is a supply-rail load.
     if (supplyVoltage !== undefined && max >= supplyVoltage - 0.5 && (min === undefined || min <= supplyVoltage)) return false;
-    return max <= mcuLogic + 0.6 && (min === undefined || min >= mcuLogic - 0.6 || mcuLogic >= min);
+    /*
+     * Does the logic voltage sit inside the part's window (small tolerance for
+     * rounded catalog values)? The previous test compared the part's MAX against
+     * logic + 0.6, which no 4.8–6 V part can pass at 5 V logic: the SG90 was
+     * booked onto the 9 V rail the wiring planner had correctly avoided, and the
+     * budget then failed the correct design with "SG90 accepts at most 6 V but
+     * the supply provides 9 V".
+     */
+    return mcuLogic >= (min ?? mcuLogic) - 0.6 && mcuLogic <= max + 0.6;
   };
   const isLoad = (definition: ComponentDefinition): boolean =>
     ['motor', 'motor_driver', 'actuator'].includes(definition.category);
@@ -196,8 +204,14 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
     supplySelection?.instances[0]?.instanceId,
   );
   const logicRail: LoadTotals = {
-    typicalMa: logicOnly.typicalMa,
-    peakMa: logicOnly.peakMa,
+    /*
+     * Logic-side loads (a 6 V-max servo on the regulated rail) physically pull
+     * through this rail, so their current belongs in its totals — leaving them
+     * out made the servo's stall vanish from the transient-peak note the moment
+     * it was classified onto the logic rail.
+     */
+    typicalMa: logicOnly.typicalMa + logicSideLoads.typicalMa,
+    peakMa: logicOnly.peakMa + logicSideLoads.peakMa,
     loads: [...new Set([...logicOnly.loads, ...logicSideLoads.loads])],
   };
   if (logicRail.loads.length > 0) {
@@ -376,7 +390,63 @@ export function computePowerBudget(input: PowerPlanningInput): PowerBudget {
       return sum + stallCurrent * selection.quantity;
     }, 0);
     if (stall > 0) notes.push(`Worst-case simultaneous motor stall current is roughly ${stall} mA; the driver and supply must tolerate it.`);
-    notes.push('Add a bulk electrolytic capacitor across the motor supply to absorb stall transients and reduce brown-outs.');
+
+    /*
+     * Name the rail the stall-prone loads are actually fed from. The wiring
+     * planner feeds a 4.8–6 V servo from the regulated logic rail even in a
+     * battery build, so the stock "across the motor supply" wording pointed the
+     * builder at the wrong rail — the exact complaint in the safe-build report.
+     */
+    const onLogicRail = motorSelections.filter((selection) => {
+      const definition = definitionFor(selection, catalog);
+      return definition ? belongsOnLogicRail(definition) : false;
+    });
+    const onSupplyRail = motorSelections.filter((selection) => !onLogicRail.includes(selection));
+    const names = (list: typeof motorSelections): string => list.map((selection) => selection.name).join(', ');
+    if (onSupplyRail.length === 0 && mcuLogic !== undefined) {
+      notes.push(
+        `Add a bulk electrolytic capacitor across the ${mcuLogic} V logic rail that feeds ${names(onLogicRail)} — that is where their stall transients flow.`,
+      );
+    } else if (onLogicRail.length === 0 || supplyVoltage === undefined || mcuLogic === undefined) {
+      notes.push('Add a bulk electrolytic capacitor across the supply that feeds the motors to absorb stall transients and reduce brown-outs.');
+    } else {
+      notes.push(
+        `Add bulk electrolytic capacitance on both motor rails: across the ${supplyVoltage} V supply for ${names(onSupplyRail)}, and across the ${mcuLogic} V logic rail for ${names(onLogicRail)}.`,
+      );
+    }
+  }
+
+  /*
+   * Linear-regulator dissipation. When the raw supply far exceeds the logic
+   * voltage and the logic rail carries real current, the on-board linear
+   * regulator burns the difference as heat. The throughput current is used as
+   * milliamps on BOTH sides — a linear regulator passes current through, so
+   * I_in ≈ I_out; only a switching regulator would need a power-based
+   * conversion, and that case is excluded below.
+   */
+  if (!boardIsSupply && supplyVoltage !== undefined && mcuLogic !== undefined) {
+    const dropVoltage = supplyVoltage - mcuLogic;
+    const logicRailStallMa = sumLoads(
+      selections,
+      catalog,
+      (definition) => isLoad(definition) && belongsOnLogicRail(definition),
+      supplySelection?.instances[0]?.instanceId,
+    ).peakMa;
+    const regulatorThroughputMa = sustainedLogicMa + Math.round(logicRailStallMa * 0.2);
+    const isSwitching =
+      Boolean(
+        (regulatorSelection && /buck|lm2596|switching/i.test(`${regulatorSelection.componentId} ${definitionFor(regulatorSelection, catalog)?.name ?? ''}`)) ||
+          (driverWithRegulator && /buck|lm2596|switching/i.test(`${driverWithRegulator.componentId} ${definitionFor(driverWithRegulator, catalog)?.name ?? ''}`)),
+      );
+    if (dropVoltage > 3 && regulatorThroughputMa > 0 && (dropVoltage * regulatorThroughputMa) / 1000 >= 0.5 && !isSwitching) {
+      const watts = Math.round((dropVoltage * regulatorThroughputMa) / 100) / 10;
+      const regulatorName =
+        regulatorSelection ? definitionFor(regulatorSelection, catalog)?.name ?? regulatorSelection.name : `${controllerDefinition?.name ?? 'the controller'}'s on-board regulator`;
+      notes.push(
+        `${regulatorName} drops ${supplyVoltage} V to ${mcuLogic} V linearly: at ~${regulatorThroughputMa} mA on the logic rail that dissipates roughly ${watts} W of continuous heat. ` +
+          `Add a buck converter (${supplyVoltage} V → ${mcuLogic} V) or feed the ${mcuLogic} V rail from a separate ${mcuLogic} V source instead of pushing the raw supply through VIN.`,
+      );
+    }
   }
 
   if (mcuLogic === 3.3) {
