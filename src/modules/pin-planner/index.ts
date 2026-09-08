@@ -75,6 +75,13 @@ interface Demand {
   signal: SignalType;
   protocol: 'gpio' | 'adc' | 'pwm' | 'uart' | 'i2c' | 'spi' | 'one_wire' | 'other';
   capabilities: PinCapability[];
+  /**
+   * Capabilities that may never be traded away. `capabilities` can be relaxed
+   * when the firmware has a software workaround (a bit-banged PWM, say); these
+   * cannot, because the silicon simply does not have the function — an AVR
+   * analog-only pin (A6/A7 on a Nano) has no digital input buffer at all.
+   */
+  hardCapabilities: PinCapability[];
   required: boolean;
   purpose: string;
   scarcity: number;
@@ -84,6 +91,16 @@ const MCU_CONNECTABLE_TYPES = new Set(['digital', 'analog', 'pwm', 'uart', 'i2c'
 
 function isIntegrated(definition: ComponentDefinition): boolean {
   return definition.metadata.integrated === true || definition.metadata.participatesInWiring === false;
+}
+
+/**
+ * A matrix keypad is an `input_device`, but its pins are NOT all read the same
+ * way: the MCU *drives* the row lines and *reads* the column lines. Treating it
+ * like a single-pin switch would wire all eight pins as inputs and make the
+ * matrix unscannable.
+ */
+function isMatrixScanned(definition: ComponentDefinition): boolean {
+  return definition.metadata.keypadMatrix !== undefined || definition.metadata.matrixScanned === true;
 }
 
 function isPassiveOrMedium(definition: ComponentDefinition): boolean {
@@ -115,22 +132,35 @@ function mcuFacingPins(definition: ComponentDefinition): { pinName: string; requ
   return preferred ? [{ pinName: preferred.name, required: false }] : [];
 }
 
-function capabilitiesFor(definition: ComponentDefinition, pinName: string, signal: SignalType): PinCapability[] {
+interface CapabilityNeed {
+  /** Preferred capability; the planner relaxes it when no such pin is free. */
+  soft: PinCapability[];
+  /** Never relaxed: the pin physically cannot do the job without it. */
+  hard: PinCapability[];
+}
+
+function capabilitiesFor(definition: ComponentDefinition, pinName: string, signal: SignalType): CapabilityNeed {
   const componentPin = definition.pins.find((entry) => entry.name === pinName);
   const type = componentPin?.type;
 
-  if (type === 'i2c') return ['i2c'];
-  if (type === 'spi') return ['spi'];
-  if (type === 'uart') return ['uart'];
-  if (type === 'analog' || signal === 'analog') return ['adc'];
+  if (type === 'i2c') return { soft: ['i2c'], hard: [] };
+  if (type === 'spi') return { soft: ['spi'], hard: [] };
+  if (type === 'uart') return { soft: ['uart'], hard: [] };
+  if (type === 'analog' || signal === 'analog') return { soft: ['adc'], hard: ['adc'] };
 
   const needsPwm =
     type === 'pwm' ||
     type === 'enable' ||
     definition.category === 'actuator' && /buzzer-passive|rgb-led|neopixel/i.test(definition.id);
-  if (needsPwm) return ['pwm'];
+  if (needsPwm) return { soft: ['pwm'], hard: [] };
 
-  return [];
+  /*
+   * Plain GPIO still needs a *digital* pin. Without this the planner happily
+   * hands a keypad column to A6/A7 on an Arduino Nano, which are analog-only:
+   * they have no digital input buffer, so the pin reads nothing and the
+   * firmware silently never sees a key press.
+   */
+  return { soft: [], hard: ['digital'] };
 }
 
 function signalFor(definition: ComponentDefinition, pinName: string): SignalType {
@@ -199,8 +229,12 @@ function buildDemands(selections: ComponentSelection[], catalog: ComponentDefini
 
         const signal = signalFor(definition, entry.pinName);
         // Peripheral input => MCU drives it (output). Peripheral output => MCU reads it (input).
-        // Switches and other passive input devices are always *read* by the MCU.
-        const passiveInput = definition.category === 'input_device' && (definition.communicationProtocols?.length ?? 0) === 0;
+        // Switches and other passive input devices are always *read* by the MCU
+        // — except a matrix keypad, whose row pins are driven and column pins read.
+        const passiveInput =
+          !isMatrixScanned(definition) &&
+          definition.category === 'input_device' &&
+          (definition.communicationProtocols?.length ?? 0) === 0;
         const mcuDirection: 'input' | 'output' = passiveInput
           ? 'input'
           : componentPin.direction === 'output'
@@ -211,6 +245,7 @@ function buildDemands(selections: ComponentSelection[], catalog: ComponentDefini
                 ? 'input'
                 : 'output';
 
+        const capabilityNeed = capabilitiesFor(definition, entry.pinName, signal);
         const base = {
           instance,
           definition,
@@ -218,7 +253,8 @@ function buildDemands(selections: ComponentSelection[], catalog: ComponentDefini
           mcuDirection,
           signal,
           protocol: protocolFor(signal),
-          capabilities: capabilitiesFor(definition, entry.pinName, signal),
+          capabilities: capabilityNeed.soft,
+          hardCapabilities: capabilityNeed.hard,
           required: entry.required,
           purpose: componentPin.signal ?? `${definition.name} ${entry.pinName}`,
         };
@@ -255,11 +291,20 @@ function isShareable(protocol: Demand['protocol']): boolean {
   return protocol === 'i2c' || protocol === 'spi';
 }
 
-function pinSupports(profile: McuProfile, pinName: string, capabilities: PinCapability[], direction: 'input' | 'output'): boolean {
+function pinSupports(
+  profile: McuProfile,
+  pinName: string,
+  capabilities: PinCapability[],
+  direction: 'input' | 'output',
+  hardCapabilities: PinCapability[] = [],
+): boolean {
   const spec = pinSpec(profile, pinName);
   if (!spec) return false;
   if (direction === 'output' && spec.capabilities.includes('input-only')) return false;
-  return capabilities.every((capability) => spec.capabilities.includes(capability));
+  return (
+    capabilities.every((capability) => spec.capabilities.includes(capability)) &&
+    hardCapabilities.every((capability) => spec.capabilities.includes(capability))
+  );
 }
 
 export interface PinPlanInput {
@@ -514,7 +559,7 @@ export function planPins(input: PinPlanInput): PinPlanResult {
     const useRequested =
       requestedPin !== undefined &&
       !taken.map.has(requestedPin) &&
-      pinSupports(profile, requestedPin, demand.capabilities, demand.mcuDirection);
+      pinSupports(profile, requestedPin, demand.capabilities, demand.mcuDirection, demand.hardCapabilities);
 
     let chosen: McuPinSpec | undefined;
     let rationale = '';
@@ -531,7 +576,7 @@ export function planPins(input: PinPlanInput): PinPlanResult {
       const exclude = new Set(taken.map.keys());
       const preferred = usablePins(profile, {
         exclude,
-        capabilities: demand.capabilities,
+        capabilities: [...demand.hardCapabilities, ...demand.capabilities],
         direction: demand.mcuDirection,
         allowStrapping: false,
       });
@@ -540,7 +585,7 @@ export function planPins(input: PinPlanInput): PinPlanResult {
       if (!chosen) {
         const relaxed = usablePins(profile, {
           exclude,
-          capabilities: demand.capabilities,
+          capabilities: [...demand.hardCapabilities, ...demand.capabilities],
           direction: demand.mcuDirection,
           allowStrapping: true,
         });
@@ -549,7 +594,13 @@ export function planPins(input: PinPlanInput): PinPlanResult {
       }
 
       if (!chosen && demand.capabilities.length > 0) {
-        const fallback = usablePins(profile, { exclude, direction: demand.mcuDirection, allowStrapping: true });
+        // Soft capabilities may be traded away (with a note); hard ones may not.
+        const fallback = usablePins(profile, {
+          exclude,
+          capabilities: demand.hardCapabilities,
+          direction: demand.mcuDirection,
+          allowStrapping: true,
+        });
         chosen = fallback[0];
         if (chosen) {
           rationale = `No ${demand.capabilities.join('+')}-capable pin was free; ${chosen.name} was assigned instead, so the firmware must use a software/timer alternative.`;
@@ -578,7 +629,9 @@ export function planPins(input: PinPlanInput): PinPlanResult {
       if (request?.mcuPin && requestedPin !== undefined && requestedPin !== chosen.name) {
         const reason = taken.map.has(requestedPin)
           ? `${requestedPin} was already assigned to ${taken.map.get(requestedPin)?.[0]?.targetInstanceId ?? 'another signal'}`
-          : `${requestedPin} cannot be used as ${demand.mcuDirection} with capability ${demand.capabilities.join('+') || 'gpio'} on ${profile.name}`;
+          : `${requestedPin} cannot be used as ${demand.mcuDirection} with capability ${
+              [...demand.hardCapabilities, ...demand.capabilities].join('+') || 'gpio'
+            } on ${profile.name}`;
         overrides.push({ instanceId: demand.instance.instanceId, pin: demand.pinName, requested: request.mcuPin, assigned: chosen.name, reason });
       } else if (request?.mcuPin && requestedPin === undefined) {
         overrides.push({
@@ -673,6 +726,13 @@ export interface ReassignInput {
   pin: string;
   /** Assignment that keeps the pin; the others are moved. */
   keepAssignmentId?: string;
+  /**
+   * Pins to treat as already taken *in addition* to `assignments`. The fixer
+   * plans several moves before any of them are applied, so without this every
+   * pass re-reads the same stale snapshot and picks the same "free" pin — which
+   * is how nine signals once ended up stacked on A2.
+   */
+  alsoExclude?: Iterable<string>;
 }
 
 export interface ReassignResult {
@@ -693,12 +753,20 @@ export function reassignPin(input: ReassignInput): ReassignResult {
     conflicting.find((assignment) => assignment.required) ??
     conflicting[0];
 
+  const extraExcluded = new Set(input.alsoExclude ?? []);
+
   for (const assignment of conflicting) {
     if (!keep || assignment.id === keep.id) continue;
 
     const exclude = new Set(next.filter((entry) => entry.id !== assignment.id).map((entry) => entry.pin));
+    for (const pin of extraExcluded) exclude.add(pin);
+    /*
+     * A digital signal may only land on a *digital* pin: an AVR analog-only pin
+     * (A6/A7 on a Nano) has no digital input buffer, so relocating a keypad
+     * column there would silence it forever.
+     */
     const capabilities: PinCapability[] =
-      assignment.protocol === 'adc' ? ['adc'] : assignment.protocol === 'pwm' ? ['pwm'] : assignment.protocol === 'one_wire' ? [] : [];
+      assignment.protocol === 'adc' ? ['adc'] : assignment.protocol === 'pwm' ? ['pwm', 'digital'] : ['digital'];
 
     const candidates =
       usablePins(input.profile, { exclude, capabilities, direction: assignment.direction, allowStrapping: false })[0] ??

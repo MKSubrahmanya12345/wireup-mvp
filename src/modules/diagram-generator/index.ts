@@ -18,6 +18,8 @@ import { resolvePinName } from '@/modules/wiring-planner/conflicts';
 
 import { layoutComponents, GRID_SIZE, type LayoutInput } from './layout';
 
+import { unescapeHtmlEntities } from '@/lib/text/entities';
+
 export const DIAGRAM_GENERATOR = 'wireup-diagram-generator/1.0';
 
 export interface DiagramGeneratorInput {
@@ -182,14 +184,7 @@ function findDiagramPin(component: DiagramComponent, pinName: string, catalog: C
 }
 
 /** Text that reached the plan through an LLM may carry HTML entities. */
-function unescapeHtml(value: string): string {
-  return value
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'");
-}
+const unescapeHtml = unescapeHtmlEntities;
 
 function routeBetween(x1?: number, y1?: number, x2?: number, y2?: number): { x: number; y: number }[] | undefined {
   if (x1 === undefined || y1 === undefined || x2 === undefined || y2 === undefined) return undefined;

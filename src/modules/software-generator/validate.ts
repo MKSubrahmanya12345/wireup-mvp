@@ -25,6 +25,7 @@
 import type { GeneratedCodeFile } from '@/types/project';
 
 import type { DeviceContract } from './contract';
+import { commandCharacters, opensControlLink } from './firmware-signals';
 
 export interface SoftwareFinding {
   severity: 'error' | 'warning' | 'info';
@@ -501,10 +502,14 @@ function checkFirmwareAgreement(
     }
   }
 
-  // Every non-built-in command must appear as a case label in handleCommand.
+  /*
+   * Every command must be accepted by the firmware's parser. Both idioms count:
+   * `case 'x':` labels and `if (command == 'x')` chains — checking only the
+   * former flagged every command in every generated sketch as unhandled.
+   */
+  const handled = commandCharacters(firmware) ?? [];
   for (const command of contract.commands.filter((entry) => !entry.builtIn)) {
-    const label = `case '${command.character === "'" ? "\\'" : command.character}':`;
-    if (!source.includes(label)) {
+    if (!handled.includes(command.character)) {
       findings.push({
         severity: 'warning',
         code: 'SW-COMMAND-UNHANDLED',
@@ -513,7 +518,7 @@ function checkFirmwareAgreement(
     }
   }
 
-  if (!/Serial\.begin\(|controlLink\.begin\(/.test(source)) {
+  if (!opensControlLink(firmware)) {
     findings.push({
       severity: 'warning',
       code: 'SW-NO-LINK',

@@ -21,5 +21,8 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  // `external/velxio` is a vendored third-party app with its own tsconfig and
+  // its own dependencies; type-checking it here only reports missing modules
+  // from a tree this repo never compiles, which hides real errors in `src/`.
+  "exclude": ["node_modules", "external"]
 }

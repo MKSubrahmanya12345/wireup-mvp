@@ -134,8 +134,13 @@ export const SENSORS: ComponentDefinition[] = [
     ],
     keywords: ['ldr', 'photoresistor', 'light', 'brightness', 'cds', 'ambient light'],
     aliases: ['ldr', 'photoresistor', 'light sensor', 'cds cell'],
-    simulator: { part: 'wokwi-photoresistor', supported: false, notes: 'Part id unverified — confirm before use.' },
-    metadata: { electrical: true, requiresVoltageDivider: true, dividerResistorOhm: 10000, resistanceDarkOhm: 1000000, resistanceLightOhm: 5000 },
+    simulator: {
+      supported: false,
+      notes:
+        'Wokwi and Velxio only model a four-pin photoresistor MODULE (VCC/GND/DO/AO), not a bare two-terminal LDR. ' +
+        'Placing the module would connect the divider to pins this part does not have, so it stays out of the simulation.',
+    },
+    metadata: { electrical: true, noSupplyPins: true, requiresVoltageDivider: true, dividerResistorOhm: 10000, resistanceDarkOhm: 1000000, resistanceLightOhm: 5000 },
   }),
 
   def({

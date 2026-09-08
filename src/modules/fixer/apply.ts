@@ -38,6 +38,7 @@ import type { DraftSelection } from '@/modules/hardware-planner/types';
 import { syncPinConstants } from '@/modules/code-generator';
 import { applyFirmwareHygiene } from '@/modules/code-generator/hygiene';
 import {
+  buildIncludesBlock,
   buildPinMapBlock,
   INCLUDES_END,
   INCLUDES_START,
@@ -439,6 +440,55 @@ export function applyChanges(input: ApplyInput): ApplyOutput {
               refuse(change, 'no controller instance is known, so a new assignment cannot be created');
               break;
             }
+
+            /*
+             * A "new" assignment for a peripheral pin the plan already covers is
+             * not new: it would emit a second `const int PIN_<INSTANCE>_<PIN>`
+             * with the same name, which is a redefinition error in C++. Merge it
+             * into the existing assignment instead.
+             */
+            const sameTarget = working.pinAssignments.find(
+              (assignment) =>
+                assignment.targetInstanceId === patch.targetInstanceId &&
+                assignment.targetPin.toLowerCase() === String(patch.targetPin).toLowerCase(),
+            );
+            if (sameTarget) {
+              const before = sameTarget.pin;
+              const merged: PinAssignment = { ...sameTarget, ...patch, id: sameTarget.id, source: 'fixer' };
+              if (patch.pin !== before && patch.pinNumber === undefined) {
+                const number = input.profile ? pinSpec(input.profile, patch.pin)?.number : undefined;
+                if (number !== undefined) merged.pinNumber = number;
+                else delete merged.pinNumber;
+              }
+              const position = working.pinAssignments.findIndex((assignment) => assignment.id === sameTarget.id);
+              working.pinAssignments[position] = merged;
+              pinsChanged = true;
+              wiringChanged = true;
+              if (before !== merged.pin) requestedStages.add('wiring');
+              record(
+                change,
+                `${merged.targetInstanceId}.${merged.targetPin} is already assigned — updated ${before} → ${merged.pin} instead of adding a duplicate`,
+              );
+              break;
+            }
+
+            /*
+             * Two different signals may share a pin only on a shared bus (I2C
+             * SDA/SCL, SPI). Anything else is a short circuit, so refuse rather
+             * than quietly stack a second signal on a pin that is already driven.
+             */
+            const sharedBus = (protocol?: string) => protocol === 'i2c' || protocol === 'spi';
+            const occupant = working.pinAssignments.find(
+              (assignment) => assignment.pin === patch.pin && assignment.mcuInstanceId === mcuInstanceId,
+            );
+            if (occupant && !(sharedBus(occupant.protocol) && sharedBus(patch.protocol))) {
+              refuse(
+                change,
+                `${patch.pin} already carries ${occupant.targetInstanceId}.${occupant.targetPin}; a second signal on the same pin is a conflict, not a fix`,
+              );
+              break;
+            }
+
             const derivedNumber = patch.pinNumber ?? (input.profile ? pinSpec(input.profile, patch.pin)?.number : undefined);
             const created: PinAssignment = {
               id: newAssignmentId(),
@@ -1045,14 +1095,26 @@ function syncFirmware(
       missingIncludes.push(statement);
     }
     if (missingIncludes.length > 0) {
-      const includeBlock = [INCLUDES_START, ...missingIncludes, INCLUDES_END].join('\n');
+      /*
+       * Rebuild the WHOLE managed block from the manifest. Writing only the
+       * missing lines into it used to replace the block outright, which threw
+       * away <Arduino.h>, <Wire.h>, <Servo.h> and the display headers — the
+       * sketch then failed to compile with "'Adafruit_SSD1306' was not declared"
+       * and nothing in the report explained why.
+       */
+      const includeBlock = buildIncludesBlock(libraries, esp32);
       const includeEdit = replaceBetweenMarkers(content, INCLUDES_START, INCLUDES_END, includeBlock);
       if (includeEdit.changed) {
         content = includeEdit.content;
-      } else if (!content.includes(INCLUDES_START)) {
-        const lastInclude = content.lastIndexOf('#include');
-        const lineEnd = lastInclude === -1 ? -1 : content.indexOf('\n', lastInclude);
-        content = lineEnd === -1 ? `${content.trimEnd()}\n\n${includeBlock}\n` : `${content.slice(0, lineEnd + 1)}${includeBlock}\n${content.slice(lineEnd + 1)}`;
+      } else {
+        // No managed block: append only what is genuinely absent.
+        const additions = missingIncludes.filter((statement) => !content.includes(statement));
+        if (additions.length > 0) {
+          const block = [INCLUDES_START, ...additions, INCLUDES_END].join('\n');
+          const lastInclude = content.lastIndexOf('#include');
+          const lineEnd = lastInclude === -1 ? -1 : content.indexOf('\n', lastInclude);
+          content = lineEnd === -1 ? `${content.trimEnd()}\n\n${block}\n` : `${content.slice(0, lineEnd + 1)}${block}\n${content.slice(lineEnd + 1)}`;
+        }
       }
       details.push(`added include(s): ${missingIncludes.join(', ')}`);
     }
