@@ -441,7 +441,7 @@ export const MOTION_PRESETS: Record<string, CadComponentSpec> = {
     bodyColor: '#1e293b',
     pins: [
       { name: '+', pinNumber: 1, role: 'power', signal: 'Pump positive (red)', xMm: -3.0, yMm: 44.0, zMm: -8.0, direction: 'up', aliases: ['VCC', 'RED'], required: true },
-      { name: '-', pinNumber: 2, role: 'ground', signal: 'Pump negative (black, switched)', xMm: 3.0, yMm: 44.0, zMm: -8.0, direction: 'up', aliases: ['GND', 'BLACK'], required: true },
+      { name: '-', pinNumber: 2, role: 'power', signal: 'Pump negative (black, switched by the driver — not a ground net)', xMm: 3.0, yMm: 44.0, zMm: -8.0, direction: 'up', aliases: ['GND', 'BLACK'], required: true },
     ],
     features: [
       { name: 'motor_housing', type: 'cylinder', dimensions: [12.0, 28.0, 0], position: [0, 26.0, 0], color: '#0f172a' },
@@ -467,7 +467,7 @@ export const MOTION_PRESETS: Record<string, CadComponentSpec> = {
     bodyColor: '#334155',
     pins: [
       { name: 'COIL_A', pinNumber: 1, role: 'power', signal: 'Coil terminal A (+12 V)', xMm: -6.0, yMm: 26.0, zMm: -9.0, direction: 'up', aliases: ['+', 'RED'], required: true },
-      { name: 'COIL_B', pinNumber: 2, role: 'ground', signal: 'Coil terminal B (switched)', xMm: 6.0, yMm: 26.0, zMm: -9.0, direction: 'up', aliases: ['-', 'BLACK'], required: true },
+      { name: 'COIL_B', pinNumber: 2, role: 'power', signal: 'Coil terminal B (switched by the driver — not a ground net)', xMm: 6.0, yMm: 26.0, zMm: -9.0, direction: 'up', aliases: ['-', 'BLACK'], required: true },
     ],
     features: [
       { name: 'steel_frame', type: 'box', dimensions: [32.0, 27.0, 22.0], position: [0, 13.5, 0], color: '#475569' },

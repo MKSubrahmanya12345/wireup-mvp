@@ -331,7 +331,7 @@ export function listLinkedSpecs(components: ComponentDefinition[] = SEED_COMPONE
 
 export interface CadLinkIssue {
   componentId: string;
-  kind: 'missing-anchor' | 'extra-anchor' | 'orphan-preset' | 'role-mismatch';
+  kind: 'missing-anchor' | 'extra-anchor' | 'orphan-preset' | 'role-mismatch' | 'pin-role-mismatch' | 'alias-collision';
   detail: string;
 }
 
@@ -358,6 +358,60 @@ function normalisePinName(name: string): string {
  * registry aliases). A drift here produces confidently-wrong 3D wiring, so it
  * is reported rather than silently tolerated.
  */
+/**
+ * Registry pin types whose CAD role is legitimately one-to-many.
+ *
+ * An `enable` pin is the clear case: the L298N's ENA takes a PWM duty cycle for
+ * speed, while the TB6612's STBY is a plain logic gate. Both are `enable` in the
+ * registry, and forcing a single CAD role would be false precision. Anything not
+ * listed here must match `cadPinRole()` exactly.
+ */
+const CAD_ROLE_TOLERANCE: Partial<Record<ComponentPin['type'], PinSignalRole[]>> = {
+  enable: ['control', 'pwm', 'digital'],
+  control: ['control', 'digital'],
+  signal: ['digital', 'analog'],
+  motor: ['power'],
+};
+
+function cadRoleAcceptable(componentPin: ComponentPin, actual: PinSignalRole): boolean {
+  if (actual === cadPinRole(componentPin)) return true;
+  return (CAD_ROLE_TOLERANCE[componentPin.type] ?? []).includes(actual);
+}
+
+/**
+ * Aliases that resolve to more than one part.
+ *
+ * `matchComponent()` returns on the first exact alias hit, so a duplicated alias
+ * means catalog *file order* silently decides which part a user gets. That is
+ * how "piezo buzzer" could resolve to the active buzzer (digitalWrite) or the
+ * passive one (tone()) — different firmware, no warning. Detected here because
+ * this is the module that already owns cross-catalog consistency.
+ */
+export function findAliasCollisions(components: ComponentDefinition[] = SEED_COMPONENTS): CadLinkIssue[] {
+  const byTerm = new Map<string, Set<string>>();
+  for (const component of components) {
+    for (const term of [component.name, ...(component.aliases ?? [])]) {
+      const key = term.toLowerCase().trim();
+      if (!key) continue;
+      const bucket = byTerm.get(key) ?? new Set<string>();
+      bucket.add(component.id);
+      byTerm.set(key, bucket);
+    }
+  }
+
+  const issues: CadLinkIssue[] = [];
+  for (const [term, ids] of byTerm) {
+    if (ids.size < 2) continue;
+    const owners = [...ids].sort();
+    issues.push({
+      componentId: owners[0],
+      kind: 'alias-collision',
+      detail: `alias "${term}" also resolves to ${owners.slice(1).join(', ')} — catalog order would decide the match`,
+    });
+  }
+  return issues;
+}
+
 export function auditCatalogCadLink(components: ComponentDefinition[] = SEED_COMPONENTS): CadLinkAudit {
   const index = componentIndex(components);
   const issues: CadLinkIssue[] = [];
@@ -414,6 +468,17 @@ export function auditCatalogCadLink(components: ComponentDefinition[] = SEED_COM
       }
     }
 
+    for (const componentPin of component.pins) {
+      const anchor = presetSpec.pins.find((entry) => normalisePinName(entry.name) === normalisePinName(componentPin.name));
+      if (anchor && !cadRoleAcceptable(componentPin, anchor.role)) {
+        issues.push({
+          componentId: presetId,
+          kind: 'pin-role-mismatch',
+          detail: `pin "${componentPin.name}": registry type "${componentPin.type}" implies CAD role "${cadPinRole(componentPin)}", model says "${anchor.role}"`,
+        });
+      }
+    }
+
     const expectedRole = cadRoleForCategory(component.category);
     if (presetSpec.category !== expectedRole) {
       issues.push({
@@ -430,6 +495,8 @@ export function auditCatalogCadLink(components: ComponentDefinition[] = SEED_COM
   for (const component of components) {
     if (!COMPONENT_PRESETS[component.id]) derived += 1;
   }
+
+  issues.push(...findAliasCollisions(components));
 
   return {
     totalCatalogComponents: components.length,

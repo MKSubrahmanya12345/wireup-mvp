@@ -30,7 +30,7 @@ export const POWER: ComponentDefinition[] = [
       pin('-', 'ground', 'output', { required: true, signal: 'Negative terminal / system ground reference', aliases: ['V-', 'NEG', 'BLACK', 'GND'] }),
     ],
     keywords: ['battery', 'lipo', 'li-po', '7.4v', '2s', 'power supply', 'pack'],
-    aliases: ['lipo', 'lipo battery', '2s lipo', '7.4v battery', 'battery pack'],
+    aliases: ['lipo', 'lipo battery', '2s lipo', '7.4v battery'],
     metadata: {
       electrical: true,
       cells: 2,

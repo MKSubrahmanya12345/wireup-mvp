@@ -72,12 +72,12 @@ function arduinoUnoPins(): CadPinDefinition[] {
   };
 
   // Digital header (two physical segments on the Uno) including AREF and its adjacent ground pin.
-  add('AREF', 'control', -24.3, 20.5, 'Analog reference');
+  add('AREF', 'analog', -24.3, 20.5, 'Analog reference');
   add('GND.1', 'ground', -24.3, 17.96, 'Digital-header ground', true);
   UNO_DIGITAL.forEach((name, index) => add(name, UNO_PWM.has(name) ? 'pwm' : 'digital', -24.3, 15.42 - index * 2.54, `Digital I/O ${name}`));
   // Power header. Distinct ground names match the named-anchor contract in the GLB.
   [
-    ['IOREF', 'control', 20.5],
+    ['IOREF', 'power', 20.5],
     ['RESET', 'control', 17.96],
     ['3V3', 'power', 15.42],
     ['5V', 'power', 12.88],
