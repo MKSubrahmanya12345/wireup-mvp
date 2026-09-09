@@ -5,7 +5,7 @@
  */
 
 import type { CadComponentSpec, CadFeature, CadPinDefinition } from './types';
-import { Triangle, createBoxTriangles, createCylinderTriangles } from './stl-generator';
+import { Triangle, createBoxTriangles, createFeatureTriangles, createPinTriangles } from './stl-generator';
 
 interface MeshPart {
   name: string;
@@ -74,25 +74,25 @@ export function buildMeshParts(spec: CadComponentSpec): {
     roughnessFactor: 0.8,
   });
 
-  // 1. PCB Mesh Part
-  parts.push({
-    name: 'pcb_body',
-    materialIndex: 0,
-    triangles: createBoxTriangles(0, heightMm / 2, 0, widthMm, heightMm, lengthMm),
-  });
+  // 1. PCB / housing mesh part. Discrete parts model the whole package through features.
+  if (spec.bodyStyle !== 'none') {
+    parts.push({
+      name: 'pcb_body',
+      materialIndex: 0,
+      triangles: createBoxTriangles(0, heightMm / 2, 0, widthMm, heightMm, lengthMm),
+    });
+  }
 
-  // 2. Pins & Headers
+  // 2. Pins & Headers. Geometry now respects each pin's declared anchor and direction;
+  // older output always put pins vertically above the PCB, which made front/back/side
+  // connectors visibly wrong even when the named anchor nodes were correct.
   const pinMetalTriangles: Triangle[] = [];
   const pinCollarTriangles: Triangle[] = [];
 
   for (const pin of spec.pins) {
-    const pinSize = 0.64;
-    const pinLength = 6.0;
-    const pinCy = pin.direction === 'down' ? -(pinLength / 2) : heightMm + pinLength / 2;
-    pinMetalTriangles.push(...createBoxTriangles(pin.xMm, pinCy, pin.zMm, pinSize, pinLength, pinSize));
-
-    const collarCy = pin.direction === 'down' ? -1.0 : heightMm + 1.0;
-    pinCollarTriangles.push(...createBoxTriangles(pin.xMm, collarCy, pin.zMm, 2.4, 2.0, 2.4));
+    const { metal, collars } = createPinTriangles(pin, spec.pinStyle ?? 'headers');
+    pinMetalTriangles.push(...metal);
+    pinCollarTriangles.push(...collars);
   }
 
   if (pinMetalTriangles.length > 0) {
@@ -114,8 +114,6 @@ export function buildMeshParts(spec: CadComponentSpec): {
   // 3. Surface Features
   for (let i = 0; i < spec.features.length; i++) {
     const feat = spec.features[i];
-    const [fx, fy, fz] = feat.position;
-    const [d1, d2, d3] = feat.dimensions;
 
     const featColor = feat.color ? hexToRgba(feat.color) : [0.7, 0.7, 0.75, 1.0];
     const isMetal = feat.type === 'heatsink' || feat.type === 'cylinder';
@@ -129,17 +127,10 @@ export function buildMeshParts(spec: CadComponentSpec): {
       roughnessFactor: isMetal ? 0.3 : isGlass ? 0.1 : 0.7,
     });
 
-    let featTriangles: Triangle[] = [];
-    if (feat.type === 'cylinder' || feat.type === 'lens') {
-      featTriangles = createCylinderTriangles(fx, fy, fz, d1, d2, 20);
-    } else {
-      featTriangles = createBoxTriangles(fx, fy, fz, d1, d2, d3);
-    }
-
     parts.push({
       name: feat.name,
       materialIndex: matIdx,
-      triangles: featTriangles,
+      triangles: createFeatureTriangles(feat),
     });
   }
 

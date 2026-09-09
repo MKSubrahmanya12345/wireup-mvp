@@ -28,12 +28,20 @@ type Doubt = {
   confidence: number;
 };
 
+type CadParseProvenance = {
+  mode: 'curated' | 'url' | 'heuristic' | 'curated+url';
+  matchedComponentId?: string;
+  fetchedUrl?: string;
+  sources?: Array<{ label: string; url: string; note?: string }>;
+  warnings?: string[];
+};
+
 const initialNodes: GraphNode[] = [
   {
     id: 'intent',
     kind: 'intent',
-    label: 'Answer paper reviewers',
-    detail: 'Create a point-by-point response that protects the claim and earns trust.',
+    label: 'Ship a verified hardware build',
+    detail: 'Turn a user brief into a traceable BOM, wiring plan, firmware and CAD assembly that can survive bench review.',
     owner: 'YOU',
     status: 'complete',
     position: { left: 7, top: 39 },
@@ -41,8 +49,8 @@ const initialNodes: GraphNode[] = [
   {
     id: 'extract',
     kind: 'reasoning',
-    label: 'Extract reviewer claims',
-    detail: 'Separate requests, objections, evidence gaps and hidden assumptions.',
+    label: 'Parse electrical intent',
+    detail: 'Separate functional requirements, selected parts, power rails, communication buses and missing datasheets.',
     owner: 'AI',
     status: 'complete',
     position: { left: 29, top: 18 },
@@ -50,8 +58,8 @@ const initialNodes: GraphNode[] = [
   {
     id: 'stakes',
     kind: 'evidence',
-    label: 'Map real-world stakes',
-    detail: 'What changes if this claim is accepted, misunderstood or ignored?',
+    label: 'Check bench risks',
+    detail: 'Find polarity mistakes, current overloads, level-shift gaps and mechanical fit risks before wiring.',
     owner: 'AI',
     status: 'active',
     position: { left: 29, top: 61 },
@@ -59,8 +67,8 @@ const initialNodes: GraphNode[] = [
   {
     id: 'doubts',
     kind: 'reasoning',
-    label: 'Resolve open doubts',
-    detail: 'Keep asking until the answer is supported, scoped and honestly uncertain.',
+    label: 'Resolve component doubts',
+    detail: 'Ask for the exact module, datasheet or photo when a generic catalog match would be unsafe.',
     owner: 'AI',
     status: 'active',
     position: { left: 53, top: 18 },
@@ -68,8 +76,8 @@ const initialNodes: GraphNode[] = [
   {
     id: 'draft',
     kind: 'human',
-    label: 'Draft response sections',
-    detail: 'AI proposes. You choose the wording and add lived research context.',
+    label: 'Approve BOM + wiring',
+    detail: 'AI proposes the build; you approve substitutions, pin assignments and external supply assumptions.',
     owner: 'YOU',
     status: 'queued',
     position: { left: 53, top: 61 },
@@ -77,8 +85,8 @@ const initialNodes: GraphNode[] = [
   {
     id: 'verify',
     kind: 'evidence',
-    label: 'Evidence + countercheck',
-    detail: 'Test the response against sources, reviewer intent and known failure modes.',
+    label: 'Validate code + simulation',
+    detail: 'Compile firmware, export Wokwi/Velxio assets and cross-check CAD anchors against the wiring graph.',
     owner: 'AI',
     status: 'queued',
     position: { left: 76, top: 39 },
@@ -86,8 +94,8 @@ const initialNodes: GraphNode[] = [
   {
     id: 'publish',
     kind: 'output',
-    label: 'Submit with confidence',
-    detail: 'A human-approved answer with a traceable decision history.',
+    label: 'Export bench package',
+    detail: 'A human-approved project bundle with parts, wiring, firmware, simulation files and CAD provenance.',
     owner: 'YOU',
     status: 'queued',
     position: { left: 89, top: 39 },
@@ -97,33 +105,33 @@ const initialNodes: GraphNode[] = [
 const initialDoubts: Doubt[] = [
   {
     id: 'doubt-1',
-    tag: 'CLAIM SCOPE',
-    question: 'Does reviewer 2 mean the method is invalid, or only that the boundary is underspecified?',
-    context: 'Connected to “Extract reviewer claims” · 2 sources attached',
+    tag: 'POWER BUDGET',
+    question: 'Do the selected motor drivers cover stall current, or only the no-load current in the brief?',
+    context: 'Connected to “Check bench risks” · needs motor datasheet',
     priority: 'high',
     confidence: 62,
   },
   {
     id: 'doubt-2',
-    tag: 'EVIDENCE',
-    question: 'Which result actually supports the causal language in paragraph 4?',
-    context: 'Connected to “Map real-world stakes” · needs your reading',
+    tag: 'CAD SOURCE',
+    question: 'Is this module using a reviewed 3D asset, a datasheet-shaped fallback, or a plain registry-derived body?',
+    context: 'Connected to “Component assembly studio” · provenance visible',
     priority: 'high',
     confidence: 48,
   },
   {
     id: 'doubt-3',
-    tag: 'HUMAN CONTEXT',
-    question: 'What would a practitioner do differently if this finding is true?',
-    context: 'Connected to “Draft response sections” · no grounded answer yet',
+    tag: 'LEVEL SHIFT',
+    question: 'Does a 5 V sensor output need a divider before reaching a 3.3 V ESP32 input?',
+    context: 'Connected to “Approve BOM + wiring” · board-specific check',
     priority: 'medium',
     confidence: 35,
   },
   {
     id: 'doubt-4',
-    tag: 'TERMINOLOGY',
-    question: 'Are “robustness” and “reliability” being used as interchangeable terms here?',
-    context: 'Connected to “Evidence + countercheck” · glossary candidate',
+    tag: 'POLARITY',
+    question: 'Are discrete LEDs, diodes and electrolytic capacitors oriented correctly in the wiring plan?',
+    context: 'Connected to “Validate code + simulation” · polarity-sensitive parts',
     priority: 'low',
     confidence: 71,
   },
@@ -132,26 +140,26 @@ const initialDoubts: Doubt[] = [
 const initialStakes = [
   {
     id: 'stake-1',
-    name: 'Reader trust',
-    summary: 'A reviewer should be able to see exactly what changed and why the claim still holds.',
+    name: 'Bench safety',
+    summary: 'Power, polarity and current assumptions must be explicit before a real board is wired.',
     confidence: 88,
-    evidence: ['response structure', 'scope note', 'reviewer 2'],
+    evidence: ['power budget', 'polarity checks', 'driver ratings'],
     color: 'violet',
   },
   {
     id: 'stake-2',
-    name: 'Scientific integrity',
-    summary: 'Do not turn a plausible interpretation into a stronger causal statement than the data supports.',
+    name: 'Model honesty',
+    summary: 'A parametric fallback is useful, but it must not be labeled like a reviewed manufacturer CAD asset.',
     confidence: 79,
-    evidence: ['experiment 03', 'methods section', 'open doubt #2'],
+    evidence: ['asset tier', 'datasheet source', 'anchor audit'],
     color: 'orange',
   },
   {
     id: 'stake-3',
-    name: 'Practical consequence',
-    summary: 'Make the real-world decision this work informs visible, including who bears the cost of being wrong.',
+    name: 'Build reproducibility',
+    summary: 'The downloaded bundle should explain which part data came from registry entries, datasheets or reviewed CAD.',
     confidence: 64,
-    evidence: ['field note', 'stakeholder map'],
+    evidence: ['BOM', 'source links', 'export manifest'],
     color: 'blue',
   },
 ];
@@ -160,10 +168,10 @@ const navGroups: { label: string; items: { id: ViewId; label: string; icon: stri
   {
     label: 'Workspace',
     items: [
-      { id: 'overview', label: 'Mission control', icon: 'grid' },
-      { id: 'graph', label: 'Decision graph', icon: 'nodes' },
-      { id: 'doubts', label: 'Doubt stack', icon: 'question', count: '07' },
-      { id: 'stakes', label: 'Real-world stakes', icon: 'target' },
+      { id: 'overview', label: 'Hardware review', icon: 'grid' },
+      { id: 'graph', label: 'Build graph', icon: 'nodes' },
+      { id: 'doubts', label: 'Doubt stack', icon: 'question', count: '04' },
+      { id: 'stakes', label: 'Build stakes', icon: 'target' },
     ],
   },
   {
@@ -275,7 +283,7 @@ function DoubtStack({ doubts, resolved, onResolve, onOpen }: { doubts: Doubt[]; 
         </div>
         <span className="control-count-pill">{doubts.length - resolved.length} open</span>
       </div>
-      <p className="control-card__intro">The agent does not paper over uncertainty. Every answer makes the graph more grounded.</p>
+      <p className="control-card__intro">The agent does not hide uncertainty. Every resolved question tightens the electrical, firmware and CAD plan.</p>
       <div className="control-doubt-list">
         {visible.map((doubt) => (
           <div className="control-doubt" key={doubt.id}>
@@ -322,25 +330,25 @@ function OverviewView({ nodes, selectedId, setSelectedId, doubts, resolved, onRe
   return (
     <>
       <div className="control-hero-row">
-        <SectionHeading eyebrow="CONTROL PLANE / 01" title="Mission control" description="A human-directed operating system for messy, high-stakes work." />
-        <div className="control-hero-status"><StatusDot status="live" /><div><strong>Learning loop active</strong><span>Last update 2 min ago · 4 decisions recorded</span></div></div>
+        <SectionHeading eyebrow="CONTROL PLANE / 01" title="Hardware mission control" description="A human-directed review desk for BOM choices, datasheets, wiring, firmware and CAD assets." />
+        <div className="control-hero-status"><StatusDot status="live" /><div><strong>CAD + validation loop active</strong><span>Last update 2 min ago · 4 checks recorded</span></div></div>
       </div>
       <PromptComposer onSubmit={(prompt) => addNode(prompt)} />
       <div className="control-metrics">
-        <MetricCard label="Grounded concepts" value="12" detail="+3 this session" trend="↑ 33%" tone="violet" />
+        <MetricCard label="Catalog parts" value="86" detail="all previewable" trend="audited" tone="violet" />
         <MetricCard label="Open doubts" value={String(doubts.length - resolved.length).padStart(2, '0')} detail="2 need your input" trend="attention" tone="orange" />
-        <MetricCard label="Graph coverage" value="87%" detail="of current objective" trend="↑ 12%" tone="blue" />
+        <MetricCard label="CAD coverage" value="100%" detail="reference + parametric" trend="↑" tone="blue" />
         <MetricCard label="Human gates" value="04" detail="2 awaiting review" trend="active" tone="green" />
       </div>
       <div className="control-overview-grid">
         <section className="control-card control-graph-card">
           <div className="control-card__heading">
-            <div><div className="control-card__eyebrow">LIVE OBJECTIVE / PAPER-RESPONSE-01</div><h2>Answer paper reviewers</h2></div>
+            <div><div className="control-card__eyebrow">LIVE OBJECTIVE / HARDWARE-BUILD-01</div><h2>Ship a verified hardware build</h2></div>
             <button type="button" className="control-icon-button" onClick={() => openView('graph')} aria-label="Open graph"><Icon name="nodes" size={16} /></button>
           </div>
           <div className="control-graph-summary"><span><StatusDot status="active" /> AI is mapping consequences</span><span>7 nodes · 6 edges · v0.4</span></div>
           <GraphCanvas nodes={nodes} selectedId={selectedId} onSelect={setSelectedId} compact />
-          <div className="control-graph-card__footer"><span><span className="control-avatar control-avatar--you">Y</span> Next gate: you review the claim boundary</span><button type="button" className="control-text-button" onClick={() => openView('graph')}>Edit graph <Icon name="arrow" size={12} /></button></div>
+          <div className="control-graph-card__footer"><span><span className="control-avatar control-avatar--you">Y</span> Next gate: you approve datasheet-backed part substitutions</span><button type="button" className="control-text-button" onClick={() => openView('graph')}>Edit graph <Icon name="arrow" size={12} /></button></div>
         </section>
         <DoubtStack doubts={doubts} resolved={resolved} onResolve={onResolve} onOpen={() => openView('doubts')} />
       </div>
@@ -350,9 +358,9 @@ function OverviewView({ nodes, selectedId, setSelectedId, doubts, resolved, onRe
           <div className="control-stakes-mini-grid">{initialStakes.map((stake) => <StakeMiniCard key={stake.id} stake={stake} />)}</div>
         </section>
         <section className="control-card control-learning-card">
-          <div className="control-card__eyebrow">LEARNING TRACE / RECENT</div><h2>What changed in the model of this work?</h2>
-          <div className="control-learning-item"><span className="control-learning-icon control-learning-icon--violet"><Icon name="spark" size={14} /></span><div><strong>Scope is a first-class decision</strong><p>The agent learned that “valid” and “generalizable” are different claims here.</p></div><span>2m</span></div>
-          <div className="control-learning-item"><span className="control-learning-icon control-learning-icon--orange"><Icon name="question" size={14} /></span><div><strong>One doubt became a task</strong><p>Find a citation for causal language in paragraph 4.</p></div><span>8m</span></div>
+          <div className="control-card__eyebrow">LEARNING TRACE / RECENT</div><h2>What changed in the model of this build?</h2>
+          <div className="control-learning-item"><span className="control-learning-icon control-learning-icon--violet"><Icon name="spark" size={14} /></span><div><strong>Package shape matters</strong><p>Discrete LEDs and resistors now render as real packages instead of fake module boxes.</p></div><span>2m</span></div>
+          <div className="control-learning-item"><span className="control-learning-icon control-learning-icon--orange"><Icon name="question" size={14} /></span><div><strong>One doubt became a check</strong><p>Confirm datasheet dimensions before claiming a model is more than parametric.</p></div><span>8m</span></div>
           <button type="button" className="control-card__footer-link" onClick={() => openView('activity')}>See full activity log <Icon name="arrow" size={13} /></button>
         </section>
       </div>
@@ -377,9 +385,9 @@ function GraphView({ nodes, selectedId, setSelectedId, addNode }: Pick<ViewProps
   const selected = nodes.find((node) => node.id === selectedId) ?? nodes[0];
   return (
     <>
-      <div className="control-hero-row"><SectionHeading eyebrow="WORKSPACE / DECISION GRAPH" title="Editable decision graph" description="The AI proposes a durable path. You can move, rename or stop any step before it becomes action." /><button type="button" className="control-primary-button" onClick={() => addNode('New human-reviewed step')}><Icon name="plus" size={15} /> Add step</button></div>
+      <div className="control-hero-row"><SectionHeading eyebrow="WORKSPACE / DECISION GRAPH" title="Editable hardware graph" description="The AI proposes a build path. You can move, rename or stop any electrical/CAD step before it becomes action." /><button type="button" className="control-primary-button" onClick={() => addNode('New human-reviewed hardware step')}><Icon name="plus" size={15} /> Add step</button></div>
       <div className="control-graph-layout">
-        <section className="control-card control-graph-card control-graph-card--full"><div className="control-card__heading"><div><div className="control-card__eyebrow">DSA / DIRECTED STATE GRAPH · VERSION 0.4</div><h2>Answer paper reviewers</h2></div><span className="control-version-pill">autosaved 2m ago</span></div><div className="control-graph-summary"><span><StatusDot status="active" /> 3 AI steps · 3 human gates · 1 output</span><span>Click any node to inspect</span></div><GraphCanvas nodes={nodes} selectedId={selectedId} onSelect={setSelectedId} /></section>
+        <section className="control-card control-graph-card control-graph-card--full"><div className="control-card__heading"><div><div className="control-card__eyebrow">DSA / DIRECTED STATE GRAPH · VERSION 0.4</div><h2>Ship a verified hardware build</h2></div><span className="control-version-pill">autosaved 2m ago</span></div><div className="control-graph-summary"><span><StatusDot status="active" /> 3 AI steps · 3 human gates · 1 output</span><span>Click any node to inspect</span></div><GraphCanvas nodes={nodes} selectedId={selectedId} onSelect={setSelectedId} /></section>
         <aside className="control-card control-inspector"><div className="control-card__eyebrow">NODE INSPECTOR</div><div className="control-inspector__title"><span className={`control-inspector__icon control-inspector__icon--${selected.kind}`}><Icon name={selected.owner === 'YOU' ? 'target' : 'spark'} size={17} /></span><div><span>{selected.owner === 'YOU' ? 'Human gate' : 'AI reasoning'}</span><h2>{selected.label}</h2></div></div><label className="control-field-label">Purpose</label><p className="control-inspector__detail">{selected.detail}</p><label className="control-field-label">State</label><div className="control-state-select"><StatusDot status={selected.status} /><select value={selected.status} onChange={() => undefined} aria-label="Node state"><option value="complete">Complete</option><option value="active">In progress</option><option value="queued">Queued</option><option value="blocked">Blocked by doubt</option></select></div><div className="control-inspector__divider" /><div className="control-inspector__row"><span>Evidence attached</span><strong>{selected.kind === 'evidence' ? '03' : '01'}</strong></div><div className="control-inspector__row"><span>Open doubts</span><strong className="is-orange">{selected.id === 'doubts' ? '04' : '01'}</strong></div><button type="button" className="control-secondary-button">Edit node details <Icon name="arrow" size={13} /></button></aside>
       </div>
       <div className="control-graph-note"><span className="control-note-icon"><Icon name="spark" size={14} /></span><div><strong>Why a graph, not a chat history?</strong><p>Every claim, doubt, action and human decision becomes a named state that can be revisited. The graph is the memory.</p></div><span className="control-note-code">state → evidence → action</span></div>
@@ -415,16 +423,48 @@ function StakesView() {
 const CAD_TIER_LABEL: Record<string, string> = {
   reference: 'reviewed assembly',
   preset: 'authored CAD spec',
-  derived: 'derived from registry',
+  derived: 'datasheet-shaped fallback',
 };
 
 const CAD_TIER_DETAIL: Record<string, string> = {
   reference: 'GLB with real part topology',
   preset: 'measured envelope + datasheet anchors',
-  derived: 'registry pins laid out on a generic body',
+  derived: 'registry pins with package-aware parametric geometry',
 };
 
 const CAD_CATEGORY_ORDER = ['controller', 'driver', 'actuator', 'sensor', 'communication', 'display', 'power', 'input', 'passive', 'prototyping', 'other'];
+
+function estimateCadBounds(spec: CadComponentSpec): { widthMm: number; lengthMm: number; heightMm: number } {
+  let minX = Infinity; let maxX = -Infinity;
+  let minY = Infinity; let maxY = -Infinity;
+  let minZ = Infinity; let maxZ = -Infinity;
+  const includeBox = (cx: number, cy: number, cz: number, sx: number, sy: number, sz: number) => {
+    minX = Math.min(minX, cx - sx / 2); maxX = Math.max(maxX, cx + sx / 2);
+    minY = Math.min(minY, cy - sy / 2); maxY = Math.max(maxY, cy + sy / 2);
+    minZ = Math.min(minZ, cz - sz / 2); maxZ = Math.max(maxZ, cz + sz / 2);
+  };
+  if (spec.bodyStyle !== 'none') {
+    includeBox(0, spec.dimensions.heightMm / 2, 0, spec.dimensions.widthMm, spec.dimensions.heightMm, spec.dimensions.lengthMm);
+  }
+  for (const feature of spec.features) {
+    const [d1, d2, d3] = feature.dimensions;
+    const sx = feature.type === 'cylinder' || feature.type === 'lens' ? d1 * 2 : feature.type === 'led' ? Math.max(d1, d3) : d1;
+    const sy = feature.type === 'led' ? d2 : feature.type === 'lens' ? Math.max(d1, d2) : d2;
+    const sz = feature.type === 'cylinder' || feature.type === 'lens' ? d1 * 2 : feature.type === 'led' ? Math.max(d1, d3) : d3;
+    includeBox(feature.position[0], feature.position[1], feature.position[2], sx, sy, Math.max(sz, 0.2));
+  }
+  for (const pin of spec.pins) {
+    includeBox(pin.xMm, pin.yMm, pin.zMm, 1, 1, 1);
+    const pinLength = spec.pinStyle === 'leads' ? 10.5 : spec.pinStyle === 'headers' || !spec.pinStyle ? 5.2 : 0;
+    const dx = pin.direction === 'left' ? -1 : pin.direction === 'right' ? 1 : 0;
+    const dy = pin.direction === 'down' ? -1 : pin.direction === 'up' || !pin.direction ? 1 : 0;
+    const dz = pin.direction === 'back' ? -1 : pin.direction === 'front' ? 1 : 0;
+    if (pinLength > 0) includeBox(pin.xMm + dx * pinLength, pin.yMm + dy * pinLength, pin.zMm + dz * pinLength, 1, 1, 1);
+  }
+  if (!Number.isFinite(minX)) return spec.dimensions;
+  const round = (value: number) => Number(Math.max(value, 0).toFixed(1));
+  return { widthMm: round(maxX - minX), heightMm: round(maxY - minY), lengthMm: round(maxZ - minZ) };
+}
 
 function CadHelperView() {
   /*
@@ -463,9 +503,11 @@ function CadHelperView() {
   const [wireframe, setWireframe] = useState(false);
   const [showPins, setShowPins] = useState(false);
   const [rawText, setRawText] = useState('');
+  const [parseProvenance, setParseProvenance] = useState<CadParseProvenance | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const referenceAsset = getCadReferenceAsset(spec);
+  const visualBounds = useMemo(() => estimateCadBounds(spec), [spec]);
 
   const selectPreset = (key: string) => {
     const entry = specForCatalogComponent(key);
@@ -474,6 +516,7 @@ function CadHelperView() {
     setTier(entry.tier);
     setSpec(JSON.parse(JSON.stringify(entry.spec)));
     setNotice('');
+    setParseProvenance(null);
   };
 
   const parseDatasheet = async () => {
@@ -488,8 +531,17 @@ function CadHelperView() {
       const data = await response.json();
       if (data.ok && data.spec) {
         setSpec(data.spec);
-        setTier('derived');
-        setNotice('Datasheet geometry extracted. This uses the parametric fallback until a reviewed assembly is attached.');
+        setTier(data.tier ?? 'derived');
+        setParseProvenance(data.provenance ?? null);
+        const sourceCount = data.provenance?.sources?.length ?? 0;
+        const mode = data.provenance?.mode === 'curated+url'
+          ? 'fetched URL + matched curated datasheet'
+          : data.provenance?.mode === 'curated'
+            ? 'matched curated online datasheet data'
+            : data.provenance?.mode === 'url'
+              ? 'fetched and parsed the URL'
+              : 'parsed pasted text with heuristics';
+        setNotice(`Datasheet geometry extracted (${mode}${sourceCount ? ` · ${sourceCount} source${sourceCount === 1 ? '' : 's'}` : ''}). Parametric until a reviewed assembly is attached.`);
       } else {
         setNotice(data.error ?? 'Could not parse this datasheet.');
       }
@@ -581,22 +633,34 @@ function CadHelperView() {
               ? `Registry ↔ CAD in sync · ${linkAudit.reference} reviewed · ${linkAudit.preset} authored · ${linkAudit.derived} derived`
               : `${linkAudit.issues.length} registry ↔ CAD mismatches — anchors would not match the wiring plan`}
           </div>
-          <div className="control-cad-or">or paste a datasheet excerpt</div>
+          <div className="control-cad-or">or lookup / paste datasheet data</div>
           <textarea
             className="control-textarea"
             value={rawText}
             onChange={(event) => setRawText(event.target.value)}
-            placeholder="Dimensions: 45 x 20 x 1.6 mm… Pin 1: VCC…"
+            placeholder="Paste a part name, URL, or excerpt: e.g. 5mm LED, HC-SR04, L298N, or “Dimensions: 45 × 20 × 15 mm… Pin 1: VCC…”"
             rows={5}
           />
           <button type="button" className="control-secondary-button control-secondary-button--wide" onClick={parseDatasheet} disabled={busy || !rawText.trim()}>
-            {busy ? 'Extracting…' : 'Parse datasheet'} <Icon name="arrow" size={13} />
+            {busy ? 'Checking sources…' : 'Lookup / parse datasheet'} <Icon name="arrow" size={13} />
           </button>
+          {parseProvenance ? (
+            <div className="control-cad-sources">
+              <div><strong>{parseProvenance.mode.replace('+', ' + ')}</strong>{parseProvenance.matchedComponentId ? <code>{parseProvenance.matchedComponentId}</code> : null}</div>
+              {(parseProvenance.sources ?? []).slice(0, 3).map((source) => (
+                <a href={source.url} target="_blank" rel="noreferrer" key={source.url} title={source.note ?? source.label}>{source.label}</a>
+              ))}
+              {(parseProvenance.warnings ?? []).map((warning) => <span className="is-warning" key={warning}>{warning}</span>)}
+            </div>
+          ) : null}
           <div className="control-cad-specs">
             <div><span>catalog id</span><code>{spec.id}</code></div>
-            <div><span>assembly bounds</span><code>{spec.dimensions.widthMm} × {spec.dimensions.lengthMm} × {spec.dimensions.heightMm} mm</code></div>
+            <div><span>visual bounds</span><code>{visualBounds.widthMm} × {visualBounds.lengthMm} × {visualBounds.heightMm} mm</code></div>
+            <div><span>body / PCB datum</span><code>{spec.dimensions.widthMm} × {spec.dimensions.lengthMm} × {spec.dimensions.heightMm} mm</code></div>
             <div><span>pin anchors</span><code>{spec.pins.length} mapped</code></div>
             <div><span>asset tier</span><code>{tier === 'reference' ? 'reference / multi-mesh' : tier === 'preset' ? 'authored / parametric' : 'derived / parametric'}</code></div>
+            <div><span>package style</span><code>{spec.bodyStyle ?? 'pcb'} · {spec.pinStyle ?? 'headers'}</code></div>
+            <div><span>data sources</span><code>{spec.datasheetSources?.length ? `${spec.datasheetSources.length} linked` : 'registry / local spec'}</code></div>
           </div>
         </section>
 
@@ -642,10 +706,10 @@ function RepositoriesView({ openView }: { openView: (view: ViewId) => void }) {
 
 function ActivityView() {
   const events = [
-    { time: '2 min ago', kind: 'LEARNED', title: 'Scope became a named stake', detail: 'Linked “reader trust” to reviewer 2 and updated the graph edge.', tone: 'violet' },
-    { time: '8 min ago', kind: 'HUMAN INPUT', title: 'You added a field note', detail: '“Practitioners use this as a screening heuristic, not a diagnosis.”', tone: 'orange' },
-    { time: '14 min ago', kind: 'GRAPH', title: 'AI branched an evidence check', detail: 'Created a new task from the causal-language doubt.', tone: 'blue' },
-    { time: '21 min ago', kind: 'SYSTEM', title: 'Objective initialized', detail: 'Answer paper reviewers · 7 nodes · 4 doubts · 3 stakes.', tone: 'green' },
+    { time: '2 min ago', kind: 'LEARNED', title: 'Discrete package profile added', detail: '5 mm LEDs, RGB LEDs, resistors and capacitors no longer use generic module boxes.', tone: 'violet' },
+    { time: '8 min ago', kind: 'HUMAN INPUT', title: 'Datasheet lookup requested', detail: 'Admin intake can resolve known part names, pasted excerpts or fetched URLs.', tone: 'orange' },
+    { time: '14 min ago', kind: 'GRAPH', title: 'CAD anchor audit ran', detail: 'Every catalog pin still resolves to a named CAD anchor before export.', tone: 'blue' },
+    { time: '21 min ago', kind: 'SYSTEM', title: 'Objective initialized', detail: 'Verified hardware build · 7 nodes · 4 doubts · 3 stakes.', tone: 'green' },
   ];
   return <><div className="control-hero-row"><SectionHeading eyebrow="OBSERVE / PROVENANCE" title="Activity log" description="A readable record of what the assistant proposed, what you changed and what the system learned." /><div className="control-repo-status"><StatusDot status="ok" /><span>event stream healthy</span></div></div><div className="control-activity-layout"><section className="control-card control-activity-card"><div className="control-card__heading"><div><div className="control-card__eyebrow">TODAY · 4 EVENTS</div><h2>Decision history</h2></div><button type="button" className="control-secondary-button">Export JSON <Icon name="arrow" size={13} /></button></div><div className="control-timeline">{events.map((event) => <div className="control-timeline-item" key={event.time}><div className={`control-timeline-icon control-timeline-icon--${event.tone}`}><Icon name={event.kind === 'HUMAN INPUT' ? 'target' : event.kind === 'GRAPH' ? 'nodes' : 'spark'} size={14} /></div><div className="control-timeline-body"><div><span className="control-card__eyebrow">{event.kind}</span><time>{event.time}</time></div><h3>{event.title}</h3><p>{event.detail}</p></div></div>)}</div></section><aside className="control-card control-observability"><div className="control-card__eyebrow">SYSTEM SIGNALS</div><h2>Trust primitives</h2><div className="control-signal-row"><span>Provenance coverage</span><strong>100%</strong><div><i style={{ width: '100%' }} /></div></div><div className="control-signal-row"><span>Human gate compliance</span><strong>100%</strong><div><i style={{ width: '100%' }} /></div></div><div className="control-signal-row"><span>Confidence calibration</span><strong>78%</strong><div><i style={{ width: '78%' }} /></div></div><div className="control-signal-row"><span>Open-loop actions</span><strong className="is-orange">00</strong><div><i style={{ width: '3%' }} /></div></div><div className="control-observability-note"><Icon name="check" size={14} /><span>No autonomous external action is enabled for this workspace.</span></div></aside></div></>;
 }
@@ -681,5 +745,5 @@ export function AdminConsole() {
   const resolveDoubt = (id: string) => { setResolved((current) => [...current, id]); showToast('Doubt resolved and retained in the learning trace.'); };
   const pageTitle = useMemo(() => navGroups.flatMap((group) => group.items).find((item) => item.id === activeView)?.label ?? 'Mission control', [activeView]);
 
-  return <div className="control-shell"><aside className="control-sidebar"><div className="control-brand"><span className="control-brand__mark"><span /><span /><span /></span><div><strong>WIREUP</strong><small>control plane</small></div></div><div className="control-workspace-switch"><span className="control-workspace-switch__avatar">R</span><div><strong>Research workspace</strong><span>private · local</span></div><span className="control-workspace-switch__chevron">⌄</span></div><nav className="control-nav" aria-label="Admin navigation">{navGroups.map((group) => <div className="control-nav__group" key={group.label}><div className="control-nav__label">{group.label}</div>{group.items.map((item) => <button type="button" key={item.id} className={`control-nav__item${activeView === item.id ? ' is-active' : ''}`} onClick={() => openView(item.id)}><Icon name={item.icon} size={16} /><span>{item.label}</span>{item.count ? <em>{item.count}</em> : null}</button>)}</div>)}</nav><div className="control-sidebar__bottom"><div className="control-loop-card"><div className="control-loop-card__top"><span className="control-live-pulse" /><span>SELF-LEARNING LOOP</span></div><strong>Human directed</strong><small>Autonomy level 02 / 05</small><div className="control-loop-meter"><i /><i /><i /><i /><i /></div></div><button type="button" className="control-user"><span className="control-user__avatar">RS</span><span><strong>Researcher</strong><small>workspace owner</small></span><span className="control-user__dots">•••</span></button></div></aside><main className="control-main"><header className="control-topbar"><div className="control-breadcrumb"><span>ADMIN</span><Icon name="arrow" size={12} /><strong>{pageTitle}</strong></div><div className="control-topbar__actions"><span className="control-topbar__clock"><StatusDot status="ok" /> All systems nominal</span><button type="button" className="control-topbar__icon" aria-label="Search"><span>⌕</span></button><button type="button" className="control-topbar__icon" aria-label="Notifications"><span>◌</span><i /></button><span className="control-topbar__divider" /><button type="button" className="control-help">?</button></div></header><div className="control-content">{activeView === 'overview' ? <OverviewView nodes={nodes} selectedId={selectedId} setSelectedId={setSelectedId} doubts={doubts} resolved={resolved} onResolve={resolveDoubt} openView={openView} addNode={addNode} onToast={toast} /> : null}{activeView === 'graph' ? <GraphView nodes={nodes} selectedId={selectedId} setSelectedId={setSelectedId} addNode={addNode} /> : null}{activeView === 'doubts' ? <DoubtsView doubts={doubts} resolved={resolved} onResolve={resolveDoubt} /> : null}{activeView === 'stakes' ? <StakesView /> : null}{activeView === 'cad-helper' ? <CadHelperView /> : null}{activeView === 'repositories' ? <RepositoriesView openView={openView} /> : null}{activeView === 'activity' ? <ActivityView /> : null}</div></main></div>;
+  return <div className="control-shell"><aside className="control-sidebar"><div className="control-brand"><span className="control-brand__mark"><span /><span /><span /></span><div><strong>WIREUP</strong><small>control plane</small></div></div><div className="control-workspace-switch"><span className="control-workspace-switch__avatar">R</span><div><strong>Hardware workspace</strong><span>private · local</span></div><span className="control-workspace-switch__chevron">⌄</span></div><nav className="control-nav" aria-label="Admin navigation">{navGroups.map((group) => <div className="control-nav__group" key={group.label}><div className="control-nav__label">{group.label}</div>{group.items.map((item) => <button type="button" key={item.id} className={`control-nav__item${activeView === item.id ? ' is-active' : ''}`} onClick={() => openView(item.id)}><Icon name={item.icon} size={16} /><span>{item.label}</span>{item.count ? <em>{item.count}</em> : null}</button>)}</div>)}</nav><div className="control-sidebar__bottom"><div className="control-loop-card"><div className="control-loop-card__top"><span className="control-live-pulse" /><span>SELF-LEARNING LOOP</span></div><strong>Human directed</strong><small>Autonomy level 02 / 05</small><div className="control-loop-meter"><i /><i /><i /><i /><i /></div></div><button type="button" className="control-user"><span className="control-user__avatar">RS</span><span><strong>Builder</strong><small>workspace owner</small></span><span className="control-user__dots">•••</span></button></div></aside><main className="control-main"><header className="control-topbar"><div className="control-breadcrumb"><span>ADMIN</span><Icon name="arrow" size={12} /><strong>{pageTitle}</strong></div><div className="control-topbar__actions"><span className="control-topbar__clock"><StatusDot status="ok" /> All systems nominal</span><button type="button" className="control-topbar__icon" aria-label="Search"><span>⌕</span></button><button type="button" className="control-topbar__icon" aria-label="Notifications"><span>◌</span><i /></button><span className="control-topbar__divider" /><button type="button" className="control-help">?</button></div></header><div className="control-content">{activeView === 'overview' ? <OverviewView nodes={nodes} selectedId={selectedId} setSelectedId={setSelectedId} doubts={doubts} resolved={resolved} onResolve={resolveDoubt} openView={openView} addNode={addNode} onToast={toast} /> : null}{activeView === 'graph' ? <GraphView nodes={nodes} selectedId={selectedId} setSelectedId={setSelectedId} addNode={addNode} /> : null}{activeView === 'doubts' ? <DoubtsView doubts={doubts} resolved={resolved} onResolve={resolveDoubt} /> : null}{activeView === 'stakes' ? <StakesView /> : null}{activeView === 'cad-helper' ? <CadHelperView /> : null}{activeView === 'repositories' ? <RepositoriesView openView={openView} /> : null}{activeView === 'activity' ? <ActivityView /> : null}</div></main></div>;
 }

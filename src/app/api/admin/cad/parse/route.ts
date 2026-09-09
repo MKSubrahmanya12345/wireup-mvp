@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { parseDatasheetText } from 'cad-helper';
+import { resolveDatasheetInput } from '@cad-helper/online-datasheet';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,9 +8,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { rawText, overrides } = body;
 
-    const spec = parseDatasheetText(rawText || '', overrides);
+    const result = await resolveDatasheetInput(rawText || '', overrides);
 
-    return NextResponse.json({ ok: true, spec });
+    return NextResponse.json({ ok: true, spec: result.spec, tier: result.tier ?? 'derived', provenance: result.provenance });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : 'Failed to parse datasheet' },
