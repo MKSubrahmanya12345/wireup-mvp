@@ -149,6 +149,130 @@ const PIN_MAPS: Record<string, PinMapper> = {
   'wokwi-mpu6050': table({ VCC: 'VCC', GND: 'GND', SCL: 'SCL', SDA: 'SDA', INT: 'INT', AD0: 'AD0' }),
   'wokwi-pir-motion-sensor': table({ VCC: 'VCC', OUT: 'OUT', GND: 'GND' }),
   'wokwi-relay-module': table({ VCC: 'VCC', GND: 'GND', IN: 'IN', COM: 'COM', NO: 'NO', NC: 'NC' }),
+
+  /* ---- Velxio-simulatable batch (verified against the vendored element set) -- */
+  // The joystick element names its pins HORZ/VERT/SEL, not VRX/VRY/SW.
+  'wokwi-analog-joystick': table({ VRX: 'HORZ', VRY: 'VERT', HORZ: 'HORZ', VERT: 'VERT', SW: 'SEL', SEL: 'SEL', VCC: 'VCC', GND: 'GND' }),
+  // MQ-2 module pins AO/DO land on the element's AOUT/DOUT.
+  'wokwi-gas-sensor': table({ VCC: 'VCC', GND: 'GND', AO: 'AOUT', A0: 'AOUT', AOUT: 'AOUT', DO: 'DOUT', D0: 'DOUT', DOUT: 'DOUT' }),
+  // TSOP style names (OUT/VS) onto the element's DAT/VCC.
+  'wokwi-ir-receiver': table({ OUT: 'DAT', DATA: 'DAT', DAT: 'DAT', VS: 'VCC', VCC: 'VCC', GND: 'GND' }),
+  // HX711 module names DT/SCK as DAT/SCK on the element; the bridge-side pins
+  // (E±/A±/B±) have no counterpart — those wires are reported, not silently mapped.
+  'wokwi-hx711': table({ VCC: 'VCC', GND: 'GND', DT: 'DT', DAT: 'DT', DOUT: 'DT', SCK: 'SCK', CLK: 'SCK' }),
+  // KY-040 supplies through a pin literally named "+" on the module.
+  'wokwi-ky-040': table({ '+': 'VCC', VCC: 'VCC', GND: 'GND', CLK: 'CLK', DT: 'DT', SW: 'SW' }),
+  // NTC/tilt comparator modules: three pins, element names match.
+  'wokwi-ntc-temperature-sensor': table({ VCC: 'VCC', GND: 'GND', OUT: 'OUT', AO: 'OUT', SIG: 'OUT' }),
+  'wokwi-tilt-switch': table({ VCC: 'VCC', GND: 'GND', OUT: 'OUT', DO: 'OUT', SIG: 'OUT' }),
+  // NEMA17 coil names → the stepper element's coil pins.
+  'wokwi-stepper-motor': table({ COIL_A1: 'A+', 'A+': 'A+', COIL_A2: 'A-', 'A-': 'A-', COIL_B1: 'B+', 'B+': 'B+', COIL_B2: 'B-', 'B-': 'B-' }),
+  // Pololu A4988: silkscreen STP/EN/RST/SLP and the two grounds map onto the
+  // element's STEP/ENABLE/RESET/SLEEP and GND/GND.2.
+  'wokwi-a4988': table({
+    VMOT: 'VMOT',
+    GND_MOT: 'GND',
+    GND: 'GND.2',
+    GND_LOGIC: 'GND.2',
+    '1A': '1A',
+    '1B': '1B',
+    '2A': '2A',
+    '2B': '2B',
+    VDD: 'VDD',
+    STP: 'STEP',
+    STEP: 'STEP',
+    DIR: 'DIR',
+    EN: 'ENABLE',
+    ENABLE: 'ENABLE',
+    MS1: 'MS1',
+    MS2: 'MS2',
+    MS3: 'MS3',
+    RST: 'RESET',
+    RESET: 'RESET',
+    SLP: 'SLEEP',
+    SLEEP: 'SLEEP',
+  }),
+  // Slide pot: same three-pin shape as the rotary pot.
+  'wokwi-slide-potentiometer': table({ A: 'VCC', WIPER: 'SIG', B: 'GND' }),
+  // DIP switch poles are named 1A/1B… on the catalog, 1a/1b… on the element.
+  'wokwi-dip-switch-8': table(
+    Object.fromEntries(
+      [1, 2, 3, 4, 5, 6, 7, 8].flatMap((n) => [
+        [`${n}A`, `${n}a`],
+        [`${n}B`, `${n}b`],
+        [`${n}a`, `${n}a`],
+        [`${n}b`, `${n}b`],
+      ]),
+    ),
+  ),
+  // 7-segment: shared catalog COM pin → the element's COM.1 (COM.2 exists too).
+  'wokwi-7segment': table({ A: 'A', B: 'B', C: 'C', D: 'D', E: 'E', F: 'F', G: 'G', DP: 'DP', DOT: 'DP', COM: 'COM.1', CATHODE: 'COM.1' }),
+  // Bar graph: anodes/cathodes share the element's A1-A10/C1-C10 names.
+  'wokwi-led-bar-graph': table(
+    Object.fromEntries(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].flatMap((n) => [
+        [`A${n}`, `A${n}`],
+        [`C${n}`, `C${n}`],
+        [`K${n}`, `C${n}`],
+      ]),
+    ),
+  ),
+  'wokwi-led-ring': table({ VCC: 'VCC', GND: 'GND', DIN: 'DIN', DOUT: 'DOUT' }),
+  // SPI microSD: catalog SPI names onto the element's DI/DO.
+  'wokwi-microsd-card': table({ VCC: 'VCC', GND: 'GND', CS: 'CS', MOSI: 'DI', DI: 'DI', MISO: 'DO', DO: 'DO', SCK: 'SCK', CD: 'CD' }),
+  // DS1307 module: the element's supply pin is literally named "5V".
+  'wokwi-ds1307': table({ VCC: '5V', '5V': '5V', GND: 'GND', SDA: 'SDA', SCL: 'SCL', SQW: 'SQW' }),
+  // Slide switch: the element names its poles 1/2/3 with 2 the common — the
+  // catalog's COM/NO/NC previously passed through and every wire was dropped
+  // on import (caught by the verify:simulator end-to-end check).
+  'wokwi-slide-switch': table({ COM: '2', C: '2', NO: '1', NC: '3', A: '1', B: '3' }),
+  // Keypad rows/columns already match the element 1:1; pinned explicitly so a
+  // rename upstream becomes a visible gate failure instead of a silent
+  // pass-through.
+  'wokwi-membrane-keypad': table({ R1: 'R1', R2: 'R2', R3: 'R3', R4: 'R4', C1: 'C1', C2: 'C2', C3: 'C3', C4: 'C4' }),
+  // 8x8 matrix: DIN/DOUT/VCC/GND are already the element's names (note: VCC/GND,
+  // NOT VDD/VSS like the single wokwi-neopixel). Pinned for the same reason.
+  'wokwi-neopixel-matrix': table({ DIN: 'DIN', DOUT: 'DOUT', VCC: 'VCC', GND: 'GND' }),
+  // ILI9341 module: silkscreen variations (SDI/MOSI, SDO/MISO, D/C or RS,
+  // RST/RESET) all resolve onto the element's exact pin names.
+  'wokwi-ili9341': table({
+    VCC: 'VCC',
+    GND: 'GND',
+    CS: 'CS',
+    RESET: 'RST',
+    RST: 'RST',
+    DC: 'D/C',
+    'D/C': 'D/C',
+    RS: 'D/C',
+    SDI: 'MOSI',
+    MOSI: 'MOSI',
+    SCK: 'SCK',
+    SCLK: 'SCK',
+    LED: 'LED',
+    SDO: 'MISO',
+    MISO: 'MISO',
+  }),
+  // NEO-6M module TX/RX match the element directly.
+  'wokwi-gps-neo6m': table({ VCC: 'VCC', GND: 'GND', TX: 'TX', TXD: 'TX', RX: 'RX', RXD: 'RX' }),
+  // DS3231: I2C pins match; the module's SQW/32K outputs have no element
+  // counterpart — wires to them are reported as unsupported, not silently mapped.
+  'wokwi-ds3231': table({ VCC: 'VCC', GND: 'GND', SDA: 'SDA', SCL: 'SCL' }),
+
+  /* ---- SPICE tier: the catalog's K (cathode) lands on the element's C; the
+     schematic-symbol elements use single-letter pin names. ------------------ */
+  'wokwi-diode-1n4007': table({ A: 'A', ANODE: 'A', K: 'C', CATHODE: 'C' }),
+  'wokwi-diode-1n4148': table({ A: 'A', ANODE: 'A', K: 'C', CATHODE: 'C' }),
+  'wokwi-diode-1n5819': table({ A: 'A', ANODE: 'A', K: 'C', CATHODE: 'C' }),
+  // Schematic symbols: C/B/E and D/G/S are the element's exact pin names.
+  'wokwi-bjt-2n2222': table({ B: 'B', BASE: 'B', C: 'C', COLLECTOR: 'C', E: 'E', EMITTER: 'E' }),
+  'wokwi-mosfet-2n7000': table({ G: 'G', GATE: 'G', D: 'D', DRAIN: 'D', S: 'S', SOURCE: 'S' }),
+  'wokwi-mosfet-irf540': table({ G: 'G', GATE: 'G', D: 'D', DRAIN: 'D', S: 'S', SOURCE: 'S' }),
+  // PC817 element pins are AN/CAT/COL/EMIT.
+  'wokwi-opto-pc817': table({ ANODE: 'AN', A: 'AN', CATHODE: 'CAT', K: 'CAT', COLLECTOR: 'COL', OUT: 'COL', EMITTER: 'EMIT' }),
+  // Regulator: catalog IN/OUT onto the element's VIN/VOUT.
+  'wokwi-reg-7805': table({ IN: 'VIN', VIN: 'VIN', GND: 'GND', OUT: 'VOUT', VOUT: 'VOUT' }),
+  // Battery: '+' matches; the exporter renames '-' to the element's U+2212 minus.
+  'wokwi-battery-9v': table({ '+': '+', '-': '-' }),
 };
 
 /** Attributes Wokwi needs for a part to behave like the catalog entry. */
@@ -167,8 +291,40 @@ const PART_SIZE: Record<string, { width: number; height: number }> = {
   'wokwi-esp32-devkit-v1': { width: 110, height: 210 },
   'wokwi-ssd1306': { width: 150, height: 120 },
   'wokwi-lcd1602': { width: 310, height: 140 },
+  'wokwi-lcd2004': { width: 370, height: 180 },
+  'wokwi-7segment': { width: 100, height: 160 },
+  'wokwi-led-bar-graph': { width: 140, height: 100 },
+  'wokwi-led-ring': { width: 110, height: 110 },
+  'wokwi-neopixel-matrix': { width: 180, height: 180 },
+  'wokwi-ili9341': { width: 220, height: 310 },
+  'wokwi-gps-neo6m': { width: 110, height: 80 },
+  'wokwi-ds3231': { width: 100, height: 70 },
+  'wokwi-diode-1n4007': { width: 80, height: 40 },
+  'wokwi-diode-1n4148': { width: 80, height: 40 },
+  'wokwi-diode-1n5819': { width: 80, height: 40 },
+  'wokwi-bjt-2n2222': { width: 72, height: 72 },
+  'wokwi-mosfet-2n7000': { width: 72, height: 72 },
+  'wokwi-mosfet-irf540': { width: 72, height: 72 },
+  'wokwi-opto-pc817': { width: 90, height: 60 },
+  'wokwi-battery-9v': { width: 70, height: 100 },
+  'wokwi-reg-7805': { width: 72, height: 56 },
   'wokwi-servo': { width: 120, height: 90 },
+  'wokwi-stepper-motor': { width: 140, height: 140 },
+  'wokwi-a4988': { width: 72, height: 96 },
   'wokwi-hc-sr04': { width: 180, height: 100 },
+  'wokwi-pir-motion-sensor': { width: 70, height: 90 },
+  'wokwi-photoresistor-sensor': { width: 80, height: 90 },
+  'wokwi-gas-sensor': { width: 90, height: 100 },
+  'wokwi-ntc-temperature-sensor': { width: 70, height: 80 },
+  'wokwi-tilt-switch': { width: 70, height: 80 },
+  'wokwi-analog-joystick': { width: 110, height: 130 },
+  'wokwi-ky-040': { width: 90, height: 90 },
+  'wokwi-hx711': { width: 110, height: 80 },
+  'wokwi-ir-receiver': { width: 50, height: 70 },
+  'wokwi-dip-switch-8': { width: 160, height: 120 },
+  'wokwi-slide-potentiometer': { width: 150, height: 60 },
+  'wokwi-microsd-card': { width: 130, height: 110 },
+  'wokwi-ds1307': { width: 130, height: 100 },
   'wokwi-breadboard': { width: 650, height: 210 },
   'wokwi-resistor': { width: 70, height: 30 },
   'wokwi-capacitor': { width: 60, height: 40 },

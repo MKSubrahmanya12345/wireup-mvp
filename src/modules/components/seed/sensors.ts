@@ -94,7 +94,11 @@ export const SENSORS: ComponentDefinition[] = [
     ],
     keywords: ['pir', 'motion', 'hc-sr501', 'presence', 'intruder', 'security'],
     aliases: ['pir', 'pir sensor', 'hc-sr501', 'motion sensor'],
-    simulator: { supported: false, notes: 'Represent as a digital input source.' },
+    simulator: {
+      part: 'wokwi-pir-motion-sensor',
+      supported: true,
+      notes: 'Velxio registers real simulation logic: OUT idles LOW and pulses on a trigger. The HC-SR501 sensitivity/delay pots and the 30 s warm-up window are not modelled.',
+    },
     metadata: { electrical: true, outputLogicVoltage: 3.3, warmUpSeconds: 30, detectionRangeM: 7, adjustableDelay: [1.3, 25] },
   }),
 
@@ -259,7 +263,14 @@ export const SENSORS: ComponentDefinition[] = [
     keywords: ['ds18b20', 'temperature', '1-wire', 'onewire', 'thermometer', 'probe', 'waterproof'],
     aliases: ['ds18b20', 'ds1820', 'dallas temperature sensor', '1-wire temperature'],
     exampleUsage: ['Multi-zone temperature logging on a single GPIO', 'Water temperature with the waterproof probe'],
-    simulator: { part: 'wokwi-ds18b20', supported: true },
+    simulator: {
+      part: 'wokwi-ds18b20',
+      supported: false,
+      notes:
+        'Wokwi.com ships a DS18B20 part, but the bundled Velxio build has NO DS18B20 element (verified against its pinned ' +
+        '@wokwi/elements and components-metadata.json). Claiming it would draw a part with no pins and silently drop ' +
+        'every wire. For a simulated temperature input use the DHT22; on the bench the DS18B20 remains the better part.',
+    },
     metadata: {
       electrical: true,
       requiresPullup: true,
@@ -382,7 +393,11 @@ export const SENSORS: ComponentDefinition[] = [
     keywords: ['hx711', 'load cell', 'weight', 'scale', 'strain gauge', 'force'],
     aliases: ['hx711', 'load cell amplifier', 'weight sensor', 'scale module'],
     exampleUsage: ['Digital kitchen/parcel scale', 'Filament runout and weight monitoring'],
-    simulator: { supported: false },
+    simulator: {
+      part: 'wokwi-hx711',
+      supported: true,
+      notes: 'Velxio emulates the DT/SCK bit protocol and lets you set a known weight on the part. The bridge-side pins (E±/A±/B±) are real header pins, but the load cell itself has no model — the simulator reports the configured weight, not physics.',
+    },
     metadata: { electrical: true, adcBits: 24, gainOptions: [128, 64, 32], sampleRateHz: [10, 80], requiresCalibration: true },
   }),
 
@@ -404,7 +419,127 @@ export const SENSORS: ComponentDefinition[] = [
     ],
     keywords: ['mq-2', 'mq2', 'gas', 'smoke', 'lpg', 'air quality', 'flammable'],
     aliases: ['mq2', 'mq-2', 'mq series', 'gas sensor', 'smoke sensor'],
-    simulator: { supported: false, notes: 'Represent as an analog source.' },
+    simulator: {
+      part: 'wokwi-gas-sensor',
+      supported: true,
+      notes: 'Velxio models AOUT/DOUT against a configurable gas level. The heater warm-up and the 24–48 h burn-in are not modelled.',
+    },
     metadata: { electrical: true, heaterCurrentMa: 800, burnInHours: 24, detectionPpm: { lpg: [300, 10000], smoke: [100, 1000] } },
+  }),
+
+  def({
+    id: 'ntc-thermistor-module',
+    name: 'NTC thermistor temperature module (analog out)',
+    category: 'sensor',
+    description:
+      '10 kΩ NTC thermistor on a comparator board with a single amplified output. Read OUT with an ADC pin and convert with the beta/Steinhart-Hart equation — the module only scales the divider, it does not linearise. Output falls as temperature rises (NTC: resistance drops when hot).',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 1, maxMa: 10, note: 'Divider + comparator quiescent current; the NTC leg dominates.' },
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('OUT', 'analog', 'output', { required: true, signal: 'Scaled divider voltage — colder = higher', aliases: ['AO', 'A0', 'SIG', 'S'] }),
+    ],
+    keywords: ['ntc', 'thermistor', 'temperature', 'analog temperature', 'thermal'],
+    aliases: ['ntc temperature sensor', 'thermistor module', 'ntc module', 'ntc sensor'],
+    simulator: {
+      part: 'wokwi-ntc-temperature-sensor',
+      supported: true,
+      notes: 'Velxio maps the temperature you set on the part to the OUT voltage. Only the single OUT pin is modelled — there is no digital threshold output on this element.',
+    },
+    metadata: { electrical: true, resistanceOhm: 10000, betaCoefficient: 3950, requiresAdc: true, accuracyNote: 'Beta equation ≈ ±1 °C over 0–70 °C after a two-point calibration.' },
+  }),
+
+  def({
+    id: 'tilt-sensor-module',
+    name: 'Tilt sensor module (SW-520D ball switch)',
+    category: 'sensor',
+    description:
+      'Metal-ball tilt switch on a comparator board: OUT pulses LOW (on most boards) while the ball rolls and goes stable when the module settles past ~±10° from horizontal. Digital-only output — for a continuous angle use an accelerometer such as the MPU6050. Debounce: the ball chatters while moving.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 1, maxMa: 10 },
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('OUT', 'digital', 'output', { required: true, signal: 'Tilt alarm — pulses while the ball rolls', aliases: ['DO', 'SIG', 'S'] }),
+    ],
+    keywords: ['tilt', 'sw-520d', 'ball switch', 'vibration', 'tilt sensor', 'fall detection'],
+    aliases: ['tilt sensor', 'tilt switch', 'sw520d', 'ball tilt sensor'],
+    simulator: {
+      part: 'wokwi-tilt-switch',
+      supported: true,
+      notes: 'Velxio tilts the part on click and drives OUT accordingly. The comparator threshold and ball chatter are not modelled.',
+    },
+    metadata: { electrical: true, activeLevel: 'low', triggerAngleDeg: 10, requiresPullup: true, recommendedDebounceMs: 50 },
+  }),
+
+  def({
+    id: 'gps-neo6m-module',
+    name: 'u-blox NEO-6M GPS module',
+    category: 'sensor',
+    description:
+      'u-blox NEO-6 receiver on a breakout with antenna, backup battery holder and status LED. Streams NMEA 0183 sentences (GGA/RMC/VTG) over UART at 9600 baud; a TinyGPS-class parser assembles position, altitude, speed, course and UTC time. 2.5 m CEP accuracy outdoors, 50 channels, ~27 s typical cold start (1 s hot). Give it clear sky view — accuracy collapses indoors.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 45, maxMa: 67, note: 'Acquisition at full power; backup mode ~11 uA when main supply is removed.' },
+    communicationProtocols: ['uart'],
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('TX', 'uart', 'output', { required: true, signal: 'NMEA data out — wire to the MCU RX', aliases: ['TXD'] }),
+      pin('RX', 'uart', 'input', { required: true, signal: 'Configuration commands in — wire from the MCU TX (optional if you only read)', aliases: ['RXD'] }),
+      pin('PPS', 'digital', 'output', { required: false, signal: 'Pulse-per-second, accurate to ~ns — wire only when time-syncing, not needed for position', aliases: ['PP', 'TIMEPULSE'] }),
+    ],
+    libraryRequirements: [
+      { name: 'TinyGPSPlus', import: 'TinyGPS++.h', manager: 'arduino', repository: 'https://github.com/mikalhart/TinyGPSPlus', purpose: 'NMEA sentence parsing' },
+    ],
+    keywords: ['gps', 'neo-6m', 'neo6m', 'ublox', 'navigation', 'position', 'tracking', 'nmea'],
+    aliases: ['gps', 'gps module', 'neo-6m', 'neo6m', 'ublox gps'],
+    exampleUsage: ['Speedometer / trip logger for a bike or car', 'Geofence alert when leaving an area'],
+    simulator: {
+      part: 'wokwi-gps-neo6m',
+      supported: true,
+      notes: 'Velxio injects real NMEA sentences into the UART at ~9600 baud from the fix you set on the part (lat/lng/altitude/speed/course), so TinyGPS++ decodes them exactly like real hardware. PPS and cold-start fix timing are not modelled.',
+    },
+    metadata: { electrical: true, uartBaud: 9600, nmeaSentences: ['GGA', 'RMC', 'VTG'], accuracyCepM: 2.5, channels: 50, coldStartS: 27 },
+  }),
+
+  def({
+    id: 'rtc-ds3231-module',
+    name: 'DS3231 high-precision RTC module (ZS-042)',
+    category: 'sensor',
+    description:
+      'Temperature-compensated real-time clock: ±2 ppm between 0-40 °C (about ±1 minute per year), seconds/minutes/hours/day/date/month/year with leap-year correction, on-chip aging trim and an integrated temperature sensor readable over I2C. The ZS-042 breakout adds a CR2032 backup holder so time survives power loss, plus SQW and 32K output pins. Careful on a shared bus: the DS3231 answers at 0x68 — the SAME address as an MPU6050. Move the IMU to 0x69 (AD0 high) or use one or the other.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 0.3, maxMa: 1, note: 'Timekeeping ~84 uA on the backup battery; the module power LED dominates in-circuit.' },
+    communicationProtocols: ['i2c'],
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('SDA', 'i2c', 'bidirectional', { required: true, signal: 'I2C data', aliases: ['D'] }),
+      pin('SCL', 'i2c', 'input', { required: true, signal: 'I2C clock', aliases: ['C'] }),
+      pin('SQW', 'digital', 'output', { required: false, signal: 'Programmable square wave 1 Hz-8 kHz (also a configurable alarm pin)', aliases: ['SQW/OUT'] }),
+      pin('32K', 'digital', 'output', { required: false, signal: '32.768 kHz clock output, enabled by register', aliases: ['32KHZ'] }),
+    ],
+    libraryRequirements: [
+      { name: 'RTClib', import: 'RTClib.h', manager: 'arduino', repository: 'https://github.com/adafruit/RTClib', purpose: 'DS3231 register driver and DateTime helpers' },
+      { name: 'Wire', import: 'Wire.h', manager: 'arduino', purpose: 'I2C bus', builtIn: true },
+    ],
+    keywords: ['ds3231', 'rtc', 'real time clock', 'clock', 'timekeeping', 'alarm', 'calendar'],
+    aliases: ['ds3231', 'rtc module', 'real time clock', 'real-time clock', 'zs-042'],
+    exampleUsage: ['Data logger with correct timestamps on an SD card', 'Timed feeder or irrigation controller'],
+    simulator: {
+      part: 'wokwi-ds3231',
+      supported: true,
+      notes: 'Velxio emulates the I2C register map at 0x68 — time registers plus control/status and the temperature register (default 25 °C, settable on the part). The SQW and 32K outputs are not modelled.',
+    },
+    metadata: { electrical: true, i2cAddress: '0x68', i2cAddressConflict: 'Same 0x68 as the MPU6050 — move the IMU to 0x69 (AD0 high) if both share the bus.', i2cMaxClockHz: 400000, accuracyPpm: 2, batteryBackup: 'CR2032', temperatureSensor: true },
   }),
 ];

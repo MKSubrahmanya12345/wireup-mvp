@@ -107,7 +107,14 @@ export const ACTUATORS: ComponentDefinition[] = [
     ],
     keywords: ['relay', 'switch', 'mains', 'high current', 'pump', 'lamp', 'contactor'],
     aliases: ['relay', 'relay module', '5v relay', '1 channel relay'],
-    simulator: { supported: false, notes: 'Represent as a digital load with a switch contact.' },
+    simulator: {
+      supported: false,
+      notes:
+        'The bundled Velxio bare-relay element (COIL+/COIL-/COM/NO/NC) only DRAWS the relay: it has no registered ' +
+        'simulation behaviour and no netlist mapper, so on the canvas it is dead — the coil does not pull in. It also ' +
+        'has no VCC/GND/IN module pins to fake. Keep the module for the bench; simulate switching with a transistor ' +
+        'stage and an LED probe instead.',
+    },
     metadata: {
       electrical: true,
       activeLevel: 'low',
@@ -146,5 +153,63 @@ export const ACTUATORS: ComponentDefinition[] = [
         'A real strip needs one part per pixel in the simulator, or a bench build with the full length.',
     },
     metadata: { electrical: true, levelShiftFrom3v3: true, protocol: 'ws2812b-single-wire', ledCount: 'per segment' },
+  }),
+
+  def({
+    id: 'led-ring-ws2812-8',
+    name: 'WS2812 8-LED ring (NeoPixel ring)',
+    category: 'actuator',
+    description:
+      'Circular PCB carrying 8 addressable WS2812B LEDs chained on a single data line. Same electrical rules as a NeoPixel strip: 5 V supply, 800 kHz timing, one pin drives the whole ring, DOUT exists for chaining a second ring. Full-white draw is ~0.5 A (8 × 60 mA) — budget it on the 5 V rail, and add ~470 µF across the ring supply.',
+    voltage: 5,
+    minVoltage: 4.5,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 60, maxMa: 480, note: 'Per LED at full white ~60 mA; 8 LEDs ≈ 0.5 A worst case.' },
+    pins: [
+      pin('DIN', 'digital', 'input', { required: true, signal: '800 kHz data in', aliases: ['DI', 'DATA', 'IN'] }),
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+5V', '+', 'VDD'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'VSS'] }),
+      pin('DOUT', 'digital', 'output', { required: false, signal: 'Data out to the next ring in the chain', aliases: ['DO'] }),
+    ],
+    libraryRequirements: [
+      { name: 'Adafruit NeoPixel', import: 'Adafruit_NeoPixel.h', manager: 'arduino', repository: 'https://github.com/adafruit/Adafruit_NeoPixel', purpose: 'WS2812B timing and colour control' },
+    ],
+    keywords: ['neopixel ring', 'ws2812 ring', 'led ring', 'addressable ring', 'status ring'],
+    aliases: ['led ring', 'neopixel ring', 'ws2812 ring', '8-pixel ring', 'pixel ring'],
+    simulator: {
+      part: 'wokwi-led-ring',
+      supported: true,
+      notes: 'Velxio renders and drives all 8 pixels from DIN (VCC/GND/DIN/DOUT match pin for pin) — the ring is fully interactive, unlike a long strip which is modelled one pixel at a time.',
+    },
+    metadata: { electrical: true, levelShiftFrom3v3: true, protocol: 'ws2812b-single-wire', ledCount: 8, diameterMm: 50 },
+  }),
+
+  def({
+    id: 'led-matrix-ws2812-8x8',
+    name: 'WS2812B 8x8 LED matrix (NeoPixel matrix, 64 pixels)',
+    category: 'actuator',
+    description:
+      '64 addressable WS2812B LEDs in an 8x8 grid on one data line — the same single-pin protocol as the strip and ring, scrolled into a matrix. One pin drives every pixel (index = row*8 + col with the common left-to-right, top-to-bottom wiring; cheap boards vary, so verify direction before fixing a layout). Full-white draw is ~3.8 A: budget a dedicated 5 V supply, inject power at the connector, and keep data runs short with a ~330-470 ohm series resistor and a ~1000 uF cap across the supply.',
+    voltage: 5,
+    minVoltage: 4.5,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 60, maxMa: 3840, note: 'Per pixel ~60 mA at full white; 64 pixels ≈ 3.8 A worst case — never from a USB pin.' },
+    pins: [
+      pin('DIN', 'digital', 'input', { required: true, signal: '800 kHz data in', aliases: ['DI', 'DATA', 'IN'] }),
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+5V', '+', 'VDD'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'VSS'] }),
+      pin('DOUT', 'digital', 'output', { required: false, signal: 'Data out to the next matrix in the chain', aliases: ['DO'] }),
+    ],
+    libraryRequirements: [
+      { name: 'Adafruit NeoPixel', import: 'Adafruit_NeoPixel.h', manager: 'arduino', repository: 'https://github.com/adafruit/Adafruit_NeoPixel', purpose: 'WS2812B timing and colour control' },
+    ],
+    keywords: ['neopixel matrix', 'ws2812 matrix', 'led matrix', '8x8 matrix', 'pixel matrix', 'addressable matrix'],
+    aliases: ['neopixel matrix', 'ws2812 matrix', '8x8 matrix', 'led matrix', 'pixel matrix'],
+    simulator: {
+      part: 'wokwi-neopixel-matrix',
+      supported: true,
+      notes: 'Velxio decodes the WS2812B stream on DIN and lights each pixel at its (row, col) — set the part rows/cols to match the Adafruit_NeoPixel constructor. Power injection and current-vs-brightness are not modelled.',
+    },
+    metadata: { electrical: true, levelShiftFrom3v3: true, protocol: 'ws2812b-single-wire', ledCount: 64, columns: 8, rows: 8 },
   }),
 ];

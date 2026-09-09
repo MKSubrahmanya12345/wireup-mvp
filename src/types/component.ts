@@ -16,6 +16,7 @@ export type ComponentCategory =
   | 'display'
   | 'power'
   | 'passive'
+  | 'discrete'
   | 'electromechanical'
   | 'input_device'
   | 'prototyping'

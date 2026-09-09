@@ -99,7 +99,7 @@ export interface VelxioProjectResult {
  * listed; an unlisted board falls back to `arduino-uno` ONLY if it is an AVR
  * part, otherwise the caller is told the board is unsupported.
  */
-const BOARD_KIND_BY_WOKWI_TYPE: Record<string, string> = {
+export const BOARD_KIND_BY_WOKWI_TYPE: Record<string, string> = {
   'wokwi-esp32-devkit-v1': 'esp32',
   'wokwi-esp32-devkit-c-v4': 'esp32-devkit-c-v4',
   'wokwi-esp32-s3-devkitc-1': 'esp32-s3',
@@ -137,9 +137,16 @@ const BOARD_KIND_BY_CATALOG_ID: Record<string, string> = {
  * `bmp280`, the L293D module → `motor-driver-l293d`). Anything not listed here
  * has no verified Velxio model and is reported instead of guessed.
  *
- * Verified against that catalog file — every value below exists in it.
+ * Every value below is machine-verified by `pnpm verify:simulator` against two
+ * ground truths in the vendored repo: the metadata file itself (the id must
+ * exist AND its tag must be runtime-definable in the pinned build) and the
+ * `PartSimulationRegistry` `register(...)` calls in
+ * `frontend/src/simulation/parts/` (which decide whether the part actually
+ * *behaves*, not just renders). The catalog `simulator.supported` claims are
+ * held to the same standard — a `supported: true` without registered behaviour
+ * fails the gate.
  */
-const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
+export const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
   'wokwi-led': 'led',
   'wokwi-rgb-led': 'rgb-led',
   'wokwi-buzzer': 'buzzer',
@@ -180,6 +187,21 @@ const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
   'wokwi-ili9341': 'ili9341',
   'wokwi-breadboard': 'breadboard',
   'wokwi-breadboard-mini': 'breadboard-mini',
+  'wokwi-dip-switch-8': 'dip-switch-8',
+  'wokwi-tilt-switch': 'tilt-switch',
+  'wokwi-ky-040': 'ky-040',
+  'wokwi-gps-neo6m': 'gps-neo6m',
+  'wokwi-ds3231': 'ds3231',
+  // SPICE tier: active semiconductors + the solved power parts.
+  'wokwi-diode-1n4007': 'diode-1n4007',
+  'wokwi-diode-1n4148': 'diode-1n4148',
+  'wokwi-diode-1n5819': 'diode-1n5819',
+  'wokwi-bjt-2n2222': 'bjt-2n2222',
+  'wokwi-mosfet-2n7000': 'mosfet-2n7000',
+  'wokwi-mosfet-irf540': 'mosfet-irf540',
+  'wokwi-opto-pc817': 'opto-pc817',
+  'wokwi-battery-9v': 'battery-9v',
+  'wokwi-reg-7805': 'reg-7805',
   // NOTE deliberately absent: 'wokwi-ds18b20', 'wokwi-l298n'. The pinned
   // Velxio catalog has no model for them, and putting a lookalike on the canvas
   // (an L293D standing in for an L298N, say) would wire the firmware to pins
@@ -202,11 +224,22 @@ const METADATA_REFINEMENTS: {
   pins?: Record<string, string>;
 }[] = [
   { matches: /^capacitor-[\w-]*electrolytic/i, metadataId: 'capacitor-electrolytic', pins: { '1': '+', '2': '\u2212' } },
+  // Battery elements name their negative terminal with U+2212 (a true minus),
+  // not the hyphen the catalog uses — same treatment as the electrolytic.
+  { matches: /^battery-/i, metadataId: '', pins: { '-': '\u2212' } },
 ];
 
 function refinePart(partId: string, metadataId: string): { metadataId: string; pins?: Record<string, string> } {
   for (const refinement of METADATA_REFINEMENTS) {
-    if (refinement.matches.test(partId)) return { metadataId: refinement.metadataId, pins: refinement.pins };
+    // Match the mapped METADATA ID first, the instance id second: a hand-made
+    // instance id ("bat-1") must not silently skip a pin rename that the part
+    // type itself calls for. Both current refinements match either form.
+    if (refinement.matches.test(metadataId) || refinement.matches.test(partId)) {
+      return {
+        metadataId: refinement.metadataId || metadataId,
+        ...(refinement.pins ? { pins: refinement.pins } : {}),
+      };
+    }
   }
   return { metadataId };
 }
