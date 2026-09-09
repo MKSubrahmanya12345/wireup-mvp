@@ -177,6 +177,103 @@ export const GENERAL: ComponentDefinition[] = [
   }),
 
   def({
+    id: 'rotary-encoder-ky040',
+    name: 'KY-040 rotary encoder module',
+    category: 'input_device',
+    description:
+      'Incremental quadrature encoder with a detented knob (20 detents / 20 pulses per revolution) and an integrated push switch. CLK and DT are 90 degrees out of phase, so the direction is the phase relationship, not the pulse itself. The module carries 10 kOhm pull-ups on CLK and DT but not on SW, which needs the internal pull-up. Contact bounce is severe: debounce in firmware or add 0.1 uF capacitors.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 1, maxMa: 5 },
+    pins: [
+      pin('CLK', 'digital', 'output', { required: true, signal: 'Quadrature channel A — read on an interrupt-capable pin', aliases: ['A', 'ENC_A', 'S1'], requiresCapability: ['interrupt'] }),
+      pin('DT', 'digital', 'output', { required: true, signal: 'Quadrature channel B — sampled on the CLK edge to get direction', aliases: ['B', 'ENC_B', 'S2'] }),
+      pin('SW', 'digital', 'output', { required: false, signal: 'Push switch, active LOW, needs an internal pull-up', aliases: ['SWITCH', 'BUTTON', 'KEY'] }),
+      pin('+', 'power', 'power', { required: true, voltage: 5, signal: 'Supply 3.3–5 V', aliases: ['VCC', 'V+', '5V', '3V3'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+    ],
+    compatibleMicrocontrollers: ['esp32-devkit-v1', 'arduino-uno-r3', 'arduino-nano'],
+    keywords: ['rotary encoder', 'ky-040', 'ky040', 'knob', 'dial', 'quadrature', 'menu', 'volume'],
+    aliases: ['ky040', 'ky-040', 'rotary encoder', 'encoder knob', 'digital potentiometer knob'],
+    exampleUsage: ['Menu navigation on an OLED', 'Setpoint adjustment on a thermostat'],
+    simulator: { supported: false, notes: 'Part id unverified — model as two phase-shifted digital inputs plus a button.' },
+    metadata: {
+      electrical: true,
+      detentsPerRevolution: 20,
+      pulsesPerRevolution: 20,
+      onboardPullups: ['CLK', 'DT'],
+      requiresPullup: 'SW only',
+      recommendedDebounceMs: 5,
+      dimensionsMm: { width: 26, length: 19, height: 1.6 },
+    },
+  }),
+
+  def({
+    id: 'toggle-switch-spdt',
+    name: 'SPDT slide / toggle switch',
+    category: 'input_device',
+    description:
+      'Single-pole double-throw mechanical switch: the common terminal is connected to exactly one of the two throws at all times. Use it as a hard power switch or as a latching logic input (common to the GPIO, one throw to GND, internal pull-up enabled).',
+    minVoltage: 0,
+    maxVoltage: 30,
+    currentRequirements: { typicalMa: 0, maxMa: 3000, note: 'Contact rating; typical miniature switches handle 3 A at 30 V DC.' },
+    pins: [
+      pin('COM', 'digital', 'bidirectional', { required: true, signal: 'Common pole', aliases: ['C', '2', 'POLE'] }),
+      pin('NO', 'digital', 'bidirectional', { required: true, signal: 'Throw 1 (position A)', aliases: ['1', 'A', 'ON1'] }),
+      pin('NC', 'digital', 'bidirectional', { required: false, signal: 'Throw 2 (position B)', aliases: ['3', 'B', 'ON2'] }),
+    ],
+    keywords: ['switch', 'toggle', 'slide switch', 'spdt', 'power switch', 'latching'],
+    aliases: ['toggle switch', 'slide switch', 'spdt switch', 'switch'],
+    simulator: { part: 'wokwi-slide-switch', supported: true },
+    metadata: { electrical: true, noSupplyPins: true, latching: true, requiresPullup: true, recommendedDebounceMs: 20 },
+  }),
+
+  def({
+    id: 'limit-switch-microswitch',
+    name: 'Lever microswitch (limit switch)',
+    category: 'input_device',
+    description:
+      'Snap-action lever switch with common, normally-open and normally-closed terminals. Standard end-stop for motion systems. Wire NC-to-ground for a fail-safe end-stop: a broken wire then reads as "triggered" rather than as "clear".',
+    minVoltage: 0,
+    maxVoltage: 250,
+    currentRequirements: { typicalMa: 0, maxMa: 5000 },
+    pins: [
+      pin('COM', 'digital', 'bidirectional', { required: true, signal: 'Common terminal', aliases: ['C', 'POLE'] }),
+      pin('NO', 'digital', 'bidirectional', { required: false, signal: 'Normally open — closes when the lever is pressed', aliases: ['NORMALLY_OPEN'] }),
+      pin('NC', 'digital', 'bidirectional', { required: false, signal: 'Normally closed — opens when the lever is pressed (fail-safe wiring)', aliases: ['NORMALLY_CLOSED'] }),
+    ],
+    keywords: ['limit switch', 'microswitch', 'end stop', 'endstop', 'lever switch', 'homing'],
+    aliases: ['limit switch', 'microswitch', 'endstop', 'end stop switch'],
+    simulator: { supported: false },
+    metadata: { electrical: true, noSupplyPins: true, snapAction: true, requiresPullup: true, failSafeWiring: 'NC to ground' },
+  }),
+
+  def({
+    id: 'joystick-module-2axis',
+    name: '2-axis analog thumb joystick module',
+    category: 'input_device',
+    description:
+      'PS2-style thumb joystick: two 10 kOhm potentiometers on X and Y plus a momentary push switch under the stick. Each axis reads roughly mid-scale at rest (about 512 on a 10-bit ADC) and needs a dead-band in firmware because the spring return is not exact.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 1, maxMa: 5 },
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, signal: 'Supply — sets the ADC full-scale reference for both axes', aliases: ['+5V', '+', 'VDD'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-'] }),
+      pin('VRX', 'analog', 'output', { required: true, signal: 'X axis wiper voltage', aliases: ['VRx', 'X', 'HOR'] }),
+      pin('VRY', 'analog', 'output', { required: true, signal: 'Y axis wiper voltage', aliases: ['VRy', 'Y', 'VER'] }),
+      pin('SW', 'digital', 'output', { required: false, signal: 'Push switch, active LOW, needs an internal pull-up', aliases: ['SEL', 'BUTTON', 'KEY'] }),
+    ],
+    keywords: ['joystick', 'thumbstick', 'analog stick', '2-axis', 'ps2 joystick', 'control'],
+    aliases: ['joystick', 'joystick module', 'thumb joystick', 'ky-023'],
+    exampleUsage: ['Driving an RC car over Bluetooth', 'Pan/tilt camera control'],
+    simulator: { supported: false, notes: 'Model as two potentiometers and a button.' },
+    metadata: { electrical: true, resistanceOhm: 10000, restValue10Bit: 512, requiresDeadband: true, requiresAdc: true },
+  }),
+
+  def({
     id: 'breadboard-830',
     name: '830-point solderless breadboard',
     category: 'prototyping',

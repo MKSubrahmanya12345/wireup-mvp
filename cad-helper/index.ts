@@ -10,3 +10,4 @@ export * from './stl-generator';
 export * from './glb-generator';
 export * from './bundle-generator';
 export * from './reference-assets';
+export * from './catalog-link';
