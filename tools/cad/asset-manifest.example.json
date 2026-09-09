@@ -1,0 +1,16 @@
+{
+  "id": "example-sensor",
+  "source": "../../cad-source/example-sensor.step",
+  "output": "../../public/models3d/example-sensor/example-sensor.glb",
+  "maxBytes": 15000000,
+  "pinAnchors": [
+    { "name": "VCC", "positionMm": [-5.08, 8.5, 0.0] },
+    { "name": "GND", "positionMm": [-2.54, 8.5, 0.0] },
+    { "name": "SDA", "positionMm": [0.0, 8.5, 0.0] },
+    { "name": "SCL", "positionMm": [2.54, 8.5, 0.0] }
+  ],
+  "materialHints": [
+    { "match": "housing", "color": "#1b2739", "metallic": 0.08, "roughness": 0.42 },
+    { "match": "lens", "color": "#3fbed8", "metallic": 0.03, "roughness": 0.18 }
+  ]
+}

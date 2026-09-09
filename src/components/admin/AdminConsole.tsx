@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import type { CadComponentSpec } from 'cad-helper';
-import { COMPONENT_PRESETS } from 'cad-helper';
+import { COMPONENT_PRESETS, getCadReferenceAsset } from 'cad-helper';
 import { CadPreviewCanvas } from '@/components/admin/CadPreviewCanvas';
 
 type ViewId = 'overview' | 'graph' | 'doubts' | 'stakes' | 'cad-helper' | 'repositories' | 'activity';
@@ -414,17 +414,158 @@ function StakesView() {
 
 function CadHelperView() {
   const presetKeys = Object.keys(COMPONENT_PRESETS);
-  const [selectedKey, setSelectedKey] = useState(presetKeys[0] ?? 'hc-sr04-ultrasonic');
-  const [spec, setSpec] = useState<CadComponentSpec>(COMPONENT_PRESETS[selectedKey]);
+  const defaultPresetKey = presetKeys.includes('arduino-uno-r3') ? 'arduino-uno-r3' : (presetKeys[0] ?? 'hc-sr04-ultrasonic');
+  const [selectedKey, setSelectedKey] = useState(defaultPresetKey);
+  const [spec, setSpec] = useState<CadComponentSpec>(() => JSON.parse(JSON.stringify(COMPONENT_PRESETS[defaultPresetKey])));
   const [wireframe, setWireframe] = useState(false);
+  const [showPins, setShowPins] = useState(false);
   const [rawText, setRawText] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
-  const selectPreset = (key: string) => { setSelectedKey(key); setSpec(JSON.parse(JSON.stringify(COMPONENT_PRESETS[key]))); setNotice(''); };
-  const parseDatasheet = async () => { if (!rawText.trim()) return; setBusy(true); try { const response = await fetch('/api/admin/cad/parse', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rawText }) }); const data = await response.json(); if (data.ok && data.spec) { setSpec(data.spec); setNotice('Datasheet geometry extracted. Review the anchors before exporting.'); } else setNotice(data.error ?? 'Could not parse this datasheet.'); } catch { setNotice('Parser unavailable in this environment.'); } finally { setBusy(false); } };
-  const generateBundle = async () => { setBusy(true); try { const response = await fetch('/api/admin/cad/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) }); const data = await response.json(); setNotice(data.ok ? `Bundle ready · ${data.stlByteLength ?? 0} byte STL · seed definition generated.` : data.error ?? 'Bundle generation failed.'); } catch { setNotice('Bundle service unavailable.'); } finally { setBusy(false); } };
-  const deployBundle = async () => { setBusy(true); try { const response = await fetch('/api/admin/cad/deploy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) }); const data = await response.json(); setNotice(data.ok ? data.result?.message ?? 'Catalog sync complete.' : data.error ?? 'Catalog sync failed.'); } catch { setNotice('Catalog sync unavailable.'); } finally { setBusy(false); } };
-  return <><div className="control-hero-row"><SectionHeading eyebrow="FEATURE REPO / CAD-HELPER" title="CAD helper" description="Datasheet → parametric geometry → catalog-ready assets. This feature repo is wired into the control plane." /><div className="control-repo-status"><StatusDot status="ok" /><span>repo connected</span><code>cad-helper@0.1.0</code></div></div><div className="control-repo-strip"><span className="control-repo-mark"><Icon name="cube" size={16} /></span><div><strong>MKSubrahmanya12345/cad-helper</strong><span>separate feature surface · trusted by wireup-core</span></div><span className="control-repo-path">/cad-helper</span><span className="control-repo-sync"><StatusDot status="ok" /> synced</span></div><div className="control-cad-layout"><section className="control-card control-cad-intake"><div className="control-card__eyebrow">01 / INTAKE</div><h2>Choose a component</h2><label className="control-field-label">High-accuracy preset</label><select className="control-select" value={selectedKey} onChange={(event) => selectPreset(event.target.value)}>{presetKeys.map((key) => <option key={key} value={key}>{COMPONENT_PRESETS[key].name}</option>)}</select><div className="control-cad-or">or paste a datasheet excerpt</div><textarea className="control-textarea" value={rawText} onChange={(event) => setRawText(event.target.value)} placeholder="Dimensions: 45 x 20 x 1.6 mm… Pin 1: VCC…" rows={5} /><button type="button" className="control-secondary-button control-secondary-button--wide" onClick={parseDatasheet} disabled={busy || !rawText.trim()}>{busy ? 'Extracting…' : 'Parse datasheet'} <Icon name="arrow" size={13} /></button><div className="control-cad-specs"><div><span>catalog id</span><code>{spec.id}</code></div><div><span>dimensions</span><code>{spec.dimensions.widthMm} × {spec.dimensions.lengthMm} × {spec.dimensions.heightMm} mm</code></div><div><span>pin anchors</span><code>{spec.pins.length} mapped</code></div></div></section><section className="control-card control-cad-preview"><div className="control-card__heading"><div><div className="control-card__eyebrow">02 / PREVIEW</div><h2>Parametric model</h2></div><button type="button" className="control-secondary-button" onClick={() => setWireframe(!wireframe)}>{wireframe ? 'Solid view' : 'Wireframe'} <Icon name="cube" size={13} /></button></div><CadPreviewCanvas spec={spec} wireframe={wireframe} showPins /><div className="control-cad-actions"><button type="button" className="control-primary-button" onClick={generateBundle} disabled={busy}><Icon name="spark" size={14} /> {busy ? 'Building…' : 'Generate bundle'}</button><button type="button" className="control-secondary-button" onClick={deployBundle} disabled={busy}>Deploy to catalog</button></div>{notice ? <div className="control-inline-notice"><StatusDot status="ok" />{notice}</div> : null}</section></div></>;
+  const referenceAsset = getCadReferenceAsset(spec);
+
+  const selectPreset = (key: string) => {
+    setSelectedKey(key);
+    setSpec(JSON.parse(JSON.stringify(COMPONENT_PRESETS[key])));
+    setNotice('');
+  };
+
+  const parseDatasheet = async () => {
+    if (!rawText.trim()) return;
+    setBusy(true);
+    try {
+      const response = await fetch('/api/admin/cad/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rawText }),
+      });
+      const data = await response.json();
+      if (data.ok && data.spec) {
+        setSpec(data.spec);
+        setNotice('Datasheet geometry extracted. This uses the parametric fallback until a reviewed assembly is attached.');
+      } else {
+        setNotice(data.error ?? 'Could not parse this datasheet.');
+      }
+    } catch {
+      setNotice('Parser unavailable in this environment.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const generateBundle = async () => {
+    setBusy(true);
+    try {
+      const response = await fetch('/api/admin/cad/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec),
+      });
+      const data = await response.json();
+      setNotice(data.ok
+        ? `Parametric bundle ready · ${data.stlByteLength ?? 0} byte STL · seed definition generated.`
+        : data.error ?? 'Bundle generation failed.');
+    } catch {
+      setNotice('Bundle service unavailable.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deployBundle = async () => {
+    setBusy(true);
+    try {
+      const response = await fetch('/api/admin/cad/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spec),
+      });
+      const data = await response.json();
+      setNotice(data.ok ? data.result?.message ?? 'Catalog sync complete.' : data.error ?? 'Catalog sync failed.');
+    } catch {
+      setNotice('Catalog sync unavailable.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="control-hero-row">
+        <SectionHeading
+          eyebrow="FEATURE REPO / CAD STUDIO"
+          title="Component assembly studio"
+          description="Reviewed CAD assemblies render at presentation quality; every new datasheet still gets an honest, shaded parametric fallback."
+        />
+        <div className="control-repo-status"><StatusDot status="ok" /><span>asset registry online</span><code>cad-helper@0.2.0</code></div>
+      </div>
+
+      <div className="control-repo-strip">
+        <span className="control-repo-mark"><Icon name="cube" size={16} /></span>
+        <div><strong>CAD asset registry + builder</strong><span>reviewed GLB assemblies, named pin anchors and a separate parametric export path</span></div>
+        <span className="control-repo-path">/public/models3d</span>
+        <span className="control-repo-sync"><StatusDot status="ok" /> studio ready</span>
+      </div>
+
+      <div className="control-cad-layout">
+        <section className="control-card control-cad-intake">
+          <div className="control-card__eyebrow">01 / ASSET OR SPEC</div>
+          <h2>Choose a component</h2>
+          <label className="control-field-label">Reference CAD or parametric preset</label>
+          <select className="control-select" value={selectedKey} onChange={(event) => selectPreset(event.target.value)}>
+            {presetKeys.map((key) => <option key={key} value={key}>{COMPONENT_PRESETS[key].name}</option>)}
+          </select>
+          <div className="control-cad-asset-state">
+            <span className={referenceAsset ? 'is-reference' : 'is-parametric'}><i />{referenceAsset ? 'reviewed assembly' : 'parametric fallback'}</span>
+            <small>{referenceAsset ? 'GLB with real part topology' : 'dimensions + anchors + features'}</small>
+          </div>
+          <div className="control-cad-or">or paste a datasheet excerpt</div>
+          <textarea
+            className="control-textarea"
+            value={rawText}
+            onChange={(event) => setRawText(event.target.value)}
+            placeholder="Dimensions: 45 x 20 x 1.6 mm… Pin 1: VCC…"
+            rows={5}
+          />
+          <button type="button" className="control-secondary-button control-secondary-button--wide" onClick={parseDatasheet} disabled={busy || !rawText.trim()}>
+            {busy ? 'Extracting…' : 'Parse datasheet'} <Icon name="arrow" size={13} />
+          </button>
+          <div className="control-cad-specs">
+            <div><span>catalog id</span><code>{spec.id}</code></div>
+            <div><span>assembly bounds</span><code>{spec.dimensions.widthMm} × {spec.dimensions.lengthMm} × {spec.dimensions.heightMm} mm</code></div>
+            <div><span>pin anchors</span><code>{spec.pins.length} mapped</code></div>
+            <div><span>asset tier</span><code>{referenceAsset ? 'reference / multi-mesh' : 'fallback / parametric'}</code></div>
+          </div>
+        </section>
+
+        <section className="control-card control-cad-preview">
+          <div className="control-card__heading">
+            <div>
+              <div className="control-card__eyebrow">02 / PRESENTATION VIEW</div>
+              <h2>{referenceAsset ? 'Reference CAD assembly' : 'Shaded parametric assembly'}</h2>
+            </div>
+            <div className="control-cad-preview-controls">
+              <button type="button" className={`control-secondary-button${showPins ? ' is-selected' : ''}`} onClick={() => setShowPins((visible) => !visible)}>
+                {showPins ? 'Hide anchors' : 'Show anchors'}
+              </button>
+              <button type="button" className="control-secondary-button" onClick={() => setWireframe((visible) => !visible)}>
+                {wireframe ? 'Solid view' : 'Wireframe'} <Icon name="cube" size={13} />
+              </button>
+            </div>
+          </div>
+          <CadPreviewCanvas spec={spec} wireframe={wireframe} showPins={showPins} />
+          <div className="control-cad-actions">
+            <button type="button" className="control-primary-button" onClick={generateBundle} disabled={busy}>
+              <Icon name="spark" size={14} /> {busy ? 'Building…' : 'Build parametric bundle'}
+            </button>
+            <button type="button" className="control-secondary-button" onClick={deployBundle} disabled={busy}>Deploy fallback to catalog</button>
+          </div>
+          {referenceAsset ? <p className="control-cad-provenance" title={referenceAsset.attribution}>Studio source: {referenceAsset.label}. The export buttons intentionally produce the separate parametric fallback, not a claimed copy of this reviewed assembly.</p> : null}
+          {notice ? <div className="control-inline-notice"><StatusDot status="ok" />{notice}</div> : null}
+        </section>
+      </div>
+    </>
+  );
 }
 
 function RepositoriesView({ openView }: { openView: (view: ViewId) => void }) {

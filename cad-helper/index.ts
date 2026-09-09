@@ -9,3 +9,4 @@ export * from './datasheet-parser';
 export * from './stl-generator';
 export * from './glb-generator';
 export * from './bundle-generator';
+export * from './reference-assets';
