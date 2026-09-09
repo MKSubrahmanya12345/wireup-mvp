@@ -230,16 +230,34 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
       metadata: { query: entry.query, reason: entry.reason },
     });
   }
+
+  /*
+   * Provisional parts are synthesised from an electrical contract when the
+   * catalog has no entry for a request. Every stage after this one resolves
+   * component ids against a catalog, so they must look the parts up here too —
+   * otherwise pins, wiring, diagram and firmware would silently skip the very
+   * component the user asked for. They stay flagged via `metadata.provisional`,
+   * which is what the validator reports on.
+   */
+  const workingCatalog = hardware.provisional.length ? [...catalog, ...hardware.provisional] : catalog;
+  for (const part of hardware.provisional) {
+    events.emit(
+      'info',
+      `"${part.metadata?.requestedAs ?? part.name}" is not in the component database yet — it was built from a `
+        + `${String(part.metadata?.contractFamily ?? 'generic')} template using worst-case values, so verify it against the datasheet before wiring.`,
+      { stage: 'hardware', metadata: { componentId: part.id, provisional: true } },
+    );
+  }
   state = { ...state, components: selections, hardwarePlan, name: projectName };
   await stage({ components: selections, hardwarePlan }, 'hardware');
 
-  const controller = controllerInfo({ ...state, components: selections, hardwarePlan }, catalog);
+  const controller = controllerInfo({ ...state, components: selections, hardwarePlan }, workingCatalog);
   const profile = controller.profile;
 
   /* --- 6. Pins ------------------------------------------------------------ */
   const pinPlan = planPins({
     selections,
-    catalog,
+    catalog: workingCatalog,
     ...(controller.instanceId ? { controllerInstanceId: controller.instanceId } : {}),
     modelPinAssignments: modelPayload.pinAssignments,
     events,
@@ -257,7 +275,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   /* --- 7. Wiring ---------------------------------------------------------- */
   const wiring = planWiring({
     selections,
-    catalog,
+    catalog: workingCatalog,
     assignments,
     power: hardwarePlan.power,
     ...(controller.instanceId ? { controllerInstanceId: controller.instanceId } : {}),
@@ -273,7 +291,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   const softwarePlan = planSoftware({
     requirements,
     selections,
-    catalog,
+    catalog: workingCatalog,
     assignments,
     serialLinks: pinPlan.serialLinks,
     i2cBuses: pinPlan.i2cBuses,
@@ -290,7 +308,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     projectSummary: requirements.summary,
     requirements,
     selections,
-    catalog,
+    catalog: workingCatalog,
     assignments,
     serialLinks: pinPlan.serialLinks,
     i2cBuses: pinPlan.i2cBuses,
@@ -322,7 +340,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   const libraries = generateLibraries({
     softwarePlan,
     selections,
-    catalog,
+    catalog: workingCatalog,
     ...(controller.componentId ? { controllerComponentId: controller.componentId } : {}),
     events,
   });
@@ -338,7 +356,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     projectSummary: requirements.summary,
     requirements,
     selections,
-    catalog,
+    catalog: workingCatalog,
     assignments,
     wiring,
     hardwarePlan,
@@ -353,7 +371,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     projectSummary: requirements.summary,
     requirements,
     selections,
-    catalog,
+    catalog: workingCatalog,
     hardwarePlan,
     pinAssignments: assignments,
     wiring,

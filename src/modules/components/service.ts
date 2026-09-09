@@ -109,6 +109,18 @@ export interface MatchResult {
  * nearest real catalog entry. This is what stops invented hardware from
  * entering the project.
  */
+/**
+ * Whole-token containment.
+ *
+ * `"unobtainium widget".includes("uno")` is true and meaningless. Both strings
+ * are already normalised to space-separated lowercase tokens, so padding with
+ * spaces makes containment align to token boundaries.
+ */
+function containsPhrase(haystack: string, needle: string): boolean {
+  if (!haystack || !needle) return false;
+  return ` ${haystack} `.includes(` ${needle} `);
+}
+
 export function matchComponent(query: string, catalog: ComponentDefinition[]): MatchResult | undefined {
   const raw = (query ?? '').trim();
   if (!raw) return undefined;
@@ -132,17 +144,25 @@ export function matchComponent(query: string, catalog: ComponentDefinition[]): M
     let score = 0;
     let matchedTerm: string | undefined;
 
+    /*
+     * Substring containment must respect word boundaries.
+     *
+     * A raw `includes()` matched the alias "uno" inside "unobtainium widget",
+     * scoring 80 and confidently returning an Arduino Uno for a part that has
+     * nothing to do with one. Any short alias (uno, esc, led, pot) hides inside
+     * ordinary words, so containment is only meaningful on whole tokens.
+     */
     for (const alias of component.aliases ?? []) {
       const normalisedAlias = normalizeText(alias);
       if (normalisedAlias.length < 2) continue;
-      if (needle.includes(normalisedAlias) || normalisedAlias.includes(needle)) {
+      if (containsPhrase(needle, normalisedAlias) || containsPhrase(normalisedAlias, needle)) {
         score = Math.max(score, 80);
         matchedTerm = alias;
       }
     }
 
     const normalisedName = normalizeText(component.name);
-    if (normalisedName.includes(needle) || needle.includes(normalisedName)) {
+    if (containsPhrase(normalisedName, needle) || containsPhrase(needle, normalisedName)) {
       score = Math.max(score, 75);
       matchedTerm = matchedTerm ?? component.name;
     }
@@ -150,22 +170,33 @@ export function matchComponent(query: string, catalog: ComponentDefinition[]): M
     for (const keyword of component.keywords ?? []) {
       const normalisedKeyword = normalizeText(keyword);
       if (normalisedKeyword.length < 3) continue;
-      if (needle.includes(normalisedKeyword)) {
+      if (containsPhrase(needle, normalisedKeyword)) {
         score = Math.max(score, 65);
         matchedTerm = matchedTerm ?? keyword;
       }
     }
 
-    // Token overlap fallback (handles "esp 32 dev board", "l298 driver", …)
+    /*
+     * Token overlap fallback (handles "esp 32 dev board", "l298 driver", …).
+     *
+     * The haystack must be de-duplicated. A part whose name, id and aliases all
+     * repeat the same word ("servo motor sg90", "sg90", "micro servo", "hobby
+     * servo", "9g servo") used to count that word once per occurrence, pushing
+     * `ratio` far above 1.0 and producing scores above the 100 maximum — 123 for
+     * "SG92R micro servo" against the SG90. A vague family word could therefore
+     * outrank an exact part match, which is precisely backwards.
+     */
     const needleTokens = new Set(needle.split(' ').filter((token) => token.length > 1));
-    const haystackTokens = normalizeText(`${component.name} ${component.id} ${(component.aliases ?? []).join(' ')}`)
-      .split(' ')
-      .filter((token) => token.length > 1);
-    const overlap = haystackTokens.filter((token) => needleTokens.has(token)).length;
+    const haystackTokens = new Set(
+      normalizeText(`${component.name} ${component.id} ${(component.aliases ?? []).join(' ')}`)
+        .split(' ')
+        .filter((token) => token.length > 1),
+    );
+    const overlap = [...haystackTokens].filter((token) => needleTokens.has(token)).length;
     if (overlap > 0) {
-      const ratio = overlap / Math.max(1, needleTokens.size);
+      const ratio = Math.min(1, overlap / Math.max(1, needleTokens.size));
       score = Math.max(score, Math.round(30 + ratio * 35));
-      matchedTerm = matchedTerm ?? [...needleTokens].find((token) => haystackTokens.includes(token));
+      matchedTerm = matchedTerm ?? [...needleTokens].find((token) => haystackTokens.has(token));
     }
 
     if (score > 0) {

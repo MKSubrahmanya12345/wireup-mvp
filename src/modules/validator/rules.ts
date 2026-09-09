@@ -26,6 +26,7 @@ import {
 import { issueId } from '@/lib/validation/ids';
 
 import { analyzeCoverage } from '@/modules/project-understanding';
+import { isProvisional, provisionalVerification } from '@/modules/components/contracts';
 import { braceBalance } from '@/modules/code-generator';
 import { constantName, pinLiteral } from '@/modules/code-generator/templates';
 import { checkDiagramIntegrity, findMissingDiagramComponents } from '@/modules/diagram-generator';
@@ -548,6 +549,32 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
       });
     }
   }
+  /*
+   * A provisional part carries a contract's worst-case numbers, not measured
+   * ones. The budget it feeds is therefore an estimate, and an estimate must
+   * not be reported as a pass — that is exactly the silent-confidence failure
+   * the contract layer exists to prevent. Warn per part, and name the fields.
+   */
+  for (const selection of project.components) {
+    const definition = catalog.find((component) => component.id === selection.componentId);
+    if (!isProvisional(definition) || !definition) continue;
+    const unverified = (definition.metadata.unverifiedFields as string[] | undefined) ?? [];
+    add('power', {
+      code: 'unverified_component',
+      severity: 'warning',
+      domain: 'power',
+      message: `${selection.name} is a provisional part built from the "${definition.metadata.contractFamily}" contract, not a verified catalog entry.`,
+      details: [
+        unverified.length > 0 ? `Unverified: ${unverified.join(', ')}.` : '',
+        ...provisionalVerification(definition),
+      ]
+        .filter(Boolean)
+        .join(' '),
+      fixHint: `Confirm the datasheet values for "${definition.metadata.requestedAs}" and add it to the component catalog.`,
+      target: { artifact: 'components' },
+    });
+  }
+
   finishCheck('power.budget', 'Power budget', 'power', mark, 'Power budget is adequate for the selected supply');
 
   /* 8. Code ----------------------------------------------------------------- */

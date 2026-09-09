@@ -32,5 +32,11 @@ export interface HardwarePlanResult {
   plan: HardwarePlan;
   /** Component names the model asked for that could not be mapped to the catalog. */
   unmatched: { query: string; reason: string }[];
+  /**
+   * Parts synthesised from an electrical contract because the catalog had no
+   * entry. They carry `metadata.provisional` and must be surfaced to the user
+   * as unverified rather than presented as catalog parts.
+   */
+  provisional: import('@/types/component').ComponentDefinition[];
   notes: string[];
 }
