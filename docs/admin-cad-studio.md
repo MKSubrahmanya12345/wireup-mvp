@@ -51,3 +51,41 @@ must be attached before adding an asset to `cad-helper/reference-assets.ts`.
 The Uno demonstration asset has a specific licensing note at
 `public/models3d/ATTRIBUTION.md`; retain that notice until its licensing is
 resolved for the target deployment.
+
+## Registry ↔ CAD link
+
+The studio is no longer driven by a hand-written preset list. `cad-helper/catalog-link.ts`
+binds the component registry (`src/modules/components`) to the CAD layer, and
+`/api/admin/cad/presets` serves the result:
+
+| Tier | Selector marker | Source of geometry |
+| --- | --- | --- |
+| `reference` | ★ | reviewed multi-mesh GLB in `public/models3d` |
+| `preset` | ◆ | authored spec with measured envelope + datasheet anchors (`presets-motion.ts`, `datasheet-parser.ts`) |
+| `derived` | · | generated from the registry entry: real pins, real voltages, generic body |
+
+Because the derived tier exists, **every catalog part is previewable and
+exportable immediately** — adding a component to a seed file makes it appear in
+the studio with correct anchors on the same run.
+
+### Why the link is verified
+
+A CAD anchor whose name does not match the registry pin produces confidently
+wrong 3D wiring: the render looks correct and the connection is not. So the
+coupling is a checked contract, not a convention:
+
+```
+pnpm verify:cad-link
+```
+
+The verifier fails on an orphan preset (a model no project part can reference),
+a registry pin with no anchor, an anchor that does not exist on the part, a
+studio role that disagrees with the registry category, a dropped pin in a
+derived spec, or non-finite anchor coordinates. The admin studio surfaces the
+same audit inline, so a mismatch is visible in the UI rather than only in CI.
+
+Running it caught real pre-existing drift on the first pass: the Uno was missing
+`AREF`/`IOREF` and its `GND.1-3` aliases, the MPU6050 was missing the `XDA`/`XCL`
+auxiliary bus, the L298N motor-supply anchor was named `VCC` against a registry
+`+12V`, and the BME280 and KY-040 had CAD models with no catalog entry at all.
+Those are fixed in the registry, not papered over in the audit.

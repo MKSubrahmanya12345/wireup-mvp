@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import type { CadComponentSpec } from 'cad-helper';
-import { COMPONENT_PRESETS, getCadReferenceAsset } from 'cad-helper';
+import { auditCatalogCadLink, getCadReferenceAsset, listLinkedSpecs, specForCatalogComponent } from 'cad-helper';
 import { CadPreviewCanvas } from '@/components/admin/CadPreviewCanvas';
 
 type ViewId = 'overview' | 'graph' | 'doubts' | 'stakes' | 'cad-helper' | 'repositories' | 'activity';
@@ -412,11 +412,54 @@ function StakesView() {
   );
 }
 
+const CAD_TIER_LABEL: Record<string, string> = {
+  reference: 'reviewed assembly',
+  preset: 'authored CAD spec',
+  derived: 'derived from registry',
+};
+
+const CAD_TIER_DETAIL: Record<string, string> = {
+  reference: 'GLB with real part topology',
+  preset: 'measured envelope + datasheet anchors',
+  derived: 'registry pins laid out on a generic body',
+};
+
+const CAD_CATEGORY_ORDER = ['controller', 'driver', 'actuator', 'sensor', 'communication', 'display', 'power', 'input', 'passive', 'prototyping', 'other'];
+
 function CadHelperView() {
-  const presetKeys = Object.keys(COMPONENT_PRESETS);
-  const defaultPresetKey = presetKeys.includes('arduino-uno-r3') ? 'arduino-uno-r3' : (presetKeys[0] ?? 'hc-sr04-ultrasonic');
+  /*
+   * The studio is driven by the component registry, not by a hand-written
+   * preset list: every catalog part is selectable and carries the best model
+   * that exists for it. `tier` keeps the UI honest about which one that is.
+   */
+  const linked = useMemo(() => listLinkedSpecs(), []);
+  const linkAudit = useMemo(() => auditCatalogCadLink(), []);
+  const groupedOptions = useMemo(() => {
+    const groups = new Map<string, { id: string; name: string; tier: string }[]>();
+    for (const entry of linked) {
+      const bucket = groups.get(entry.spec.category) ?? [];
+      bucket.push({ id: entry.spec.id, name: entry.spec.name, tier: entry.tier });
+      groups.set(entry.spec.category, bucket);
+    }
+    return [...groups.entries()]
+      .sort((a, b) => {
+        const orderA = CAD_CATEGORY_ORDER.indexOf(a[0]);
+        const orderB = CAD_CATEGORY_ORDER.indexOf(b[0]);
+        return (orderA < 0 ? 99 : orderA) - (orderB < 0 ? 99 : orderB);
+      })
+      .map(([category, items]) => ({
+        category,
+        items: items.sort((a, b) => (a.tier === b.tier ? a.name.localeCompare(b.name) : a.tier.localeCompare(b.tier))),
+      }));
+  }, [linked]);
+
+  const defaultPresetKey = linked.some((entry) => entry.spec.id === 'arduino-uno-r3') ? 'arduino-uno-r3' : (linked[0]?.spec.id ?? 'hc-sr04-ultrasonic');
   const [selectedKey, setSelectedKey] = useState(defaultPresetKey);
-  const [spec, setSpec] = useState<CadComponentSpec>(() => JSON.parse(JSON.stringify(COMPONENT_PRESETS[defaultPresetKey])));
+  const [tier, setTier] = useState<string>(() => linked.find((entry) => entry.spec.id === defaultPresetKey)?.tier ?? 'derived');
+  const [spec, setSpec] = useState<CadComponentSpec>(() => {
+    const entry = specForCatalogComponent(defaultPresetKey);
+    return JSON.parse(JSON.stringify(entry?.spec ?? linked[0]?.spec));
+  });
   const [wireframe, setWireframe] = useState(false);
   const [showPins, setShowPins] = useState(false);
   const [rawText, setRawText] = useState('');
@@ -425,8 +468,11 @@ function CadHelperView() {
   const referenceAsset = getCadReferenceAsset(spec);
 
   const selectPreset = (key: string) => {
+    const entry = specForCatalogComponent(key);
+    if (!entry) return;
     setSelectedKey(key);
-    setSpec(JSON.parse(JSON.stringify(COMPONENT_PRESETS[key])));
+    setTier(entry.tier);
+    setSpec(JSON.parse(JSON.stringify(entry.spec)));
     setNotice('');
   };
 
@@ -442,6 +488,7 @@ function CadHelperView() {
       const data = await response.json();
       if (data.ok && data.spec) {
         setSpec(data.spec);
+        setTier('derived');
         setNotice('Datasheet geometry extracted. This uses the parametric fallback until a reviewed assembly is attached.');
       } else {
         setNotice(data.error ?? 'Could not parse this datasheet.');
@@ -511,13 +558,28 @@ function CadHelperView() {
         <section className="control-card control-cad-intake">
           <div className="control-card__eyebrow">01 / ASSET OR SPEC</div>
           <h2>Choose a component</h2>
-          <label className="control-field-label">Reference CAD or parametric preset</label>
+          <label className="control-field-label">Component registry ({linked.length} parts)</label>
           <select className="control-select" value={selectedKey} onChange={(event) => selectPreset(event.target.value)}>
-            {presetKeys.map((key) => <option key={key} value={key}>{COMPONENT_PRESETS[key].name}</option>)}
+            {groupedOptions.map((group) => (
+              <optgroup key={group.category} label={group.category}>
+                {group.items.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.tier === 'reference' ? '★ ' : item.tier === 'preset' ? '◆ ' : '· '}
+                    {item.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
           </select>
           <div className="control-cad-asset-state">
-            <span className={referenceAsset ? 'is-reference' : 'is-parametric'}><i />{referenceAsset ? 'reviewed assembly' : 'parametric fallback'}</span>
-            <small>{referenceAsset ? 'GLB with real part topology' : 'dimensions + anchors + features'}</small>
+            <span className={tier === 'reference' ? 'is-reference' : 'is-parametric'}><i />{CAD_TIER_LABEL[tier] ?? 'parametric fallback'}</span>
+            <small>{CAD_TIER_DETAIL[tier] ?? 'dimensions + anchors + features'}</small>
+          </div>
+          <div className={`control-inline-notice${linkAudit.ok ? '' : ' is-warning'}`}>
+            <StatusDot status={linkAudit.ok ? 'ok' : 'blocked'} />
+            {linkAudit.ok
+              ? `Registry ↔ CAD in sync · ${linkAudit.reference} reviewed · ${linkAudit.preset} authored · ${linkAudit.derived} derived`
+              : `${linkAudit.issues.length} registry ↔ CAD mismatches — anchors would not match the wiring plan`}
           </div>
           <div className="control-cad-or">or paste a datasheet excerpt</div>
           <textarea
@@ -534,7 +596,7 @@ function CadHelperView() {
             <div><span>catalog id</span><code>{spec.id}</code></div>
             <div><span>assembly bounds</span><code>{spec.dimensions.widthMm} × {spec.dimensions.lengthMm} × {spec.dimensions.heightMm} mm</code></div>
             <div><span>pin anchors</span><code>{spec.pins.length} mapped</code></div>
-            <div><span>asset tier</span><code>{referenceAsset ? 'reference / multi-mesh' : 'fallback / parametric'}</code></div>
+            <div><span>asset tier</span><code>{tier === 'reference' ? 'reference / multi-mesh' : tier === 'preset' ? 'authored / parametric' : 'derived / parametric'}</code></div>
           </div>
         </section>
 

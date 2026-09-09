@@ -15,6 +15,7 @@ import { COMMUNICATION } from './seed/communication';
 import { DISPLAYS } from './seed/displays';
 import { GENERAL } from './seed/general';
 import { MICROCONTROLLERS } from './seed/microcontrollers';
+import { MOTION } from './seed/motion';
 import { MOTORS } from './seed/motors';
 import { POWER } from './seed/power';
 import { SENSORS } from './seed/sensors';
@@ -22,6 +23,7 @@ import { SENSORS } from './seed/sensors';
 export const SEED_COMPONENTS: ComponentDefinition[] = [
   ...MICROCONTROLLERS,
   ...MOTORS,
+  ...MOTION,
   ...SENSORS,
   ...COMMUNICATION,
   ...ACTUATORS,
