@@ -4,7 +4,7 @@
  * Includes built-in high-accuracy presets for Maker and Industrial components.
  */
 
-import type { CadComponentSpec, CadPinDefinition, CadFeature, ComponentRole, PinSignalRole } from './types';
+import type { CadBodyStyle, CadComponentSpec, CadPinDefinition, CadFeature, CadPinStyle, ComponentRole, PinSignalRole } from './types';
 import { MOTION_PRESETS } from './presets-motion';
 
 /**
@@ -421,6 +421,9 @@ export function parseDatasheetText(rawText: string, userOverrides?: Partial<CadC
   let widthMm = userOverrides?.dimensions?.widthMm || 25.0;
   let lengthMm = userOverrides?.dimensions?.lengthMm || 20.0;
   let heightMm = userOverrides?.dimensions?.heightMm || 1.6;
+  let bodyStyle: CadBodyStyle | undefined = userOverrides?.bodyStyle;
+  let pinStyle: CadPinStyle | undefined = userOverrides?.pinStyle;
+  let inferredBodyColor = userOverrides?.bodyColor || '#1e3a8a';
 
   const dimMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:mm)?\s*[xX*×]\s*(\d+(?:\.\d+)?)\s*(?:mm)?(?:\s*[xX*×]\s*(\d+(?:\.\d+)?)\s*(?:mm)?)?/);
   if (dimMatch) {
@@ -430,7 +433,7 @@ export function parseDatasheetText(rawText: string, userOverrides?: Partial<CadC
     if (d1 && d2) {
       widthMm = Math.max(d1, d2);
       lengthMm = Math.min(d1, d2);
-      if (d3) heightMm = 1.6; // standard PCB thickness
+      if (d3) heightMm = d3;
     }
   }
 
@@ -488,11 +491,47 @@ export function parseDatasheetText(rawText: string, userOverrides?: Partial<CadC
     }
   }
 
+  const lowerText = text.toLowerCase();
+  const looksLikeRgbLed = /\brgb\b[\s\S]{0,24}\bled\b|\bled\b[\s\S]{0,24}\brgb\b/.test(lowerText);
+  const looksLikeThroughHoleLed = /\b(?:5\s*mm|t-1\s*3\/4|through[-\s]?hole|light emitting diode)\b[\s\S]{0,48}\bled\b|\bled\b[\s\S]{0,48}\b(?:5\s*mm|t-1\s*3\/4|through[-\s]?hole)\b/.test(lowerText);
+
+  if (!userOverrides?.features && (looksLikeRgbLed || looksLikeThroughHoleLed)) {
+    bodyStyle = 'none';
+    pinStyle = 'leads';
+    inferredBodyColor = looksLikeRgbLed ? '#e0f2fe' : '#ef4444';
+    widthMm = userOverrides?.dimensions?.widthMm ?? 5.0;
+    lengthMm = userOverrides?.dimensions?.lengthMm ?? 5.0;
+    heightMm = userOverrides?.dimensions?.heightMm ?? 8.6;
+
+    pins.splice(0, pins.length);
+    const names = looksLikeRgbLed ? ['R', 'G', 'B', 'CATHODE'] : ['A', 'C'];
+    const roles: PinSignalRole[] = looksLikeRgbLed ? ['pwm', 'pwm', 'pwm', 'ground'] : ['digital', 'ground'];
+    const signals = looksLikeRgbLed
+      ? ['Red anode through resistor', 'Green anode through resistor', 'Blue anode through resistor', 'Common cathode to ground']
+      : ['Anode / long lead through resistor', 'Cathode / short lead to ground'];
+    const startX = -((names.length - 1) * 2.54) / 2;
+    for (let i = 0; i < names.length; i += 1) {
+      pins.push({
+        name: names[i],
+        pinNumber: i + 1,
+        role: roles[i],
+        signal: signals[i],
+        xMm: Number((startX + i * 2.54).toFixed(3)),
+        yMm: -heightMm / 2,
+        zMm: 0,
+        direction: 'down',
+        required: true,
+      });
+    }
+  }
+
   // 6. Features
-  const features: CadFeature[] = userOverrides?.features || [
+  const features: CadFeature[] = userOverrides?.features || (bodyStyle === 'none' && /led/.test(lowerText) ? [
+    { name: looksLikeRgbLed ? 'clear_5mm_rgb_epoxy_lens' : 'diffused_5mm_epoxy_lens', type: 'led', dimensions: [5.0, heightMm, 5.0], position: [0, 0, 0], color: inferredBodyColor },
+  ] : [
     { name: 'main_ic', type: 'box', dimensions: [6.0, 1.2, 6.0], position: [0, 1.4, 0], color: '#18181b' },
     { name: 'header_block', type: 'header_block', dimensions: [pins.length * 2.54, 2.5, 2.5], position: [0, 2.0, pins[0]?.zMm ?? 0], color: '#1e293b' },
-  ];
+  ]);
 
   return {
     id,
@@ -504,7 +543,9 @@ export function parseDatasheetText(rawText: string, userOverrides?: Partial<CadC
     maxVoltage,
     currentMa: userOverrides?.currentMa || 15,
     dimensions: { widthMm, lengthMm, heightMm },
-    bodyColor: userOverrides?.bodyColor || '#1e3a8a',
+    bodyColor: inferredBodyColor,
+    ...(bodyStyle ? { bodyStyle } : {}),
+    ...(pinStyle ? { pinStyle } : {}),
     pins,
     features,
     protocols: userOverrides?.protocols || ['gpio'],

@@ -22,6 +22,22 @@ multi-mesh GLB copied into `public/models3d/arduino-uno/` from the vendored
 asset registry and provides an assembly-quality comparison point for the
 rendering experience.
 
+## Datasheet intake
+
+`/api/admin/cad/parse` now accepts three forms of evidence:
+
+1. a known maker-part name such as `5mm LED`, `HC-SR04`, `L298N`, `SG90`,
+   `LCD1602`, `HC-05` or `ESP32 DevKit V1`;
+2. pasted datasheet text; or
+3. a public HTML/text datasheet URL.
+
+Known names resolve through `cad-helper/online-datasheet.ts`, a small curated
+internet-data snapshot that records the source URL/note on `spec.datasheetSources`.
+Pasted/URL text still goes through `parseDatasheetText`, but the dimension parser
+now preserves the third dimension (`45 × 20 × 15 mm` becomes a 15 mm assembly,
+not a flattened 1.6 mm PCB). Binary/PDF URLs are not parsed in-process; the API
+warns the admin to paste the relevant table text or use a curated part name.
+
 ## Build architecture
 
 `tools/cad/build_glb.py` is the independent, headless asset job:
@@ -66,7 +82,12 @@ binds the component registry (`src/modules/components`) to the CAD layer, and
 
 Because the derived tier exists, **every catalog part is previewable and
 exportable immediately** — adding a component to a seed file makes it appear in
-the studio with correct anchors on the same run.
+the studio with correct anchors on the same run. The derived tier is now
+package-aware for common loose parts and modules: 5 mm LEDs/RGB LEDs, axial
+resistors, electrolytic/ceramic capacitors, buzzers, switches, keypads,
+batteries, regulators, breadboards, propellers, DHT/LDR/IR/MQ sensor packages, HC-05/HC-06,
+ESP-01, ESP32 DevKit V1, Arduino Nano and LCD1602 no longer appear as anonymous
+boxes when only registry data is available.
 
 ### Why the link is verified
 

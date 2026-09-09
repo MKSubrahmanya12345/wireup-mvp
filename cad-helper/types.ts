@@ -97,6 +97,16 @@ export interface CadVisualAssetRef {
   quality?: 'reference' | 'parametric';
 }
 
+export type CadBodyStyle = 'pcb' | 'enclosure' | 'discrete' | 'none';
+export type CadPinStyle = 'headers' | 'leads' | 'pads' | 'none';
+
+export interface CadDatasheetSource {
+  label: string;
+  url: string;
+  /** Short note such as the table/section used for dimensions or pinout. */
+  note?: string;
+}
+
 export interface CadComponentSpec {
   /** Unique catalog identifier (e.g. "hc-sr04-ultrasonic", "oled-ssd1306-i2c") */
   id: string;
@@ -106,6 +116,16 @@ export interface CadComponentSpec {
   category: ComponentRole;
   /** Brief technical summary */
   description: string;
+  /**
+   * Physical base style. Defaults to `pcb`; set `none` for loose parts such as
+   * LEDs/resistors so the renderer does not put a fake circuit board under the
+   * package.
+   */
+  bodyStyle?: CadBodyStyle;
+  /** How exposed pins should be drawn. Defaults to 0.1" header pins. */
+  pinStyle?: CadPinStyle;
+  /** Internet/vendor data used to author or enrich this spec, when available. */
+  datasheetSources?: CadDatasheetSource[];
   /** Typical operating logic voltage (e.g. 3.3 or 5.0) */
   voltage: number;
   /** Minimum operating voltage */
