@@ -34,6 +34,7 @@ const TABS = [
   { href: '/firmware', label: 'Firmware', short: 'Firmware' },
   { href: '/guide', label: 'Build guide', short: 'Guide' },
   { href: '/quality', label: 'Check & fix', short: 'Check' },
+  { href: '/hands', label: 'Hands & legs', short: 'Hands' },
 ] as const;
 
 export function ProjectHub({ projectId, initial, children }: { projectId: string; initial: ProjectState; children: ReactNode }) {

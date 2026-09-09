@@ -37,6 +37,7 @@ import { generateDiagram } from '@/modules/diagram-generator';
 import { generateInstructions } from '@/modules/instructions-generator';
 
 import { buildGenerationContext, controllerInfo, type GenerationContext } from './context';
+import { planHumanLoop } from '@/modules/human-loop';
 
 export interface PipelineInput {
   project: ProjectState;
@@ -69,6 +70,7 @@ type StagePatch = Partial<
     | 'wiring'
     | 'softwarePlan'
     | 'artifacts'
+    | 'humanLoop'
     | 'llm'
     | 'revision'
     | 'iteration'
@@ -372,6 +374,17 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   }
   await stage({ artifacts }, 'instructions');
 
+  /* --- Hands and legs ----------------------------------------------------- */
+  /*
+   * A generated project is a plan, not a working device. Everything the agent
+   * physically cannot do — plug it in, read the terminal, measure the door,
+   * decide what matters — is handed to the human here as an ordered queue with
+   * defaults, so the build has a route from "generated" to "actually running".
+   */
+  const humanLoop = planHumanLoop(state, context.catalog, { events });
+  state = { ...state, humanLoop, updatedAt: nowIso() };
+  await stage({ humanLoop }, 'instructions');
+
   /* --- Done --------------------------------------------------------------- */
   state = {
     ...state,
@@ -383,6 +396,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     wiring,
     softwarePlan,
     artifacts,
+    humanLoop,
     revision: 1,
     stage: 'validating',
     status: 'validating',

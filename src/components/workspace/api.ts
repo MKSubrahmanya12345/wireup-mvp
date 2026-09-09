@@ -7,6 +7,7 @@
 
 import type { AgentEvent } from '@/types/generation';
 import type { ChatDiff, ChatMessage, ProjectState } from '@/types/project';
+import type { HumanFact, HumanTask } from '@/modules/human-loop/types';
 
 export interface ApiEnvelope<T> {
   ok?: boolean;
@@ -223,3 +224,50 @@ export async function saveFirmwareFile(id: string, path: string, content: string
   return unwrap<FirmwareTurnPayload>(response);
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Hands & legs (human tasks)                                                 */
+/* -------------------------------------------------------------------------- */
+
+export interface TasksPayload {
+  tasks: HumanTask[];
+  facts: HumanFact[];
+  summary: { total: number; done: number; pending: number; blockingPending: number; assumed: number; complete: boolean };
+  next: string | null;
+}
+
+export interface TaskActionPayload {
+  task: HumanTask;
+  fact: HumanFact | null;
+  summary: TasksPayload['summary'];
+  next: string | null;
+}
+
+export async function fetchTasks(id: string): Promise<TasksPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/tasks`, { cache: 'no-store' });
+  return unwrap<TasksPayload>(response);
+}
+
+/** Derive the queue from the finished hardware plan. */
+export async function planTasks(id: string, force = false): Promise<TasksPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/tasks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'plan', force }),
+  });
+  return unwrap<TasksPayload>(response);
+}
+
+export async function actOnTask(
+  id: string,
+  taskId: string,
+  action: 'claim' | 'submit' | 'skip',
+  extra: { answer?: string; evidence?: string; note?: string } = {},
+): Promise<TaskActionPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/tasks/${encodeURIComponent(taskId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...extra }),
+  });
+  return unwrap<TaskActionPayload>(response);
+}

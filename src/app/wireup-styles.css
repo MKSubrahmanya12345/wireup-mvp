@@ -1404,3 +1404,162 @@ html {
     min-height: 320px;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Hands & legs — the human task queue                                 */
+/* ------------------------------------------------------------------ */
+
+.task {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--surface-2, transparent);
+}
+
+.task--done {
+  opacity: 0.72;
+}
+
+.task__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task__order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--border);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.task__title {
+  flex: 1 1 auto;
+  font-size: 14px;
+}
+
+.task__meta {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.task__meta > div {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 8px;
+}
+
+.task__label {
+  color: var(--muted, #8b8b8b);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.task__steps {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  display: grid;
+  gap: 3px;
+}
+
+.task__command {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #0f1115;
+  overflow-x: auto;
+}
+
+.task__command code {
+  color: #d7e2ff;
+  white-space: pre;
+  font-size: 12.5px;
+}
+
+.task__expect {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--muted, #8b8b8b);
+}
+
+.task__form {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.task__input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.task__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task__choices {
+  display: grid;
+  gap: 6px;
+}
+
+.task__choice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.task__choice--on {
+  border-color: var(--accent, #6aa6ff);
+  background: rgba(106, 166, 255, 0.08);
+}
+
+.task__choice em {
+  display: block;
+  font-style: normal;
+  color: var(--muted, #8b8b8b);
+  font-size: 12px;
+}
+
+.task__result {
+  margin: 10px 0 0;
+  display: grid;
+  gap: 6px;
+}
+
+.task__evidence {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #0f1115;
+  color: #d7e2ff;
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}

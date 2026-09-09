@@ -59,6 +59,11 @@ export const FEATURE_RULES: FeatureRule[] = [
   { feature: 'battery_power', pattern: /\b(battery|batteries|lipo|li-po|18650|aa\s*cells|9v|power\s*bank|portable)\b/i },
   { feature: 'telemetry', pattern: /\b(telemetry|log(ging)?|readout|report|dashboard|sensor\s*data)\b/i },
   { feature: 'autonomy', pattern: /\b(autonomous|self[-\s]driving|navigate|avoid|wander|patrol|follow)\b/i },
+  { feature: 'camera_vision', pattern: /\b(camera|camera module|webcam|web\s*cam|picam(era)?|csi|imx\s*\d{3,4}|video|image\s*capture|photo|opencv)\b/i, quantityKey: 'cameras', quantityNouns: ['camera', 'webcam', 'camera module'] },
+  { feature: 'face_recognition', pattern: /\b(face\s*(recogni\w*|detect\w*|identif\w*|unlock\w*|lock|data)|facial\s*recogni\w*|recogni\w*\s*faces?|biometric|identity\s*verif\w*|who\s*is\s*at\s*the\s*door)\b/i },
+  { feature: 'database_storage', pattern: /\b(database|\bdb\b|sqlite|postgres|postgresql|store|storage|persist|save\s*(the\s*)?(face\s*)?data|audit\s*log|access\s*log)\b/i },
+  { feature: 'access_control', pattern: /\b(door\s*lock|door\s*latch|doorlock|unlock|locks?|locking|access\s*control|entry\s*system|deadbolt|electric\s*strike|solenoid\s*(lock|bolt)|smart\s*lock|locks?\s*the\s*door)\b/i },
+  { feature: 'liveness', pattern: /\b(liveness|anti[-\s]*spoof\w*|spoof\w*|blink\s*detect\w*|deep\s*fake|photo\s*attack|mask\s*attack)\b/i },
 ];
 
 export interface PlatformHint {
@@ -76,6 +81,14 @@ const PLATFORM_RULES: { pattern: RegExp; platform: string; componentId?: string;
   { pattern: /\besp[\s-]?8266\b|\bnode\s*mcu\b/i, platform: 'esp8266', confidence: 0.7 },
   { pattern: /\braspberry\s*pi\s*pico\b|\brp2040\b/i, platform: 'rp2040', confidence: 0.8 },
   { pattern: /\bstm32\b/i, platform: 'stm32', confidence: 0.7 },
+  // SBCs. Specific models outrank the bare "raspberry pi" catch-all on
+  // confidence, so "raspberry pi 4" never falls through to the generic rule.
+  // Without these a Pi prompt produced NO platform hint at all and the model
+  // quietly substituted an ESP32.
+  { pattern: /\braspberry\s*pi\s*5\b|\brpi\s*5\b|\brpi5\b|\bpi\s*5\b/i, platform: 'raspberry-pi-5', componentId: 'raspberry-pi-5', confidence: 0.97 },
+  { pattern: /\braspberry\s*pi\s*4\b|\brpi\s*4\b|\brpi4\b|\bpi\s*4\s*b?\b|\bbcm2711\b/i, platform: 'raspberry-pi-4', componentId: 'raspberry-pi-4b', confidence: 0.96 },
+  { pattern: /\bpi\s*zero\s*2\b|\bzero\s*2\s*w\b|\brpi\s*zero\b|\bpi\s*zero\b/i, platform: 'raspberry-pi-zero-2-w', componentId: 'raspberry-pi-zero-2-w', confidence: 0.94 },
+  { pattern: /\braspberry\s*pi\b|\braspberrypi\b|\brpi\b|\braspberry\s*pi\s*(zero|3|3b)\b/i, platform: 'raspberry-pi', componentId: 'raspberry-pi-4b', confidence: 0.92 },
 ];
 
 export interface PromptAnalysis {

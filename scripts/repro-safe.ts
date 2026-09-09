@@ -83,6 +83,7 @@ function initialProject(prompt: string): ProjectState {
     iteration: { current: 0, max: 3 },
     llm: { calls: [] },
     chat: [],
+    humanLoop: { tasks: [], facts: [] },
     revision: 0,
   };
 }

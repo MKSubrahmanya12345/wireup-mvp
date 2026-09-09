@@ -9,6 +9,7 @@ import type { Diagram } from './diagram';
 import type { AgentEvent } from './generation';
 import type { ValidationResult } from './validation';
 import type { PinAssignment, WiringPlan } from './wiring';
+import type { HumanLoopState } from '@/modules/human-loop/types';
 
 export type ProjectStatus =
   | 'pending'
@@ -336,6 +337,11 @@ export interface ProjectState {
   };
   /** Firmware workbench conversation (user instructions + agent replies). */
   chat: ChatMessage[];
+  /**
+   * Hands-and-legs queue: the physical actions and decisions only a human can
+   * carry out, plus the facts their answers grounded.
+   */
+  humanLoop: HumanLoopState;
   /** Current revision number (1 = initial generation). */
   revision: number;
 }

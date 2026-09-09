@@ -26,6 +26,7 @@ import type {
 } from '@/types/project';
 import type { ValidationResult } from '@/types/validation';
 import type { PinAssignment, WiringPlan } from '@/types/wiring';
+import type { HumanLoopState } from '@/modules/human-loop/types';
 
 export interface ProjectDocument {
   _id: Types.ObjectId;
@@ -56,6 +57,7 @@ export interface ProjectDocument {
     calls: LlmCallRecord[];
   };
   chat: ChatMessage[];
+  humanLoop: HumanLoopState;
   revision: number;
 }
 
@@ -102,6 +104,7 @@ const ProjectSchema = new mongoose.Schema(
     iteration: { type: Mixed, default: { current: 0, max: 0 } },
     llm: { type: Mixed, default: { calls: [] } },
     chat: { type: Mixed, default: [] },
+    humanLoop: { type: Mixed, default: { tasks: [], facts: [] } },
     revision: { type: Number, default: 0 },
   },
   {

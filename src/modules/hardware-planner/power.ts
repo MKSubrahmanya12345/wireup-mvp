@@ -82,8 +82,15 @@ function sumLoads(
      * current figure is a contact or absolute maximum rating. Summing sixteen
      * 50 mA switch ratings once produced a "1025 mA peak" logic rail and a
      * power-budget error for a build that idles at microamps.
+     *
+     * A high-current LOAD is the opposite case. A solenoid or a motor is a
+     * two-terminal part for wiring purposes (which is why it carries
+     * noSupplyPins) but it really does pull an amp through its driver, and
+     * honouring the flag for loads silently dropped the entire lock current out
+     * of every door budget. Loads are always budgeted.
      */
-    if (definition.metadata.noSupplyPins === true) continue;
+    const isHighCurrentLoad = ['motor', 'motor_driver', 'actuator'].includes(definition.category);
+    if (definition.metadata.noSupplyPins === true && !isHighCurrentLoad) continue;
 
     for (const instance of selection.instances) {
       if (excludeInstanceId && instance.instanceId === excludeInstanceId) continue;

@@ -11,9 +11,11 @@
 import type { ComponentDefinition } from '@/types/component';
 
 import { ACTUATORS } from './seed/actuators';
+import { CAMERAS, SBCS } from './seed/sbcs';
 import { COMMUNICATION } from './seed/communication';
 import { DISPLAYS } from './seed/displays';
 import { GENERAL } from './seed/general';
+import { LOCK_HARDWARE } from './seed/locks';
 import { MICROCONTROLLERS } from './seed/microcontrollers';
 import { MOTORS } from './seed/motors';
 import { POWER } from './seed/power';
@@ -21,10 +23,13 @@ import { SENSORS } from './seed/sensors';
 
 export const SEED_COMPONENTS: ComponentDefinition[] = [
   ...MICROCONTROLLERS,
+  ...SBCS,
   ...MOTORS,
   ...SENSORS,
+  ...CAMERAS,
   ...COMMUNICATION,
   ...ACTUATORS,
+  ...LOCK_HARDWARE,
   ...POWER,
   ...GENERAL,
   ...DISPLAYS,

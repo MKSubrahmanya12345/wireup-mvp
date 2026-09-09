@@ -10,6 +10,7 @@ import type { Types } from 'mongoose';
 import { getProjectModel, type ProjectDocument } from '@/models/Project';
 import type { AgentEvent } from '@/types/generation';
 import type { ChatMessage, ProjectArtifacts, ProjectState, ProjectStatus } from '@/types/project';
+import type { HumanLoopState } from '@/modules/human-loop/types';
 
 import { createLogger, describeError } from '@/lib/logging/logger';
 import { connectMongo } from '@/lib/mongodb/client';
@@ -68,6 +69,9 @@ export function serializeProject(raw: RawProject): ProjectState {
       calls: Array.isArray(raw.llm?.calls) ? (raw.llm?.calls ?? []) : [],
     },
     chat: Array.isArray(raw.chat) ? (raw.chat as ChatMessage[]) : [],
+    humanLoop: raw.humanLoop && Array.isArray(raw.humanLoop.tasks)
+      ? (raw.humanLoop as HumanLoopState)
+      : { tasks: [], facts: [] },
     revision: typeof raw.revision === 'number' ? raw.revision : 0,
   };
 }

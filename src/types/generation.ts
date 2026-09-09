@@ -66,6 +66,10 @@ export type AgentEventType =
   | 'fix_change_rejected'
   | 'fix_completed'
   | 'final_project_completed'
+  /** The agent handed a physical/decision task to the human. */
+  | 'human_task_opened'
+  /** The human answered, skipped, or failed a hands-and-legs task. */
+  | 'human_task_completed'
   | 'generation_failed'
   | 'info';
 

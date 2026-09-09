@@ -80,6 +80,122 @@ const esp32Pin = (
 const ESP32_IO: PinCapability[] = ['digital', 'pwm', 'touch'];
 const ESP32_ADC1: PinCapability[] = ['digital', 'pwm', 'adc', 'touch'];
 
+/**
+ * Raspberry Pi 40-pin header.
+ *
+ * Three things make this different from an MCU and all three matter:
+ *  - 3.3 V logic that is *not* 5 V tolerant,
+ *  - no ADC at all on the header,
+ *  - and a boot-time pull state that decides whether a lock fires on power-up.
+ *
+ * GPIO0-GPIO8 pull UP at boot and GPIO9-GPIO27 pull DOWN, so GPIO17 and GPIO27
+ * are ranked first: they idle low while Linux boots, which is what a fail-secure
+ * bolt needs. Getting this backwards means the door unlocks every time the Pi
+ * reboots.
+ */
+const PI_GPIO: PinCapability[] = ['digital', 'interrupt'];
+
+const piPin = (number: number, preference: number, capabilities: PinCapability[], caution?: string): McuPinSpec => ({
+  name: `GPIO${number}`,
+  number,
+  capabilities,
+  preference,
+  ...(caution ? { caution } : {}),
+});
+
+const PI_HEADER_SPECS: McuPinSpec[] = [
+  piPin(17, 1, PI_GPIO, 'Pulls DOWN at boot — the safest choice for a driver that must stay off while Linux boots'),
+  piPin(27, 2, PI_GPIO, 'Pulls DOWN at boot — second choice for the same reason'),
+  piPin(22, 3, PI_GPIO),
+  piPin(23, 4, PI_GPIO),
+  piPin(24, 5, PI_GPIO),
+  piPin(25, 6, PI_GPIO),
+  piPin(5, 7, PI_GPIO),
+  piPin(6, 8, PI_GPIO),
+  piPin(16, 9, PI_GPIO),
+  piPin(26, 10, PI_GPIO),
+  piPin(4, 11, PI_GPIO, '1-Wire is enabled on this pin by default — disable it if you need the pin for something else'),
+  piPin(12, 12, [...PI_GPIO, 'pwm'], 'PWM0 alt function'),
+  piPin(13, 13, [...PI_GPIO, 'pwm'], 'PWM1 alt function'),
+  piPin(18, 14, [...PI_GPIO, 'pwm'], 'PWM0 alt function; also PCM clock'),
+  piPin(19, 15, [...PI_GPIO, 'pwm'], 'PWM1 alt function; SPI1 MISO'),
+  piPin(20, 16, [...PI_GPIO, 'spi'], 'SPI1 MOSI (secondary SPI)'),
+  piPin(21, 17, [...PI_GPIO, 'spi'], 'SPI1 SCLK (secondary SPI)'),
+  piPin(2, 18, [...PI_GPIO, 'i2c'], 'I2C1 SDA — a 1.8 kΩ pull-up to 3.3 V is fitted on the board'),
+  piPin(3, 19, [...PI_GPIO, 'i2c'], 'I2C1 SCL — a 1.8 kΩ pull-up to 3.3 V is fitted on the board'),
+  piPin(7, 20, [...PI_GPIO, 'spi'], 'SPI0 CE1'),
+  piPin(8, 21, [...PI_GPIO, 'spi'], 'SPI0 CE0'),
+  piPin(9, 22, [...PI_GPIO, 'spi'], 'SPI0 MISO'),
+  piPin(10, 23, [...PI_GPIO, 'spi'], 'SPI0 MOSI'),
+  piPin(11, 24, [...PI_GPIO, 'spi'], 'SPI0 SCLK'),
+  piPin(14, 25, [...PI_GPIO, 'uart'], 'UART0 TXD — the Linux console attaches here unless you disable it'),
+  piPin(15, 26, [...PI_GPIO, 'uart'], 'UART0 RXD — the Linux console attaches here unless you disable it'),
+];
+
+const PI_RESERVED: { pin: string; reason: string }[] = [
+  { pin: 'GPIO0', reason: 'HAT EEPROM ID — not broken out on the 40-pin header' },
+  { pin: 'GPIO1', reason: 'HAT EEPROM ID — not broken out on the 40-pin header' },
+];
+
+const PI_NOTES: string[] = [
+  '3.3 V logic and it is NOT 5 V tolerant — a 5 V signal will destroy the SoC.',
+  'No analog input on the 40-pin header. Use an external ADC over I2C or SPI.',
+  '16 mA per GPIO, but a 50 mA TOTAL across all GPIO. Anything larger needs a transistor or a driver.',
+  'At boot GPIO0-GPIO8 pull UP and GPIO9-GPIO27 pull DOWN. A driver that must stay off during boot belongs on GPIO17 or GPIO27.',
+  'GPIO2/GPIO3 carry 1.8 kΩ on-board pull-ups to 3.3 V for the HAT I2C bus.',
+];
+
+const PI_PROFILES: McuProfile[] = [
+  {
+    componentId: 'raspberry-pi-4b',
+    name: 'Raspberry Pi 4 Model B',
+    logicVoltage: 3.3,
+    supplyVoltageRange: [4.75, 5.25],
+    pins: PI_HEADER_SPECS,
+    reserved: PI_RESERVED,
+    i2c: { sda: 'GPIO2', scl: 'GPIO3' },
+    i2cRemappable: false,
+    spi: { mosi: 'GPIO10', miso: 'GPIO9', sck: 'GPIO11', cs: 'GPIO8' },
+    uarts: [{ id: '/dev/serial0', tx: 'GPIO14', rx: 'GPIO15', recommended: true, note: 'Primary UART; free it from the Linux console with raspi-config' }],
+    maxGpioSinkMa: 16,
+    recommendedGpioSinkMa: 8,
+    adcBits: 0,
+    notes: PI_NOTES,
+  },
+  {
+    componentId: 'raspberry-pi-5',
+    name: 'Raspberry Pi 5',
+    logicVoltage: 3.3,
+    supplyVoltageRange: [4.75, 5.25],
+    pins: PI_HEADER_SPECS,
+    reserved: PI_RESERVED,
+    i2c: { sda: 'GPIO2', scl: 'GPIO3' },
+    i2cRemappable: false,
+    spi: { mosi: 'GPIO10', miso: 'GPIO9', sck: 'GPIO11', cs: 'GPIO8' },
+    uarts: [{ id: '/dev/serial0', tx: 'GPIO14', rx: 'GPIO15', recommended: true, note: 'Primary UART' }],
+    maxGpioSinkMa: 16,
+    recommendedGpioSinkMa: 8,
+    adcBits: 0,
+    notes: [...PI_NOTES, 'Requires active cooling; throttles hard without it.'],
+  },
+  {
+    componentId: 'raspberry-pi-zero-2-w',
+    name: 'Raspberry Pi Zero 2 W',
+    logicVoltage: 3.3,
+    supplyVoltageRange: [4.75, 5.25],
+    pins: PI_HEADER_SPECS,
+    reserved: PI_RESERVED,
+    i2c: { sda: 'GPIO2', scl: 'GPIO3' },
+    i2cRemappable: false,
+    spi: { mosi: 'GPIO10', miso: 'GPIO9', sck: 'GPIO11', cs: 'GPIO8' },
+    uarts: [{ id: '/dev/serial0', tx: 'GPIO14', rx: 'GPIO15', recommended: true, note: 'Primary UART' }],
+    maxGpioSinkMa: 16,
+    recommendedGpioSinkMa: 8,
+    adcBits: 0,
+    notes: [...PI_NOTES, 'Header is unpopulated — you solder it or use a hammer header.'],
+  },
+];
+
 export const MCU_PROFILES: McuProfile[] = [
   {
     componentId: 'esp32-devkit-v1',
@@ -223,6 +339,7 @@ export const MCU_PROFILES: McuProfile[] = [
       'VIN accepts 7–12 V; the on-board 5 V regulator is limited to a few hundred mA.',
     ],
   },
+  ...PI_PROFILES,
 ];
 
 export function getMcuProfile(componentId: string): McuProfile | undefined {
