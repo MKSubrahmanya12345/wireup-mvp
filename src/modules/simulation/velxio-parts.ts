@@ -9,20 +9,27 @@
  *   1. `VELXIO_SIMULATED_METADATA_IDS` — part ids with registered behaviour in
  *      `frontend/src/simulation/parts/PartSimulationRegistry` (the part reacts
  *      to pins, not just draws itself).
- *   2. `VELXIO_RENDER_ONLY_METADATA_IDS` — ids whose element is runtime-definable
- *      in the pinned build but has no registered behaviour: passives and the
- *      wiring medium. They place correctly and pass power in the SPICE model,
- *      but no scenario drives them.
- *   3. `VELXIO_NPM_ELEMENT_TAGS` — the custom element tags the pinned
+ *   2. `VELXIO_SPICE_METADATA_IDS` — part ids the circuit solver maps onto
+ *      ngspice netlist cards (`simulation/spice/componentToSpice.ts`
+ *      `MAPPERS`). Active devices (transistors, diodes, optos, op-amps,
+ *      regulators, batteries) are deliberately NOT in the behaviour registry —
+ *      per ActiveParts.ts, "Velxio always runs SPICE so every circuit is solved
+ *      with real-world fidelity". A tier-2 claim is honest ONLY with a note
+ *      saying what the circuit model does not do.
+ *   3. `VELXIO_RENDER_ONLY_METADATA_IDS` — ids whose element is runtime-definable
+ *      in the pinned build but has neither behaviour nor a netlist mapper: the
+ *      wiring medium. They place correctly but no scenario drives them.
+ *   4. `VELXIO_NPM_ELEMENT_TAGS` — the custom element tags the pinned
  *      `@wokwi/elements@1.9.2` dependency defines (provenance note below).
  *
- * `scripts/verify-simulator-link.ts` re-derives (1) and (2)'s definability from
- * the vendored source on every run and fails when this module or the catalog
- * disagrees with it. That keeps these tables honest without any runtime I/O.
+ * `scripts/verify-simulator-link.ts` re-derives (1) and (2) from the vendored
+ * source on every run and fails when this module or the catalog disagrees with
+ * it. That keeps these tables honest without any runtime I/O.
  *
  * Governing rule (same as the CAD link): a registry that guesses confidently is
  * worse than a registry with holes. `supported: true` is only ever claimed when
- * the vendored Velxio both renders the part AND registers behaviour for it.
+ * the vendored Velxio renders the element AND either registers behaviour for it
+ * or solves it on the netlist.
  */
 
 /** Path of the vendored metadata file, relative to the repo root. */
@@ -105,6 +112,109 @@ export const VELXIO_SIMULATED_METADATA_IDS: ReadonlySet<string> = new Set([
   'ssd1306-i2c-4pin',
   'stepper-motor',
   'tilt-switch',
+]);
+
+/**
+ * Ids the ngspice netlist mapper covers (`componentToSpice.ts` `MAPPERS`, the
+ * SPICE tier). Active semiconductors live here instead of the behaviour
+ * registry by upstream design; the gate re-derives this set from the vendored
+ * source both directions.
+ */
+export const VELXIO_SPICE_METADATA_IDS: ReadonlySet<string> = new Set([
+  'analog-capacitor',
+  'analog-inductor',
+  'analog-resistor',
+  'battery-9v',
+  'battery-aa',
+  'battery-coin-cell',
+  'bjt-2n2222',
+  'bjt-2n3055',
+  'bjt-2n3906',
+  'bjt-bc547',
+  'bjt-bc557',
+  'cap-100n',
+  'cap-100p',
+  'cap-10n',
+  'cap-10p',
+  'cap-1n',
+  'cap-1u',
+  'cap-22p',
+  'cap-elec-1000u',
+  'cap-elec-100u',
+  'cap-elec-10u',
+  'cap-elec-1u',
+  'cap-elec-470u',
+  'cap-elec-47u',
+  'capacitor-electrolytic',
+  'custom-chip',
+  'diode-1n4007',
+  'diode-1n4148',
+  'diode-1n5817',
+  'diode-1n5819',
+  'ind-100u',
+  'ind-10m',
+  'ind-1m',
+  'instr-ammeter',
+  'instr-voltmeter',
+  'logic-gate-and',
+  'logic-gate-nand',
+  'logic-gate-nor',
+  'logic-gate-not',
+  'logic-gate-or',
+  'logic-gate-xnor',
+  'logic-gate-xor',
+  'mosfet-2n7000',
+  'mosfet-fqp27p06',
+  'mosfet-irf540',
+  'mosfet-irf9540',
+  'motor-driver-l293d',
+  'ntc-temperature-sensor',
+  'opamp-ideal',
+  'opamp-lm324',
+  'opamp-lm358',
+  'opamp-lm741',
+  'opamp-tl072',
+  'opto-4n25',
+  'opto-pc817',
+  'power-supply',
+  'pushbutton-6mm',
+  'reg-7805',
+  'reg-7812',
+  'reg-7905',
+  'reg-lm317',
+  'resistor-100k',
+  'resistor-10k',
+  'resistor-1k',
+  'resistor-1m',
+  'resistor-220',
+  'resistor-22k',
+  'resistor-2k2',
+  'resistor-330',
+  'resistor-470',
+  'resistor-47k',
+  'resistor-4k7',
+  'resistor-us',
+  'signal-generator',
+  'slide-potentiometer',
+  'slide-switch',
+  'zener-1n4733',
+]);
+
+/**
+ * Ids the netlist mapper covers but which are never placed from the metadata:
+ * runtime-injected bench instruments (ammeter/voltmeter — injected by
+ * ComponentRegistry like the Raspberry Pi boards), internal symbol variants
+ * (the US-style resistor) and the boardless analog-mode aliases of the three
+ * passives. The exporter can never emit them (it maps through the metadata);
+ * tracked so the SPICE tier stays exhaustive versus the vendored mapper.
+ */
+export const VELXIO_SPICE_RUNTIME_ONLY_IDS: ReadonlySet<string> = new Set([
+  'analog-capacitor',
+  'analog-inductor',
+  'analog-resistor',
+  'instr-ammeter',
+  'instr-voltmeter',
+  'resistor-us',
 ]);
 
 /**
@@ -237,11 +347,14 @@ export function checkSimulatorClaims(
       });
       continue;
     }
-    if (!VELXIO_SIMULATED_METADATA_IDS.has(metadataId) && !VELXIO_RENDER_ONLY_METADATA_IDS.has(metadataId)) {
+    const behaviour = VELXIO_SIMULATED_METADATA_IDS.has(metadataId);
+    const spiceMapped = VELXIO_SPICE_METADATA_IDS.has(metadataId);
+    const renderOnly = VELXIO_RENDER_ONLY_METADATA_IDS.has(metadataId);
+    if (!behaviour && !spiceMapped && !renderOnly) {
       problems.push({
         componentId: component.id,
         part: claim.part,
-        problem: `maps to Velxio id "${metadataId}" which has no registered simulation behaviour`,
+        problem: `maps to Velxio id "${metadataId}" which has neither registered behaviour nor a netlist mapper`,
       });
     }
   }

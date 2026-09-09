@@ -40,6 +40,7 @@ export const ROLE_BY_CATEGORY: Record<ComponentCategory, ComponentRole> = {
   display: 'display',
   power: 'power',
   passive: 'passive',
+  discrete: 'passive',
   electromechanical: 'actuator',
   input_device: 'input',
   prototyping: 'prototyping',

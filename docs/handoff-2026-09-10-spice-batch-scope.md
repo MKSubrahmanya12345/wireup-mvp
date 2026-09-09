@@ -157,3 +157,46 @@ the new entries), `typecheck`, `verify:offline`, `verify:behavioral`, `build`.
    claim are the candidates)?
 3. **`transistor-bc547` vs `2n2222`:** I propose one small-signal NPN (2N2222)
    to avoid two near-identical entries; say the word if you want both.
+
+---
+
+## 8. Execution record (same day — approved on all three decision points)
+
+Decisions taken as proposed: tier-S standard adopted, the 3+7 scope shipped,
+one small-signal NPN (2N2222).
+
+**Machinery**
+- Gate definability scan covers both registration styles
+  (`customElements.define` + the local `def(tag, cls)` helper): 91 → **127**
+  runtime-definable tags; all 156 metadata ids placeable, verified.
+- `VELXIO_SPICE_METADATA_IDS` (77 ids) and `VELXIO_SPICE_RUNTIME_ONLY_IDS`
+  (6 ids: ammeter/voltmeter bench instruments, `resistor-us`, the three
+  `analog-*` boardless aliases) added; the gate re-derives the mapper set from
+  `componentToSpice.ts` both directions. The first run failed exactly as
+  designed — six mapper ids missing from my static tier — before I exempted the
+  runtime-injected ones.
+- `refinePart` now matches refinements against the **metadataId first**,
+  instance id second: a hand-made instance id ("bat-1") must not skip a pin
+  rename the part type itself calls for. Caught by the battery U+2212 check —
+  the element's minus is a true minus, renamed in the .vlx (verified).
+- `checkSimulatorClaims` accepts the SPICE tier; the relay note was corrected
+  (the bare relay element neither registers behaviour nor maps to the netlist —
+  it only draws).
+
+**Catalog (105 parts, new `discrete` category)**
+- Claims: `diode-1n4007`, `battery-9v`, `regulator-lm7805` (tier-S notes).
+- New: `diode-1n4148`, `diode-1n5819` (power), `transistor-2n2222`,
+  `mosfet-2n7000`, `mosfet-irf540`, `optocoupler-pc817` (discrete), each with
+  the IRF540 gate-drive trap, the 2N7000 3.3 V marginality, the PC817 CTR rank
+  budget and series-resistor requirement stated.
+- Role map: `discrete → 'passive'` (the exhaustive `ROLE_BY_CATEGORY` record
+  the typecheck caught — categories are load-bearing, not cosmetic).
+
+**Numbers after the SPICE batch: 105 catalog parts · 54 simulator claims ·
+54 exporter mappings · 10 board mappings · e2e 50 peripherals / 94 wires with
+zero drops · CAD 105/105 previewable · contracts 28/28 · behavioral 19/19 ·
+typecheck/build clean.**
+
+The tier-S boundary now covers all three simulation styles in the vendored
+build: behaviour-registered (75), netlist-mapped (77, six runtime-only), and
+render-only wiring media. Everything else stays honestly unclaimed with reasons.
