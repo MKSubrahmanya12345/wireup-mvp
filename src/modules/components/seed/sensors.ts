@@ -476,4 +476,70 @@ export const SENSORS: ComponentDefinition[] = [
     },
     metadata: { electrical: true, activeLevel: 'low', triggerAngleDeg: 10, requiresPullup: true, recommendedDebounceMs: 50 },
   }),
+
+  def({
+    id: 'gps-neo6m-module',
+    name: 'u-blox NEO-6M GPS module',
+    category: 'sensor',
+    description:
+      'u-blox NEO-6 receiver on a breakout with antenna, backup battery holder and status LED. Streams NMEA 0183 sentences (GGA/RMC/VTG) over UART at 9600 baud; a TinyGPS-class parser assembles position, altitude, speed, course and UTC time. 2.5 m CEP accuracy outdoors, 50 channels, ~27 s typical cold start (1 s hot). Give it clear sky view — accuracy collapses indoors.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 45, maxMa: 67, note: 'Acquisition at full power; backup mode ~11 uA when main supply is removed.' },
+    communicationProtocols: ['uart'],
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('TX', 'uart', 'output', { required: true, signal: 'NMEA data out — wire to the MCU RX', aliases: ['TXD'] }),
+      pin('RX', 'uart', 'input', { required: true, signal: 'Configuration commands in — wire from the MCU TX (optional if you only read)', aliases: ['RXD'] }),
+      pin('PPS', 'digital', 'output', { required: false, signal: 'Pulse-per-second, accurate to ~ns — wire only when time-syncing, not needed for position', aliases: ['PP', 'TIMEPULSE'] }),
+    ],
+    libraryRequirements: [
+      { name: 'TinyGPSPlus', import: 'TinyGPS++.h', manager: 'arduino', repository: 'https://github.com/mikalhart/TinyGPSPlus', purpose: 'NMEA sentence parsing' },
+    ],
+    keywords: ['gps', 'neo-6m', 'neo6m', 'ublox', 'navigation', 'position', 'tracking', 'nmea'],
+    aliases: ['gps', 'gps module', 'neo-6m', 'neo6m', 'ublox gps'],
+    exampleUsage: ['Speedometer / trip logger for a bike or car', 'Geofence alert when leaving an area'],
+    simulator: {
+      part: 'wokwi-gps-neo6m',
+      supported: true,
+      notes: 'Velxio injects real NMEA sentences into the UART at ~9600 baud from the fix you set on the part (lat/lng/altitude/speed/course), so TinyGPS++ decodes them exactly like real hardware. PPS and cold-start fix timing are not modelled.',
+    },
+    metadata: { electrical: true, uartBaud: 9600, nmeaSentences: ['GGA', 'RMC', 'VTG'], accuracyCepM: 2.5, channels: 50, coldStartS: 27 },
+  }),
+
+  def({
+    id: 'rtc-ds3231-module',
+    name: 'DS3231 high-precision RTC module (ZS-042)',
+    category: 'sensor',
+    description:
+      'Temperature-compensated real-time clock: ±2 ppm between 0-40 °C (about ±1 minute per year), seconds/minutes/hours/day/date/month/year with leap-year correction, on-chip aging trim and an integrated temperature sensor readable over I2C. The ZS-042 breakout adds a CR2032 backup holder so time survives power loss, plus SQW and 32K output pins. Careful on a shared bus: the DS3231 answers at 0x68 — the SAME address as an MPU6050. Move the IMU to 0x69 (AD0 high) or use one or the other.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 0.3, maxMa: 1, note: 'Timekeeping ~84 uA on the backup battery; the module power LED dominates in-circuit.' },
+    communicationProtocols: ['i2c'],
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('SDA', 'i2c', 'bidirectional', { required: true, signal: 'I2C data', aliases: ['D'] }),
+      pin('SCL', 'i2c', 'input', { required: true, signal: 'I2C clock', aliases: ['C'] }),
+      pin('SQW', 'digital', 'output', { required: false, signal: 'Programmable square wave 1 Hz-8 kHz (also a configurable alarm pin)', aliases: ['SQW/OUT'] }),
+      pin('32K', 'digital', 'output', { required: false, signal: '32.768 kHz clock output, enabled by register', aliases: ['32KHZ'] }),
+    ],
+    libraryRequirements: [
+      { name: 'RTClib', import: 'RTClib.h', manager: 'arduino', repository: 'https://github.com/adafruit/RTClib', purpose: 'DS3231 register driver and DateTime helpers' },
+      { name: 'Wire', import: 'Wire.h', manager: 'arduino', purpose: 'I2C bus', builtIn: true },
+    ],
+    keywords: ['ds3231', 'rtc', 'real time clock', 'clock', 'timekeeping', 'alarm', 'calendar'],
+    aliases: ['ds3231', 'rtc module', 'real time clock', 'real-time clock', 'zs-042'],
+    exampleUsage: ['Data logger with correct timestamps on an SD card', 'Timed feeder or irrigation controller'],
+    simulator: {
+      part: 'wokwi-ds3231',
+      supported: true,
+      notes: 'Velxio emulates the I2C register map at 0x68 — time registers plus control/status and the temperature register (default 25 °C, settable on the part). The SQW and 32K outputs are not modelled.',
+    },
+    metadata: { electrical: true, i2cAddress: '0x68', i2cAddressConflict: 'Same 0x68 as the MPU6050 — move the IMU to 0x69 (AD0 high) if both share the bus.', i2cMaxClockHz: 400000, accuracyPpm: 2, batteryBackup: 'CR2032', temperatureSensor: true },
+  }),
 ];

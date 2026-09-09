@@ -187,7 +187,7 @@ excerpt of it and its selections are matched **strictly** against it; a part tha
 is not in the catalog is rejected (and the fixer replaces it with the closest
 real match) rather than passed through.
 
-95 parts are seeded, across 12 categories:
+99 parts are seeded, across 12 categories:
 
 | Category | Parts |
 | --- | --- |
@@ -195,14 +195,14 @@ real match) rather than passed through.
 | motor (16) | `dc-motor-generic-6v`, `servo-motor-sg90`, `servo-motor-mg996r`, `stepper-28byj48-uln2003`, `stepper-motor-nema17`, `servo-motor-mg90s`, `servo-continuous-fs90r`, `n20-gear-motor-encoder`, `fan-5v-40mm`, `fan-12v-4pin-pwm`, `blower-fan-5v-radial`, `bldc-motor-2205-2300kv`, `bldc-motor-2212-1000kv`, `vibration-motor-coin-3v`, `water-pump-5v-submersible`, `peristaltic-pump-12v` |
 | motor_driver (12) | `l298n-motor-driver`, `l293d-motor-driver`, `tb6612fng-motor-driver`, `a4988-stepper-driver`, `drv8833-motor-driver`, `bts7960-motor-driver`, `drv8825-stepper-driver`, `tmc2209-stepper-driver`, `uln2003-darlington-array`, `mosfet-module-irf520`, `pca9685-servo-driver`, `esc-30a-bldc` |
 | other (2) | `propeller-5045-tri-blade`, `propeller-ep-1045-two-blade` |
-| actuator (10) | `linear-actuator-12v-100mm`, `solenoid-12v-push-pull`, `solenoid-valve-12v-water`, `led-5mm`, `rgb-led-common-cathode`, `buzzer-active-5v`, `buzzer-passive`, `relay-module-5v-1ch`, `neopixel-ws2812b-strip`, `led-ring-ws2812-8` |
-| sensor (17) | `dht11-temperature-humidity`, `dht22-temperature-humidity`, `hc-sr04-ultrasonic`, `pir-sensor-hc-sr501`, `ir-obstacle-sensor`, `ldr-photoresistor`, `soil-moisture-sensor`, `mpu6050-imu`, `bme280-environmental`, `ds18b20-temperature`, `bh1750-light-sensor`, `ina219-current-sensor`, `ir-receiver-tsop38238`, `load-cell-hx711`, `mq-2-gas-sensor`, `ntc-thermistor-module`, `tilt-sensor-module` |
+| actuator (11) | `linear-actuator-12v-100mm`, `solenoid-12v-push-pull`, `solenoid-valve-12v-water`, `led-5mm`, `rgb-led-common-cathode`, `buzzer-active-5v`, `buzzer-passive`, `relay-module-5v-1ch`, `neopixel-ws2812b-strip`, `led-ring-ws2812-8`, `led-matrix-ws2812-8x8` |
+| sensor (19) | `dht11-temperature-humidity`, `dht22-temperature-humidity`, `hc-sr04-ultrasonic`, `pir-sensor-hc-sr501`, `ir-obstacle-sensor`, `ldr-photoresistor`, `soil-moisture-sensor`, `mpu6050-imu`, `bme280-environmental`, `ds18b20-temperature`, `bh1750-light-sensor`, `ina219-current-sensor`, `ir-receiver-tsop38238`, `load-cell-hx711`, `mq-2-gas-sensor`, `ntc-thermistor-module`, `tilt-sensor-module`, `gps-neo6m-module`, `rtc-ds3231-module` |
 | communication (4) | `hc-05-bluetooth`, `hc-06-bluetooth`, `esp32-bluetooth-wifi-capability`, `esp8266-esp01-wifi` |
 | power (9) | `battery-2s-lipo`, `battery-9v`, `battery-holder-4xaa`, `breadboard-power-module-mb102`, `regulator-lm7805`, `regulator-ams1117-3v3`, `buck-converter-lm2596`, `logic-level-shifter-4ch`, `diode-1n4007` |
 | passive (5) | `resistor-220ohm`, `resistor-1kohm`, `resistor-10kohm`, `capacitor-100nf-ceramic`, `capacitor-1000uf-electrolytic` |
 | input_device (9) | `pushbutton-6mm`, `keypad-4x4-membrane`, `potentiometer-10k`, `slide-potentiometer-10k`, `dip-switch-8`, `rotary-encoder-ky040`, `toggle-switch-spdt`, `limit-switch-microswitch`, `joystick-module-2axis` |
 | prototyping (2) | `breadboard-830`, `jumper-wires-kit` |
-| display (5) | `lcd-1602-i2c`, `oled-ssd1306-i2c`, `lcd-2004-i2c`, `seven-segment-1digit`, `led-bar-graph-10` |
+| display (6) | `lcd-1602-i2c`, `oled-ssd1306-i2c`, `lcd-2004-i2c`, `seven-segment-1digit`, `led-bar-graph-10`, `tft-ili9341-28` |
 
 Each definition carries pins (name, type, direction, required, electrical
 ratings), power/ground pin lists, voltage and current ranges, library
