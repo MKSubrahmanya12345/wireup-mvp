@@ -41,11 +41,17 @@ registers behaviour** for it (the render-only set is limited to the SPICE
 passives and the wiring medium: resistor, capacitor, capacitor-electrolytic,
 inductor, breadboard, breadboard-mini).
 
-37 of the 156 metadata ids are **not runtime-definable** in the pinned build
-(batteries, BJTs, MOSFETs, diodes, op-amps, regulators, the 74HC series, power
-supplies) — their metadata was generated from a newer element set than the
-build ships. Claiming any of them would draw a part with no pins. None are
-claimed.
+[SUPERSEDED 2026-09-10] The paragraph below was wrong: those 36 ids are defined
+through a local `def(tag, cls)` helper that batch 1's literal
+`customElements.define` scan could not see. All 156 metadata ids ARE
+runtime-definable; the scan now covers both registration styles (see the SPICE
+scope doc). The error was conservative — nothing ever claimed a dead part.
+
+> 37 of the 156 metadata ids are **not runtime-definable** in the pinned build
+> (batteries, BJTs, MOSFETs, diodes, op-amps, regulators, the 74HC series, power
+> supplies) — their metadata was generated from a newer element set than the
+> build ships. Claiming any of them would draw a part with no pins. None are
+> claimed.
 
 ## 3. The cross-check verdicts (all 95 parts)
 

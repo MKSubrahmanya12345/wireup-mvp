@@ -59,6 +59,7 @@ export const ComponentDefinitionSchema = z.object({
     'display',
     'power',
     'passive',
+    'discrete',
     'electromechanical',
     'input_device',
     'prototyping',

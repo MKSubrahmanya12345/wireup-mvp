@@ -41,6 +41,8 @@ import {
   VELXIO_RENDER_ONLY_METADATA_IDS,
   VELXIO_RUNTIME_ONLY_REGISTERED_IDS,
   VELXIO_SIMULATED_METADATA_IDS,
+  VELXIO_SPICE_METADATA_IDS,
+  VELXIO_SPICE_RUNTIME_ONLY_IDS,
   checkSimulatorClaims,
 } from '@/modules/simulation/velxio-parts';
 import { BOARD_KIND_BY_WOKWI_TYPE, METADATA_BY_WOKWI_TYPE, generateVelxioProject } from '@/modules/simulation/velxio-project';
@@ -92,11 +94,18 @@ function main(): number {
   const metadataById = new Map(metadata.components.map((entry) => [entry.id, entry]));
 
   // Runtime-definable tags: the pinned npm element set + velxio's own custom
-  // elements (customElements.define across the vendored frontend source).
+  // elements. Two registration styles exist in the vendored source and BOTH
+  // must be scanned: a direct customElements.define('tag', …) AND a local
+  // def('tag', cls) helper (Transistor/Diode/OpAmp/Power/LogicIC elements use
+  // the helper form — the first scan missed all 36 of them; conservative,
+  // because nothing claimed them, but wrong).
   const velxioDefinedTags = new Set<string>(VELXIO_NPM_ELEMENT_TAGS);
   for (const file of sourceFiles(velxioFrontendSrc)) {
     const text = fs.readFileSync(file, 'utf-8');
     for (const match of text.matchAll(/customElements\.define\(['"]([a-z0-9-]+)['"]/g)) {
+      velxioDefinedTags.add(match[1] as string);
+    }
+    for (const match of text.matchAll(/^\s*def\('([a-z0-9-]+)'/gm)) {
       velxioDefinedTags.add(match[1] as string);
     }
   }
@@ -185,6 +194,37 @@ function main(): number {
       failures.push(`velxio-parts: render-only id "${id}" is not runtime-definable in the pinned build`);
     }
   }
+
+  /* ---- 4b. SPICE tier vs the vendored netlist mapper --------------------- */
+  const spiceMapperPath = path.join(velxioFrontendSrc, 'simulation', 'spice', 'componentToSpice.ts');
+  const spiceMapped = new Set<string>();
+  if (fs.existsSync(spiceMapperPath)) {
+    const text = fs.readFileSync(spiceMapperPath, 'utf-8');
+    for (const match of text.matchAll(/^ {2}'([a-z0-9-]+)': ?/gm)) {
+      spiceMapped.add(match[1] as string);
+    }
+  } else {
+    failures.push('vendored simulation/spice/componentToSpice.ts not found');
+  }
+  for (const id of spiceMapped) {
+    if (!VELXIO_SPICE_METADATA_IDS.has(id)) {
+      failures.push(`velxio-parts: the netlist mapper covers "${id}" but the SPICE tier does not list it — update VELXIO_SPICE_METADATA_IDS`);
+    }
+  }
+  for (const id of VELXIO_SPICE_METADATA_IDS) {
+    if (!spiceMapped.has(id)) {
+      failures.push(`velxio-parts: SPICE tier lists "${id}" but the vendored netlist mapper has no mapping — the build drifted`);
+    }
+    const runtimeOnlySpice = VELXIO_SPICE_RUNTIME_ONLY_IDS.has(id);
+    if (!VELXIO_SIMULATED_METADATA_IDS.has(id) && !metadataById.has(id) && !runtimeOnlySpice) {
+      failures.push(`velxio-parts: SPICE id "${id}" is neither behaviour-registered, metadata-placed, nor declared runtime-only`);
+    }
+    if (runtimeOnlySpice && (metadataById.has(id) || VELXIO_SIMULATED_METADATA_IDS.has(id))) {
+      failures.push(`velxio-parts: "${id}" is declared SPICE-runtime-only but now exists in the metadata or behaviour registry — promote it`);
+    }
+  }
+  // A behaviour-registered id that is ALSO spice-mapped is fine (passives);
+  // the overlap is reported, never a failure.
 
   /* ---- 5. every simulatable MCU resolves to a board kind ---------------- */
   for (const component of SEED_COMPONENTS) {

@@ -12,6 +12,7 @@ import type { ComponentDefinition } from '@/types/component';
 
 import { ACTUATORS } from './seed/actuators';
 import { COMMUNICATION } from './seed/communication';
+import { DISCRETE } from './seed/discrete';
 import { DISPLAYS } from './seed/displays';
 import { GENERAL } from './seed/general';
 import { MICROCONTROLLERS } from './seed/microcontrollers';
@@ -30,6 +31,7 @@ export const SEED_COMPONENTS: ComponentDefinition[] = [
   ...POWER,
   ...GENERAL,
   ...DISPLAYS,
+  ...DISCRETE,
 ];
 
 export function getSeedComponent(id: string): ComponentDefinition | undefined {

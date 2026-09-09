@@ -257,6 +257,22 @@ const PIN_MAPS: Record<string, PinMapper> = {
   // DS3231: I2C pins match; the module's SQW/32K outputs have no element
   // counterpart — wires to them are reported as unsupported, not silently mapped.
   'wokwi-ds3231': table({ VCC: 'VCC', GND: 'GND', SDA: 'SDA', SCL: 'SCL' }),
+
+  /* ---- SPICE tier: the catalog's K (cathode) lands on the element's C; the
+     schematic-symbol elements use single-letter pin names. ------------------ */
+  'wokwi-diode-1n4007': table({ A: 'A', ANODE: 'A', K: 'C', CATHODE: 'C' }),
+  'wokwi-diode-1n4148': table({ A: 'A', ANODE: 'A', K: 'C', CATHODE: 'C' }),
+  'wokwi-diode-1n5819': table({ A: 'A', ANODE: 'A', K: 'C', CATHODE: 'C' }),
+  // Schematic symbols: C/B/E and D/G/S are the element's exact pin names.
+  'wokwi-bjt-2n2222': table({ B: 'B', BASE: 'B', C: 'C', COLLECTOR: 'C', E: 'E', EMITTER: 'E' }),
+  'wokwi-mosfet-2n7000': table({ G: 'G', GATE: 'G', D: 'D', DRAIN: 'D', S: 'S', SOURCE: 'S' }),
+  'wokwi-mosfet-irf540': table({ G: 'G', GATE: 'G', D: 'D', DRAIN: 'D', S: 'S', SOURCE: 'S' }),
+  // PC817 element pins are AN/CAT/COL/EMIT.
+  'wokwi-opto-pc817': table({ ANODE: 'AN', A: 'AN', CATHODE: 'CAT', K: 'CAT', COLLECTOR: 'COL', OUT: 'COL', EMITTER: 'EMIT' }),
+  // Regulator: catalog IN/OUT onto the element's VIN/VOUT.
+  'wokwi-reg-7805': table({ IN: 'VIN', VIN: 'VIN', GND: 'GND', OUT: 'VOUT', VOUT: 'VOUT' }),
+  // Battery: '+' matches; the exporter renames '-' to the element's U+2212 minus.
+  'wokwi-battery-9v': table({ '+': '+', '-': '-' }),
 };
 
 /** Attributes Wokwi needs for a part to behave like the catalog entry. */
@@ -283,6 +299,15 @@ const PART_SIZE: Record<string, { width: number; height: number }> = {
   'wokwi-ili9341': { width: 220, height: 310 },
   'wokwi-gps-neo6m': { width: 110, height: 80 },
   'wokwi-ds3231': { width: 100, height: 70 },
+  'wokwi-diode-1n4007': { width: 80, height: 40 },
+  'wokwi-diode-1n4148': { width: 80, height: 40 },
+  'wokwi-diode-1n5819': { width: 80, height: 40 },
+  'wokwi-bjt-2n2222': { width: 72, height: 72 },
+  'wokwi-mosfet-2n7000': { width: 72, height: 72 },
+  'wokwi-mosfet-irf540': { width: 72, height: 72 },
+  'wokwi-opto-pc817': { width: 90, height: 60 },
+  'wokwi-battery-9v': { width: 70, height: 100 },
+  'wokwi-reg-7805': { width: 72, height: 56 },
   'wokwi-servo': { width: 120, height: 90 },
   'wokwi-stepper-motor': { width: 140, height: 140 },
   'wokwi-a4988': { width: 72, height: 96 },

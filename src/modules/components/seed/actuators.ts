@@ -110,9 +110,10 @@ export const ACTUATORS: ComponentDefinition[] = [
     simulator: {
       supported: false,
       notes:
-        'The bundled Velxio relay model is a BARE SPDT relay (pins COIL+/COIL-/COM/NO/NC, switched by real coil current). ' +
-        'It has no VCC/GND/IN module pins, so placing the opto-isolated module would fake its input stage and drop every ' +
-        'wire. Simulate the bare relay plus a transistor stage on the Velxio canvas instead, and keep the module for the bench.',
+        'The bundled Velxio bare-relay element (COIL+/COIL-/COM/NO/NC) only DRAWS the relay: it has no registered ' +
+        'simulation behaviour and no netlist mapper, so on the canvas it is dead — the coil does not pull in. It also ' +
+        'has no VCC/GND/IN module pins to fake. Keep the module for the bench; simulate switching with a transistor ' +
+        'stage and an LED probe instead.',
     },
     metadata: {
       electrical: true,
