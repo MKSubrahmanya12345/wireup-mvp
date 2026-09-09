@@ -223,7 +223,71 @@ export const MCU_PROFILES: McuProfile[] = [
       'VIN accepts 7–12 V; the on-board 5 V regulator is limited to a few hundred mA.',
     ],
   },
+
+  {
+    componentId: 'arduino-mega',
+    name: 'Arduino Mega 2560',
+    logicVoltage: 5,
+    supplyVoltageRange: [7, 12],
+    pins: [
+      // Plain digital D22-D49: the reason the board exists — 28 conflict-free pins.
+      ...([22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 47, 48, 49] as const).map(
+        (n, index): McuPinSpec => ({ name: `D${n}`, number: n, capabilities: ['digital'], preference: index + 1 }),
+      ),
+      // PWM-capable pins.
+      ...([44, 45, 46] as const).map(
+        (n, index): McuPinSpec => ({ name: `D${n}`, number: n, capabilities: ['digital', 'pwm'], preference: 26 + index }),
+      ),
+      ...([4, 7, 8, 9, 10, 11, 12, 13, 5, 6, 2, 3] as const).map((n, index): McuPinSpec => {
+        const extra: PinCapability[] = n === 2 || n === 3 ? ['interrupt'] : [];
+        return { name: `D${n}`, number: n, capabilities: ['digital', 'pwm', ...extra], preference: 29 + index, ...(n === 13 ? { caution: 'Also the on-board LED' } : {}) };
+      }),
+      // SPI + the four UARTs + I2C.
+      { name: 'D50', number: 50, capabilities: ['digital', 'spi'], preference: 41, caution: 'SPI MISO' },
+      { name: 'D51', number: 51, capabilities: ['digital', 'spi'], preference: 42, caution: 'SPI MOSI' },
+      { name: 'D52', number: 52, capabilities: ['digital', 'spi'], preference: 43, caution: 'SPI SCK' },
+      { name: 'D53', number: 53, capabilities: ['digital', 'spi'], preference: 44, caution: 'SPI SS — must stay an OUTPUT or the SPI peripheral drops to slave mode' },
+      { name: 'D20', number: 20, capabilities: ['digital', 'i2c', 'interrupt'], preference: 45, caution: 'Default I2C SDA' },
+      { name: 'D21', number: 21, capabilities: ['digital', 'i2c', 'interrupt'], preference: 46, caution: 'Default I2C SCL' },
+      { name: 'D18', number: 18, capabilities: ['digital', 'uart', 'interrupt'], preference: 47, caution: 'Serial1 TX' },
+      { name: 'D19', number: 19, capabilities: ['digital', 'uart', 'interrupt'], preference: 48, caution: 'Serial1 RX' },
+      { name: 'D16', number: 16, capabilities: ['digital', 'uart'], preference: 49, caution: 'Serial2 TX' },
+      { name: 'D17', number: 17, capabilities: ['digital', 'uart'], preference: 50, caution: 'Serial2 RX' },
+      { name: 'D14', number: 14, capabilities: ['digital', 'uart'], preference: 51, caution: 'Serial3 TX' },
+      { name: 'D15', number: 15, capabilities: ['digital', 'uart'], preference: 52, caution: 'Serial3 RX' },
+      // Analog inputs A0-A15 (A0-A5 also serve as digital on the shield header).
+      ...([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as const).map(
+        (n, index): McuPinSpec => ({
+          name: `A${n}`,
+          number: 54 + n,
+          capabilities: ['analog', 'adc', 'digital'],
+          preference: 53 + index,
+        }),
+      ),
+      { name: 'D0', number: 0, capabilities: ['digital', 'uart'], preference: 69, caution: 'Serial RX — shared with the USB serial bridge' },
+      { name: 'D1', number: 1, capabilities: ['digital', 'uart'], preference: 70, caution: 'Serial TX — shared with the USB serial bridge' },
+    ],
+    reserved: [],
+    i2c: { sda: 'D20', scl: 'D21' },
+    spi: { mosi: 'D51', miso: 'D50', sck: 'D52', cs: 'D53' },
+    uarts: [
+      { id: 'Serial', tx: 'D1', rx: 'D0', recommended: false, note: 'Shared with the USB serial bridge' },
+      { id: 'Serial1', tx: 'D18', rx: 'D19', recommended: true, note: 'Free hardware UART' },
+      { id: 'Serial2', tx: 'D16', rx: 'D17', recommended: true, note: 'Free hardware UART' },
+      { id: 'Serial3', tx: 'D14', rx: 'D15', recommended: true, note: 'Free hardware UART' },
+    ],
+    maxGpioSinkMa: 40,
+    recommendedGpioSinkMa: 20,
+    adcBits: 10,
+    notes: [
+      '5 V logic: 3.3 V-only peripherals need level shifting, as on the Uno.',
+      'Four hardware UARTs — no SoftwareSerial needed for extra serial links.',
+      'D53 (SS) must remain an OUTPUT for the SPI peripheral to stay master.',
+      'The 5 V regulator is the same class as the Uno: ~200 mA total for peripherals before you move loads to VIN.',
+    ],
+  },
 ];
+
 
 export function getMcuProfile(componentId: string): McuProfile | undefined {
   return MCU_PROFILES.find((profile) => profile.componentId === componentId);
