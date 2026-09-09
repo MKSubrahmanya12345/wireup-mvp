@@ -328,21 +328,49 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
     if (driverPresent) continue;
 
     const motorType = definition.motorRequirements?.motorType;
+    const stallCurrent = definition.motorRequirements?.stallCurrentMa ?? definition.currentRequirements?.maxMa ?? 0;
+
     if (motorType === 'stepper') {
-      add('a4988-stepper-driver', draft.quantity, 'driver', `${definition.name} is a bipolar stepper and needs a chopper driver: the A4988 provides STEP/DIR control, microstepping and coil current regulation.`);
+      /*
+       * Coil current decides the chopper. The A4988 and DRV8825 are rated 1 A /
+       * 1.5 A without forced cooling despite their headline peaks, so anything
+       * hungrier goes to the TMC2209 (2 A, and quiet under StealthChop).
+       */
+      const stepperChoice = stallCurrent > 1500 ? 'tmc2209-stepper-driver' : stallCurrent > 1000 ? 'drv8825-stepper-driver' : 'a4988-stepper-driver';
+      add(
+        stepperChoice,
+        draft.quantity,
+        'driver',
+        `${definition.name} is a bipolar stepper and needs a chopper driver, not an H-bridge: ${definitionOf(stepperChoice)?.name ?? stepperChoice} regulates coil current (~${stallCurrent || 'unknown'} mA) and provides STEP/DIR microstepping.`,
+      );
       continue;
     }
 
-    const stallCurrent = definition.motorRequirements?.stallCurrentMa ?? definition.currentRequirements?.maxMa ?? 0;
     const channelsNeeded = draft.quantity;
+    /*
+     * Pick the smallest driver that genuinely carries the load instead of
+     * defaulting to the L298N. Catalog ratings are continuous amps per channel
+     * and stall current is transient, so requiring rated >= stall with a modest
+     * 0.8 margin is already conservative — derating harder just prescribes an
+     * absurdly oversized bridge for a small motor.
+     *
+     * Efficient parts come first: the L298N's ~2 V Darlington drop wastes
+     * supply a battery project cannot spare, so it is only reached when the
+     * MOSFET bridges are genuinely too small. Its inputs are TTL (V_IH ~2.3 V),
+     * so it is a legitimate 3.3 V option, unlike its 5 V-only enable habit.
+     */
+    const DERATE = 0.8;
+    const ladder = mcuLogic <= 3.3
+      ? ['drv8833-motor-driver', 'tb6612fng-motor-driver', 'l298n-motor-driver', 'bts7960-motor-driver']
+      : ['tb6612fng-motor-driver', 'l298n-motor-driver', 'bts7960-motor-driver'];
     const driverChoice =
-      stallCurrent > 1200
-        ? 'l298n-motor-driver'
-        : mcuLogic <= 3.3
-          ? 'tb6612fng-motor-driver'
-          : channelsNeeded > 2
-            ? 'l298n-motor-driver'
-            : 'tb6612fng-motor-driver';
+      ladder.find((id) => {
+        const candidate = definitionOf(id);
+        if (!candidate) return false;
+        const rated = candidate.motorRequirements?.maxCurrentPerChannelMa ?? 0;
+        return rated * DERATE >= stallCurrent;
+      })
+      ?? 'bts7960-motor-driver';
 
     const driverDefinition = definitionOf(driverChoice);
     const channels = driverDefinition?.motorRequirements?.channels ?? 2;
@@ -352,11 +380,7 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
       driverChoice,
       quantity,
       'driver',
-      `${definition.name} must never be driven from a microcontroller GPIO (stall current ~${stallCurrent || 'unknown'} mA). ${driverDefinition?.name ?? driverChoice} provides ${channels} H-bridge channel(s)${
-        driverChoice === 'tb6612fng-motor-driver'
-          ? ' with a low voltage drop and 3.3 V logic compatibility'
-          : ' and can handle up to 2 A per channel'
-      } — ${quantity} unit(s) cover ${channelsNeeded} motor(s).`,
+      `${definition.name} must never be driven from a microcontroller GPIO (stall current ~${stallCurrent || 'unknown'} mA). ${driverDefinition?.name ?? driverChoice} provides ${channels} channel(s) rated ${driverDefinition?.motorRequirements?.maxCurrentPerChannelMa ?? '?'} mA — ${quantity} unit(s) cover ${channelsNeeded} motor(s).`,
     );
   }
 
