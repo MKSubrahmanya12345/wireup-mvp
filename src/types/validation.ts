@@ -86,6 +86,7 @@ export type ValidationIssueCode =
   | 'instructions_missing_section'
   | 'instructions_out_of_sync'
   | 'power_budget_exceeded'
+  | 'unverified_component'
   | 'requirement_uncovered'
   | 'behavioral_assertion_failed'
   | 'model_review';
