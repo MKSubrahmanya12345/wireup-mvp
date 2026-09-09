@@ -62,7 +62,7 @@ export const ACTUATORS: ComponentDefinition[] = [
       pin('-', 'ground', 'input', { required: true, signal: 'Negative to GND', aliases: ['GND', 'NEG'] }),
     ],
     keywords: ['buzzer', 'alarm', 'beep', 'sound', 'speaker', 'audio alert'],
-    aliases: ['buzzer', 'active buzzer', 'piezo buzzer', 'beeper'],
+    aliases: ['buzzer', 'active buzzer', 'beeper'],
     simulator: { part: 'wokwi-buzzer', supported: true, notes: 'Simulated as a passive buzzer — tone generation differs.' },
     metadata: { electrical: true, active: true, oscillationFrequencyHz: 2300 },
   }),

@@ -5,6 +5,7 @@
  */
 
 import type { CadComponentSpec, CadPinDefinition, CadFeature, ComponentRole, PinSignalRole } from './types';
+import { MOTION_PRESETS } from './presets-motion';
 
 /**
  * Standard pin header spacing helper.
@@ -71,12 +72,12 @@ function arduinoUnoPins(): CadPinDefinition[] {
   };
 
   // Digital header (two physical segments on the Uno) including AREF and its adjacent ground pin.
-  add('AREF', 'control', -24.3, 20.5, 'Analog reference');
+  add('AREF', 'analog', -24.3, 20.5, 'Analog reference');
   add('GND.1', 'ground', -24.3, 17.96, 'Digital-header ground', true);
   UNO_DIGITAL.forEach((name, index) => add(name, UNO_PWM.has(name) ? 'pwm' : 'digital', -24.3, 15.42 - index * 2.54, `Digital I/O ${name}`));
   // Power header. Distinct ground names match the named-anchor contract in the GLB.
   [
-    ['IOREF', 'control', 20.5],
+    ['IOREF', 'power', 20.5],
     ['RESET', 'control', 17.96],
     ['3V3', 'power', 15.42],
     ['5V', 'power', 12.88],
@@ -90,7 +91,14 @@ function arduinoUnoPins(): CadPinDefinition[] {
   return pins;
 }
 
-export const COMPONENT_PRESETS: Record<string, CadComponentSpec> = {
+/**
+ * Hand-authored specs for the original studio components.
+ *
+ * Newer families live in their own preset modules (see `presets-motion.ts`) and
+ * are merged into `COMPONENT_PRESETS` below, so the studio, the presets API and
+ * the catalog link all see one registry.
+ */
+const BASE_PRESETS: Record<string, CadComponentSpec> = {
   'arduino-uno-r3': {
     id: 'arduino-uno-r3',
     name: 'Arduino Uno R3',
@@ -293,7 +301,7 @@ export const COMPONENT_PRESETS: Record<string, CadComponentSpec> = {
       { name: 'IN3', pinNumber: 4, role: 'digital', signal: 'Motor B Direction 1', xMm: 1.27, yMm: 6.0, zMm: 18.0, direction: 'up' },
       { name: 'IN4', pinNumber: 5, role: 'digital', signal: 'Motor B Direction 2', xMm: 3.81, yMm: 6.0, zMm: 18.0, direction: 'up' },
       { name: 'ENB', pinNumber: 6, role: 'pwm', signal: 'Motor B Speed Enable (PWM)', xMm: 6.35, yMm: 6.0, zMm: 18.0, direction: 'up' },
-      { name: 'VCC', pinNumber: 7, role: 'power', signal: 'Motor Power Input (+5V - 35V)', xMm: -16.0, yMm: 8.0, zMm: 15.0, direction: 'up', required: true },
+      { name: '+12V', pinNumber: 7, role: 'power', signal: 'Motor Power Input (+5V - 35V)', xMm: -16.0, yMm: 8.0, zMm: 15.0, direction: 'up', aliases: ['VCC', 'VMOT', 'VS'], required: true },
       { name: 'GND', pinNumber: 8, role: 'ground', signal: 'Power & Logic Ground', xMm: -16.0, yMm: 8.0, zMm: 10.0, direction: 'up', required: true },
       { name: '5V', pinNumber: 9, role: 'power', signal: '5V Logic Supply / 5V Output', xMm: -16.0, yMm: 8.0, zMm: 5.0, direction: 'up', required: true },
       { name: 'OUT1', pinNumber: 10, role: 'power', signal: 'Motor A Output 1', xMm: -18.0, yMm: 8.0, zMm: -10.0, direction: 'up' },
@@ -347,6 +355,18 @@ export const COMPONENT_PRESETS: Record<string, CadComponentSpec> = {
     keywords: ['rotary encoder', 'ky-040', 'knob', 'dial', 'pulse encoder', 'push switch'],
     aliases: ['ky040', 'ky-040', 'rotary encoder'],
   },
+};
+
+/**
+ * Every authored CAD spec available to the studio, keyed by catalog id.
+ *
+ * A key here must exist in the component registry: `auditCatalogCadLink()`
+ * reports an orphan preset otherwise, because a model that no project part can
+ * reference cannot be wired to anything.
+ */
+export const COMPONENT_PRESETS: Record<string, CadComponentSpec> = {
+  ...BASE_PRESETS,
+  ...MOTION_PRESETS,
 };
 
 /**

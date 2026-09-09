@@ -23,7 +23,9 @@
     "verify:firmware": "tsx scripts/compile-check.ts",
     "verify:behavioral": "tsx scripts/verify-behavioral.ts",
     "verify:llm-codegen": "tsx scripts/verify-llm-codegen.ts",
-    "verify:workbench": "tsx scripts/verify-firmware-workbench.ts"
+    "verify:workbench": "tsx scripts/verify-firmware-workbench.ts",
+    "verify:cad-link": "tsx scripts/verify-cad-link.ts",
+    "verify:contracts": "tsx scripts/verify-contracts.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.699.0",

@@ -21,6 +21,8 @@ import { instanceId as buildInstanceId } from '@/lib/validation/ids';
 import { nowIso } from '@/lib/validation/time';
 
 import { findComponentById, matchComponentStrict } from '@/modules/components/service';
+import { buildProvisionalComponent, isProvisional, matchContract } from '@/modules/components/contracts';
+import { demandRecord, recordDemandBatch, type DemandRecord } from '@/modules/components/demand';
 import { getMcuProfile } from '@/modules/pin-planner/mcu-profiles';
 
 import { checkCompatibility } from './compatibility';
@@ -82,13 +84,29 @@ function normaliseRole(value: unknown, category: ComponentCategory): ComponentRo
   return ROLE_BY_CATEGORY[category] ?? 'other';
 }
 
+/**
+ * Minimum score at which a fuzzy match is treated as *this specific part*
+ * rather than "something in the same family". Exact id and alias hits bypass
+ * this entirely; anything below it defers to a contract when one exists.
+ */
+const CONFIDENT_MATCH = 85;
+
 /** Map model component suggestions onto real catalog parts. */
 export function normaliseModelSelections(
   raw: unknown,
   catalog: ComponentDefinition[],
-): { drafts: DraftSelection[]; unmatched: { query: string; reason: string }[] } {
+): {
+  drafts: DraftSelection[];
+  unmatched: { query: string; reason: string }[];
+  /** Contract-derived parts synthesised for requests the catalog could not serve. */
+  provisional: ComponentDefinition[];
+  /** One telemetry row per request, so catalog gaps become measurable. */
+  demand: DemandRecord[];
+} {
   const drafts: DraftSelection[] = [];
   const unmatched: { query: string; reason: string }[] = [];
+  const provisional: ComponentDefinition[] = [];
+  const demand: DemandRecord[] = [];
 
   const list = Array.isArray(raw) ? raw : raw && typeof raw === 'object' ? [raw] : [];
 
@@ -96,26 +114,93 @@ export function normaliseModelSelections(
     const parsed = ModelComponentSchema.safeParse(entry);
     if (!parsed.success) {
       unmatched.push({ query: JSON.stringify(entry).slice(0, 120), reason: 'entry was not an object' });
+      demand.push(demandRecord(JSON.stringify(entry).slice(0, 120), 'unmatched'));
       continue;
     }
     const value = parsed.data;
     const query = value.componentId ?? value.id ?? value.catalogId ?? value.name ?? value.part ?? '';
     if (!query) {
       unmatched.push({ query: '(empty)', reason: 'no component identifier supplied' });
+      demand.push(demandRecord('(empty)', 'unmatched'));
       continue;
     }
 
     const exact = findComponentById(String(query), catalog);
     const match = exact ? { definition: exact, score: 100, via: 'id' as const } : matchComponentStrict(String(query), catalog);
     const fallback = match ? undefined : matchComponentStrict(String(value.name ?? ''), catalog);
-    const resolved = match ?? fallback;
+    let resolved = match ?? fallback;
 
+    /*
+     * Prefer an honest contract over a weak substitution.
+     *
+     * A score below CONFIDENT_MATCH means the matcher landed on a *family*
+     * word, not the part: "DS3218 waterproof servo" hits the SG90 at 80 purely
+     * because both contain "servo". Silently shipping an SG90 (500 mA stall)
+     * when the user asked for a DS3218 (2.5 A stall) understates the supply by
+     * 5x, and nothing downstream can tell that happened.
+     *
+     * When a contract recognises the same request, the provisional part is
+     * strictly better: identical wiring, worst-case ratings, and an explicit
+     * record of what is unverified. An exact id/alias hit always wins.
+     */
+    if (resolved && resolved.score < CONFIDENT_MATCH && resolved.via !== 'id' && resolved.via !== 'alias') {
+      const contract = matchContract(String(query));
+      if (contract) resolved = undefined;
+    }
+
+    /*
+     * No catalog part. Before dropping the request, try to recognise the
+     * *electrical family* it belongs to. A recognised contract gives a
+     * provisional part with the family's worst-case envelope and an explicit
+     * list of unverified fields — a working, honest design instead of either a
+     * silent substitution or a missing component.
+     */
     if (!resolved) {
+      const contract = matchContract(String(query));
+      const substitute = match ?? fallback;
+      if (contract) {
+        const synthesised = buildProvisionalComponent(String(query), contract);
+        provisional.push(synthesised);
+        demand.push(
+          demandRecord(String(query), 'provisional', {
+            resolvedTo: synthesised.id,
+            score: contract.score,
+            contract: contract.contract.id,
+          }),
+        );
+        drafts.push({
+          componentId: synthesised.id,
+          quantity: parseQuantity(value.quantity),
+          role: normaliseRole(value.role, synthesised.category),
+          reason:
+            (value.reason ?? value.justification ?? '').trim() ||
+            `Recognised as a ${contract.contract.family}; not a verified catalog part.`,
+          required: value.required ?? true,
+          source: 'model',
+          matchedFrom: String(query),
+          notes:
+            `Provisional part built from the "${contract.contract.family}" contract. Confirm the datasheet before building.` +
+            (substitute
+              ? ` Wireup deliberately did not substitute ${substitute.definition.name}, which only matched on a family keyword.`
+              : ''),
+          ...(labelsOf(value).length > 0 ? { labels: labelsOf(value) } : {}),
+        });
+        continue;
+      }
+
       unmatched.push({ query: String(query), reason: 'no catalog entry matched this name' });
+      demand.push(demandRecord(String(query), 'unmatched'));
       continue;
     }
 
     const definition = resolved.definition;
+    const isExact = Boolean(exact) || resolved.via === 'id' || resolved.via === 'alias';
+    demand.push(
+      demandRecord(String(query), isExact ? 'catalog' : 'substituted', {
+        resolvedTo: definition.id,
+        score: resolved.score,
+      }),
+    );
     const labels = (value.instanceLabels ?? value.labels ?? []).map((label) => String(label).trim()).filter(Boolean);
 
     drafts.push({
@@ -131,7 +216,12 @@ export function normaliseModelSelections(
     });
   }
 
-  return { drafts, unmatched };
+  return { drafts, unmatched, provisional, demand };
+}
+
+/** Instance labels supplied by the model, normalised. */
+function labelsOf(value: { instanceLabels?: unknown[]; labels?: unknown[] }): string[] {
+  return (value.instanceLabels ?? value.labels ?? []).map((label) => String(label).trim()).filter(Boolean);
 }
 
 /** Merge duplicate component ids so quantities stay consistent. */
@@ -365,17 +455,52 @@ export async function planHardware(input: HardwarePlannerInput, events?: AgentEv
     metadata: { catalogSize: catalog.length },
   });
 
-  const { drafts: modelDrafts, unmatched } = normaliseModelSelections(input.modelComponents, catalog);
-
-  searchHandle?.complete(
-    `Component database searched — ${modelDrafts.length} model suggestion(s) matched to real parts, ${unmatched.length} unmatched`,
-    { matched: modelDrafts.length, unmatched: unmatched.map((entry) => entry.query) },
+  const { drafts: modelDrafts, unmatched, provisional, demand } = normaliseModelSelections(
+    input.modelComponents,
+    catalog,
   );
 
-  const defaults = applyEngineeringDefaults({ drafts: modelDrafts, catalog, requirements, analysis });
+  /*
+   * Provisional parts join the working catalog so every downstream stage — pin
+   * planning, wiring, diagram, firmware — treats them like any other part. What
+   * makes them different is carried in `metadata.provisional`, not in a special
+   * code path, so there is no second pipeline to keep in sync.
+   */
+  const workingCatalog = provisional.length > 0 ? [...catalog, ...provisional] : catalog;
+
+  searchHandle?.complete(
+    `Component database searched — ${modelDrafts.length} model suggestion(s) matched to real parts, ` +
+      `${provisional.length} built from an electrical contract, ${unmatched.length} unmatched`,
+    {
+      matched: modelDrafts.length,
+      provisional: provisional.map((component) => component.id),
+      unmatched: unmatched.map((entry) => entry.query),
+    },
+  );
+
+  for (const component of provisional) {
+    events?.emit(
+      'info',
+      `"${component.metadata.requestedAs}" is not in the component database — built a provisional part from the ${component.metadata.contractFamily} contract.`,
+      {
+        stage: 'hardware',
+        status: 'info',
+        metadata: {
+          componentId: component.id,
+          contract: component.metadata.contractId,
+          unverifiedFields: component.metadata.unverifiedFields,
+        },
+      },
+    );
+  }
+
+  // Telemetry is fire-and-forget: a demand log must never delay or fail a build.
+  void recordDemandBatch(demand);
+
+  const defaults = applyEngineeringDefaults({ drafts: modelDrafts, catalog: workingCatalog, requirements, analysis });
   const mergedDrafts = mergeDrafts([...modelDrafts, ...defaults.additions]);
 
-  const selections = expandSelections(mergedDrafts, catalog);
+  const selections = expandSelections(mergedDrafts, workingCatalog);
   const controller = selections.find((selection) => selection.role === 'controller') ?? null;
 
   for (const selection of selections) {
@@ -395,8 +520,8 @@ export async function planHardware(input: HardwarePlannerInput, events?: AgentEv
 
   const profile = controller ? getMcuProfile(controller.componentId) : undefined;
 
-  const power = computePowerBudget({ selections, catalog, controller, ...(profile ? { profile } : {}) });
-  const { checks, risks } = checkCompatibility({ selections, catalog, controller, ...(profile ? { profile } : {}) });
+  const power = computePowerBudget({ selections, catalog: workingCatalog, controller, ...(profile ? { profile } : {}) });
+  const { checks, risks } = checkCompatibility({ selections, catalog: workingCatalog, controller, ...(profile ? { profile } : {}) });
 
   const subsystems = buildSubsystems(selections);
   const architecture = buildArchitecture(selections);
@@ -423,14 +548,22 @@ export async function planHardware(input: HardwarePlannerInput, events?: AgentEv
     `${selections.length} distinct parts`,
   ].filter(Boolean) as string[];
 
+  const provisionalNotes = provisional.map(
+    (component) =>
+      `"${component.metadata.requestedAs}" is not a verified catalog part. Wireup recognised it as a ` +
+      `${component.metadata.contractFamily} and used that family's worst-case values. Confirm before building: ` +
+      `${(component.metadata.verification as string[] | undefined)?.join(' ') ?? 'the datasheet electrical ratings.'}`,
+  );
+
   const notes = [
     ...defaults.notes,
+    ...provisionalNotes,
     ...unmatched.map((entry) => `Model requested "${entry.query}" which is not in the component database (${entry.reason}).`),
     ...power.notes.filter((note) => !power.adequate || /exceed|mismatch|No explicit/i.test(note)),
   ];
 
   const inactive = selections.filter((selection) => {
-    const definition = catalog.find((component) => component.id === selection.componentId);
+    const definition = workingCatalog.find((component) => component.id === selection.componentId);
     return !isElectricallyActive(definition);
   });
   if (inactive.length > 0) {
@@ -455,7 +588,16 @@ export async function planHardware(input: HardwarePlannerInput, events?: AgentEv
     signalFlow,
     compatibility: checks,
     supportingComponents,
-    risks: [...new Set([...risks, ...power.notes.filter((note) => /exceeds|cannot|mismatch|brown/i.test(note))])],
+    risks: [
+      ...new Set([
+        ...risks,
+        ...power.notes.filter((note) => /exceeds|cannot|mismatch|brown/i.test(note)),
+        ...provisional.map(
+          (component) =>
+            `${component.name} is provisional: ${(component.metadata.unverifiedFields as string[] | undefined)?.join(', ') ?? 'key ratings'} are unverified, so the power budget for it is an estimate.`,
+        ),
+      ]),
+    ],
   };
 
   events?.emit('hardware_plan_completed', `Hardware plan complete — ${selections.length} parts, ${plan.architecture.length} subsystem block(s)`, {
@@ -471,7 +613,7 @@ export async function planHardware(input: HardwarePlannerInput, events?: AgentEv
     },
   });
 
-  return { selections, plan, unmatched, notes: [...new Set(notes)] };
+  return { selections, plan, unmatched, provisional, notes: [...new Set(notes)] };
 }
 
 /* ------------------------------------------------------------------------- */
