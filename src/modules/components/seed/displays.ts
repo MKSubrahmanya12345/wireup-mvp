@@ -165,4 +165,42 @@ export const DISPLAYS: ComponentDefinition[] = [
     },
     metadata: { electrical: true, noSupplyPins: true, segments: 10, requiresSeriesResistor: true },
   }),
+
+  def({
+    id: 'tft-ili9341-28',
+    name: '2.8" ILI9341 SPI TFT display (240x320, ILI9341)',
+    category: 'display',
+    description:
+      '2.4-3.2" colour TFT panels share one driver: an ILI9341 controller over SPI with a 240x320 RGB-565 framebuffer. Wired 4-wire SPI plus D/C (command/data select), CS and RESET; the LED pin is the backlight anode, fed from 3.3 V or a GPIO-controlled transistor — the module carries the current-limiting hardware. Check the silk: many boards label MOSI as SDI and MISO as SDO.',
+    voltage: 3.3,
+    minVoltage: 3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 80, maxMa: 150, note: 'Backlight dominates (~80 mA at full); panel logic adds 20-60 mA.' },
+    communicationProtocols: ['spi'],
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 3.3, minVoltage: 3, maxVoltage: 5.5, signal: 'Module supply (regulated on board)', aliases: ['+', 'VIN'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'VSS'] }),
+      pin('CS', 'control', 'input', { required: true, signal: 'SPI chip select, active LOW', aliases: ['NSS', 'SS'] }),
+      pin('RESET', 'control', 'input', { required: true, signal: 'Controller reset, active LOW', aliases: ['RST'] }),
+      pin('DC', 'digital', 'input', { required: true, signal: 'Data/command select: LOW = command, HIGH = data', aliases: ['D/C', 'RS', 'A0'] }),
+      pin('SDI', 'spi', 'input', { required: true, signal: 'SPI MOSI — data from MCU to the panel', aliases: ['MOSI', 'SDA'] }),
+      pin('SCK', 'spi', 'input', { required: true, signal: 'SPI clock', aliases: ['SCLK', 'CLK', 'SCL'] }),
+      pin('LED', 'power', 'input', { required: false, signal: 'Backlight anode — module carries the driver; feed from 3.3 V or a switching transistor', aliases: ['BL', 'BACKLIGHT'] }),
+      pin('SDO', 'spi', 'output', { required: false, signal: 'SPI MISO — only needed when reading from the controller (most sketch loops never do)', aliases: ['MISO'] }),
+    ],
+    libraryRequirements: [
+      { name: 'Adafruit ILI9341', import: 'Adafruit_ILI9341.h', manager: 'arduino', repository: 'https://github.com/adafruit/Adafruit_ILI9341', purpose: 'ILI9341 SPI driver' },
+      { name: 'Adafruit GFX Library', import: 'Adafruit_GFX.h', manager: 'arduino', repository: 'https://github.com/adafruit/Adafruit-GFX-Library', purpose: 'Graphics primitives' },
+      { name: 'SPI', import: 'SPI.h', manager: 'arduino', purpose: 'SPI bus', builtIn: true },
+    ],
+    keywords: ['tft', 'ili9341', 'display', 'spi display', 'colour display', 'color tft', 'lcd', '240x320'],
+    aliases: ['ili9341', 'tft display', 'tft lcd', '2.8 tft', '2.4 tft', '240x320 display', 'colour tft'],
+    simulator: {
+      part: 'wokwi-ili9341',
+      supported: true,
+      attrs: {},
+      notes: 'Velxio decodes the actual SPI command stream (CASET/PASET/RAMWR/MADCTL with D/C LOW=command HIGH=data), so Adafruit_ILI9341 sketches render on the emulated 240x320 panel including rotations 1/3. The capacitive-touch overlay is not modelled.',
+    },
+    metadata: { electrical: true, resolution: '240x320', logicVoltage: 3.3, colourDepth: 'RGB-565', spiMaxClockHz: 10000000, levelShiftNote: 'Bare panels are 3.3 V only; module regulators tolerate 5 V VCC but keep logic lines 3.3 V unless the board says otherwise.' },
+  }),
 ];

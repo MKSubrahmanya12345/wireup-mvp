@@ -230,6 +230,33 @@ const PIN_MAPS: Record<string, PinMapper> = {
   // rename upstream becomes a visible gate failure instead of a silent
   // pass-through.
   'wokwi-membrane-keypad': table({ R1: 'R1', R2: 'R2', R3: 'R3', R4: 'R4', C1: 'C1', C2: 'C2', C3: 'C3', C4: 'C4' }),
+  // 8x8 matrix: DIN/DOUT/VCC/GND are already the element's names (note: VCC/GND,
+  // NOT VDD/VSS like the single wokwi-neopixel). Pinned for the same reason.
+  'wokwi-neopixel-matrix': table({ DIN: 'DIN', DOUT: 'DOUT', VCC: 'VCC', GND: 'GND' }),
+  // ILI9341 module: silkscreen variations (SDI/MOSI, SDO/MISO, D/C or RS,
+  // RST/RESET) all resolve onto the element's exact pin names.
+  'wokwi-ili9341': table({
+    VCC: 'VCC',
+    GND: 'GND',
+    CS: 'CS',
+    RESET: 'RST',
+    RST: 'RST',
+    DC: 'D/C',
+    'D/C': 'D/C',
+    RS: 'D/C',
+    SDI: 'MOSI',
+    MOSI: 'MOSI',
+    SCK: 'SCK',
+    SCLK: 'SCK',
+    LED: 'LED',
+    SDO: 'MISO',
+    MISO: 'MISO',
+  }),
+  // NEO-6M module TX/RX match the element directly.
+  'wokwi-gps-neo6m': table({ VCC: 'VCC', GND: 'GND', TX: 'TX', TXD: 'TX', RX: 'RX', RXD: 'RX' }),
+  // DS3231: I2C pins match; the module's SQW/32K outputs have no element
+  // counterpart — wires to them are reported as unsupported, not silently mapped.
+  'wokwi-ds3231': table({ VCC: 'VCC', GND: 'GND', SDA: 'SDA', SCL: 'SCL' }),
 };
 
 /** Attributes Wokwi needs for a part to behave like the catalog entry. */
@@ -252,6 +279,10 @@ const PART_SIZE: Record<string, { width: number; height: number }> = {
   'wokwi-7segment': { width: 100, height: 160 },
   'wokwi-led-bar-graph': { width: 140, height: 100 },
   'wokwi-led-ring': { width: 110, height: 110 },
+  'wokwi-neopixel-matrix': { width: 180, height: 180 },
+  'wokwi-ili9341': { width: 220, height: 310 },
+  'wokwi-gps-neo6m': { width: 110, height: 80 },
+  'wokwi-ds3231': { width: 100, height: 70 },
   'wokwi-servo': { width: 120, height: 90 },
   'wokwi-stepper-motor': { width: 140, height: 140 },
   'wokwi-a4988': { width: 72, height: 96 },

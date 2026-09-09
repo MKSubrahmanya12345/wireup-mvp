@@ -182,4 +182,33 @@ export const ACTUATORS: ComponentDefinition[] = [
     },
     metadata: { electrical: true, levelShiftFrom3v3: true, protocol: 'ws2812b-single-wire', ledCount: 8, diameterMm: 50 },
   }),
+
+  def({
+    id: 'led-matrix-ws2812-8x8',
+    name: 'WS2812B 8x8 LED matrix (NeoPixel matrix, 64 pixels)',
+    category: 'actuator',
+    description:
+      '64 addressable WS2812B LEDs in an 8x8 grid on one data line — the same single-pin protocol as the strip and ring, scrolled into a matrix. One pin drives every pixel (index = row*8 + col with the common left-to-right, top-to-bottom wiring; cheap boards vary, so verify direction before fixing a layout). Full-white draw is ~3.8 A: budget a dedicated 5 V supply, inject power at the connector, and keep data runs short with a ~330-470 ohm series resistor and a ~1000 uF cap across the supply.',
+    voltage: 5,
+    minVoltage: 4.5,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 60, maxMa: 3840, note: 'Per pixel ~60 mA at full white; 64 pixels ≈ 3.8 A worst case — never from a USB pin.' },
+    pins: [
+      pin('DIN', 'digital', 'input', { required: true, signal: '800 kHz data in', aliases: ['DI', 'DATA', 'IN'] }),
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+5V', '+', 'VDD'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'VSS'] }),
+      pin('DOUT', 'digital', 'output', { required: false, signal: 'Data out to the next matrix in the chain', aliases: ['DO'] }),
+    ],
+    libraryRequirements: [
+      { name: 'Adafruit NeoPixel', import: 'Adafruit_NeoPixel.h', manager: 'arduino', repository: 'https://github.com/adafruit/Adafruit_NeoPixel', purpose: 'WS2812B timing and colour control' },
+    ],
+    keywords: ['neopixel matrix', 'ws2812 matrix', 'led matrix', '8x8 matrix', 'pixel matrix', 'addressable matrix'],
+    aliases: ['neopixel matrix', 'ws2812 matrix', '8x8 matrix', 'led matrix', 'pixel matrix'],
+    simulator: {
+      part: 'wokwi-neopixel-matrix',
+      supported: true,
+      notes: 'Velxio decodes the WS2812B stream on DIN and lights each pixel at its (row, col) — set the part rows/cols to match the Adafruit_NeoPixel constructor. Power injection and current-vs-brightness are not modelled.',
+    },
+    metadata: { electrical: true, levelShiftFrom3v3: true, protocol: 'ws2812b-single-wire', ledCount: 64, columns: 8, rows: 8 },
+  }),
 ];

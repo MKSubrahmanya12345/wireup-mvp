@@ -1,7 +1,7 @@
 # Handoff — the registry ↔ Velxio simulator link (the "48 simulatable objects" batch)
 
 **Branch:** `arena/01a0875b-wireup-mvp`
-**Date:** 2026-09-09
+**Date:** 2026-09-09 (batch 2 appended same day)
 **Status:** typecheck clean; `next build` clean; `verify:contracts` 28/28;
 `verify:cad-link` ok (95 parts); `verify:offline` pass; `verify:behavioral` 19/19;
 **new gate `verify:simulator` pass** (41 claims, 43 part mappings, 10 board
@@ -137,3 +137,39 @@ end-to-end section of the gate makes a pass-through warning a failure.
    pnpm typecheck && pnpm build`.
 7. If Velxio is ever updated, the gate's registry cross-check fails in both
    directions — resolve by updating `velxio-parts.ts` alongside the vendor bump.
+
+---
+
+## 7. Batch 2 — the four registered-but-unclaimed parts (approved follow-up)
+
+Scope (as approved): **ILI9341 TFT, NeoPixel 8x8 matrix, GPS NEO-6M, DS3231** —
+the four most useful parts of the skip list from §3. Same method, no shortcuts.
+
+| Catalog id | Category | Simulator part | Velxio truth (verified in source, not from memory) |
+| --- | --- | --- | --- |
+| `tft-ili9341-28` | display | `wokwi-ili9341` | `ComplexParts.ts` decodes the real SPI command stream (CASET/PASET/RAMWR/MADCTL/SWRESET), D/C LOW=command HIGH=data, native 240x320 canvas with per-pixel MV/MX/MY rotation remap. Adafruit_ILI9341 rotations 1/3 render. Touch overlay: not modelled (velxio has a separate cap-touch sim, not wired here). |
+| `led-matrix-ws2812-8x8` | actuator | `wokwi-neopixel-matrix` | `SensorParts.ts` runs the WS2812B decoder on DIN and maps index → (row, col) via the element's `cols` (default 8). Note the element's supply pins are VCC/GND — *not* VDD/VSS like the single `wokwi-neopixel`; the pin map pins this explicitly. Power injection / brightness-vs-current: not modelled. |
+| `gps-neo6m-module` | sensor | `wokwi-gps-neo6m` | `GpsParts.ts` injects real NMEA (≈9600 baud pacing) over the wired UART route from a settable fix (lat/lng/altitude/speed/course) with a monotonic UTC clock — TinyGPS++ decodes it like hardware. PPS and cold-start timing: not modelled. |
+| `rtc-ds3231-module` | sensor | `wokwi-ds3231` | `ProtocolParts.ts` emulates the register map at 0x68 (time + control/status + temperature registers 0x11/0x12, default 25 °C settable on the part). SQW/32K outputs: not modelled. The entry documents the 0x68 collision with the MPU6050 and its AD0 fix. |
+
+Element pin truths extracted from source: `wokwi-ili9341` = VCC GND CS RST D/C
+MOSI SCK LED MISO; `wokwi-neopixel-matrix` = VCC GND DIN DOUT; `velxio-ds3231` =
+GND VCC SDA SCL; `velxio-gps-neo6m` = VCC RX TX GND. All four are registered in
+the PartSimulationRegistry and runtime-definable — `verify:simulator` asserts it.
+
+Shims added (both trees, with a smoke-compiled realistic sketch per library):
+`Adafruit_ILI9341.h`, `TinyGPS++.h`. The smoke test caught a real bug before any
+gate did: a `uint8_t` constructor overload made `Adafruit_ILI9341 tft(10, 9, 8)`
+ambiguous — removed to match the real library's `int8_t` signatures. (Lesson
+recorded: `g++ -fsyntax-only file.ino` silently treats `.ino` as a linker input
+and compiles nothing. Copy to `.cpp` / `-x c++` for a meaningful check.)
+
+Numbers after batch 2: **99 catalog parts, 45 simulator claims, 45 exporter
+part mappings, 10 board mappings, end-to-end 41 peripherals / 78 wires with
+zero drops**; CAD derived tier 76/99 previewable with anchors verified.
+
+Still unclaimed on purpose (unchanged): relay module, 28BYJ-48, bare LDR, DHT11
+(§3), plus biaxial stepper, IR remote, nano-rp2040-connect, franzininho,
+rotary-dialer, sound/flame/heart-beat sensors, logic gates / flip-flops /
+optocouplers / e-paper — breadboard-education or transmitter parts rather than
+project hardware.

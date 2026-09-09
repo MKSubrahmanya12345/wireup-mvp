@@ -190,6 +190,8 @@ export const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
   'wokwi-dip-switch-8': 'dip-switch-8',
   'wokwi-tilt-switch': 'tilt-switch',
   'wokwi-ky-040': 'ky-040',
+  'wokwi-gps-neo6m': 'gps-neo6m',
+  'wokwi-ds3231': 'ds3231',
   // NOTE deliberately absent: 'wokwi-ds18b20', 'wokwi-l298n'. The pinned
   // Velxio catalog has no model for them, and putting a lookalike on the canvas
   // (an L293D standing in for an L298N, say) would wire the firmware to pins
