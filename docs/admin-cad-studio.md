@@ -89,3 +89,24 @@ Running it caught real pre-existing drift on the first pass: the Uno was missing
 auxiliary bus, the L298N motor-supply anchor was named `VCC` against a registry
 `+12V`, and the BME280 and KY-040 had CAD models with no catalog entry at all.
 Those are fixed in the registry, not papered over in the audit.
+
+### Two more checks, after a self-review of batch 1
+
+Auditing only anchor *names* let two bug classes through, so the audit now also
+covers:
+
+**Pin roles.** A CAD anchor can carry the right name and the wrong electrical
+role. `CAD_ROLE_TOLERANCE` documents where a registry type legitimately maps to
+several CAD roles — an `enable` pin is `control` on the TB6612's STBY and `pwm`
+on the L298N's ENA, and both are correct — and anything outside that table must
+match `cadPinRole()` exactly. This caught the Uno's AREF/IOREF (typed as generic
+control) and the pump/solenoid switched terminals (modelled as ground nets when
+they are driver-side motor terminals, not grounds).
+
+**Alias collisions.** `matchComponent()` returns on the *first* exact alias hit,
+so a duplicated alias means catalog file order silently decides which part the
+user gets. "piezo buzzer" resolved to either the active buzzer (`digitalWrite`)
+or the passive one (`tone()`) depending on ordering — different firmware, no
+warning — and "battery pack" to either 7.4 V or 6 V. Aliases are now unique:
+"piezo buzzer" is the passive one, bare "buzzer" the active one, "battery pack"
+the AA holder.
