@@ -1,0 +1,2 @@
+# Offline CAD-asset builder only. Never install these in the Next.js runtime image.
+cascadio
