@@ -202,7 +202,11 @@ export const MOTORS: ComponentDefinition[] = [
     ],
     keywords: ['stepper', 'nema17', 'bipolar', 'cnc', '3d printer'],
     aliases: ['nema 17', 'nema17', 'bipolar stepper', '17hs4401'],
-    simulator: { supported: false, notes: 'Not available in common simulators.' },
+    simulator: {
+      part: 'wokwi-stepper-motor',
+      supported: true,
+      notes: 'Velxio drives the motor from a paired A4988: each STEP rising edge advances the rotor one (micro)step in the DIR direction. Coil pins map A±/B±; torque, inertia and stall are not modelled.',
+    },
     metadata: { electrical: true, noSupplyPins: true, incompatibleReason: 'Requires a chopper driver (A4988/DRV8825) between MCU and motor coils.' },
   }),
 
@@ -409,7 +413,11 @@ export const MOTORS: ComponentDefinition[] = [
     compatibleMicrocontrollers: ['esp32-devkit-v1', 'arduino-uno-r3', 'arduino-nano'],
     keywords: ['a4988', 'stepper driver', 'microstepping', 'step dir', 'pololu'],
     aliases: ['a4988', 'pololu a4988', 'stepstick'],
-    simulator: { supported: false, notes: 'No verified simulator part.' },
+    simulator: {
+      part: 'wokwi-a4988',
+      supported: true,
+      notes: 'Velxio advances a paired stepper motor on each STEP rising edge in the DIR direction (with MS1-MS3 microstepping selected). VREF trimming, decay mode and the fault protections are not modelled.',
+    },
     metadata: { electrical: true, requiresBulkCapacitor: true, vrefFormula: 'Imax = VREF / (8 x Rsense)', microstepping: [1, 2, 4, 8, 16] },
   }),
   def({

@@ -94,7 +94,11 @@ export const SENSORS: ComponentDefinition[] = [
     ],
     keywords: ['pir', 'motion', 'hc-sr501', 'presence', 'intruder', 'security'],
     aliases: ['pir', 'pir sensor', 'hc-sr501', 'motion sensor'],
-    simulator: { supported: false, notes: 'Represent as a digital input source.' },
+    simulator: {
+      part: 'wokwi-pir-motion-sensor',
+      supported: true,
+      notes: 'Velxio registers real simulation logic: OUT idles LOW and pulses on a trigger. The HC-SR501 sensitivity/delay pots and the 30 s warm-up window are not modelled.',
+    },
     metadata: { electrical: true, outputLogicVoltage: 3.3, warmUpSeconds: 30, detectionRangeM: 7, adjustableDelay: [1.3, 25] },
   }),
 
@@ -259,7 +263,14 @@ export const SENSORS: ComponentDefinition[] = [
     keywords: ['ds18b20', 'temperature', '1-wire', 'onewire', 'thermometer', 'probe', 'waterproof'],
     aliases: ['ds18b20', 'ds1820', 'dallas temperature sensor', '1-wire temperature'],
     exampleUsage: ['Multi-zone temperature logging on a single GPIO', 'Water temperature with the waterproof probe'],
-    simulator: { part: 'wokwi-ds18b20', supported: true },
+    simulator: {
+      part: 'wokwi-ds18b20',
+      supported: false,
+      notes:
+        'Wokwi.com ships a DS18B20 part, but the bundled Velxio build has NO DS18B20 element (verified against its pinned ' +
+        '@wokwi/elements and components-metadata.json). Claiming it would draw a part with no pins and silently drop ' +
+        'every wire. For a simulated temperature input use the DHT22; on the bench the DS18B20 remains the better part.',
+    },
     metadata: {
       electrical: true,
       requiresPullup: true,
@@ -382,7 +393,11 @@ export const SENSORS: ComponentDefinition[] = [
     keywords: ['hx711', 'load cell', 'weight', 'scale', 'strain gauge', 'force'],
     aliases: ['hx711', 'load cell amplifier', 'weight sensor', 'scale module'],
     exampleUsage: ['Digital kitchen/parcel scale', 'Filament runout and weight monitoring'],
-    simulator: { supported: false },
+    simulator: {
+      part: 'wokwi-hx711',
+      supported: true,
+      notes: 'Velxio emulates the DT/SCK bit protocol and lets you set a known weight on the part. The bridge-side pins (E±/A±/B±) are real header pins, but the load cell itself has no model — the simulator reports the configured weight, not physics.',
+    },
     metadata: { electrical: true, adcBits: 24, gainOptions: [128, 64, 32], sampleRateHz: [10, 80], requiresCalibration: true },
   }),
 
@@ -404,7 +419,61 @@ export const SENSORS: ComponentDefinition[] = [
     ],
     keywords: ['mq-2', 'mq2', 'gas', 'smoke', 'lpg', 'air quality', 'flammable'],
     aliases: ['mq2', 'mq-2', 'mq series', 'gas sensor', 'smoke sensor'],
-    simulator: { supported: false, notes: 'Represent as an analog source.' },
+    simulator: {
+      part: 'wokwi-gas-sensor',
+      supported: true,
+      notes: 'Velxio models AOUT/DOUT against a configurable gas level. The heater warm-up and the 24–48 h burn-in are not modelled.',
+    },
     metadata: { electrical: true, heaterCurrentMa: 800, burnInHours: 24, detectionPpm: { lpg: [300, 10000], smoke: [100, 1000] } },
+  }),
+
+  def({
+    id: 'ntc-thermistor-module',
+    name: 'NTC thermistor temperature module (analog out)',
+    category: 'sensor',
+    description:
+      '10 kΩ NTC thermistor on a comparator board with a single amplified output. Read OUT with an ADC pin and convert with the beta/Steinhart-Hart equation — the module only scales the divider, it does not linearise. Output falls as temperature rises (NTC: resistance drops when hot).',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 1, maxMa: 10, note: 'Divider + comparator quiescent current; the NTC leg dominates.' },
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('OUT', 'analog', 'output', { required: true, signal: 'Scaled divider voltage — colder = higher', aliases: ['AO', 'A0', 'SIG', 'S'] }),
+    ],
+    keywords: ['ntc', 'thermistor', 'temperature', 'analog temperature', 'thermal'],
+    aliases: ['ntc temperature sensor', 'thermistor module', 'ntc module', 'ntc sensor'],
+    simulator: {
+      part: 'wokwi-ntc-temperature-sensor',
+      supported: true,
+      notes: 'Velxio maps the temperature you set on the part to the OUT voltage. Only the single OUT pin is modelled — there is no digital threshold output on this element.',
+    },
+    metadata: { electrical: true, resistanceOhm: 10000, betaCoefficient: 3950, requiresAdc: true, accuracyNote: 'Beta equation ≈ ±1 °C over 0–70 °C after a two-point calibration.' },
+  }),
+
+  def({
+    id: 'tilt-sensor-module',
+    name: 'Tilt sensor module (SW-520D ball switch)',
+    category: 'sensor',
+    description:
+      'Metal-ball tilt switch on a comparator board: OUT pulses LOW (on most boards) while the ball rolls and goes stable when the module settles past ~±10° from horizontal. Digital-only output — for a continuous angle use an accelerometer such as the MPU6050. Debounce: the ball chatters while moving.',
+    voltage: 5,
+    minVoltage: 3.3,
+    maxVoltage: 5.5,
+    currentRequirements: { typicalMa: 1, maxMa: 10 },
+    pins: [
+      pin('VCC', 'power', 'power', { required: true, voltage: 5, aliases: ['+', 'V+'] }),
+      pin('GND', 'ground', 'ground', { required: true, aliases: ['-', 'V-'] }),
+      pin('OUT', 'digital', 'output', { required: true, signal: 'Tilt alarm — pulses while the ball rolls', aliases: ['DO', 'SIG', 'S'] }),
+    ],
+    keywords: ['tilt', 'sw-520d', 'ball switch', 'vibration', 'tilt sensor', 'fall detection'],
+    aliases: ['tilt sensor', 'tilt switch', 'sw520d', 'ball tilt sensor'],
+    simulator: {
+      part: 'wokwi-tilt-switch',
+      supported: true,
+      notes: 'Velxio tilts the part on click and drives OUT accordingly. The comparator threshold and ball chatter are not modelled.',
+    },
+    metadata: { electrical: true, activeLevel: 'low', triggerAngleDeg: 10, requiresPullup: true, recommendedDebounceMs: 50 },
   }),
 ];
