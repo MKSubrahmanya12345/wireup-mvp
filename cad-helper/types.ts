@@ -85,6 +85,18 @@ export interface CadDimensions {
   heightMm: number;
 }
 
+/**
+ * Optional link to a reviewed component-specific CAD assembly.
+ *
+ * Specs without this field are still rendered and exported through the
+ * parametric fallback. The distinction prevents the UI from presenting a
+ * generic box-and-pin model as if it came from a verified manufacturer model.
+ */
+export interface CadVisualAssetRef {
+  key: string;
+  quality?: 'reference' | 'parametric';
+}
+
 export interface CadComponentSpec {
   /** Unique catalog identifier (e.g. "hc-sr04-ultrasonic", "oled-ssd1306-i2c") */
   id: string;
@@ -110,6 +122,8 @@ export interface CadComponentSpec {
   pins: CadPinDefinition[];
   /** 3D decorative / functional surface elements */
   features: CadFeature[];
+  /** Optional reviewed assembly used by the studio renderer. */
+  visualAsset?: CadVisualAssetRef;
   /** Communication protocols supported */
   protocols: string[];
   /** Search keywords */

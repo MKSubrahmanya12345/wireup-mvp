@@ -50,7 +50,79 @@ export function generateHeaderPins(options: {
 /**
  * High-accuracy built-in presets for common Maker & IoT components.
  */
+const UNO_DIGITAL = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'];
+const UNO_PWM = new Set(['3', '5', '6', '9', '10', '11']);
+
+/** Pin anchor positions for the standard Arduino Uno R3 header layout. */
+function arduinoUnoPins(): CadPinDefinition[] {
+  const pins: CadPinDefinition[] = [];
+  const add = (name: string, role: PinSignalRole, xMm: number, zMm: number, signal: string, required = false) => {
+    pins.push({
+      name,
+      pinNumber: pins.length + 1,
+      role,
+      signal,
+      xMm,
+      yMm: 5.6,
+      zMm,
+      direction: 'up',
+      required,
+    });
+  };
+
+  // Digital header (two physical segments on the Uno) including AREF and its adjacent ground pin.
+  add('AREF', 'control', -24.3, 20.5, 'Analog reference');
+  add('GND.1', 'ground', -24.3, 17.96, 'Digital-header ground', true);
+  UNO_DIGITAL.forEach((name, index) => add(name, UNO_PWM.has(name) ? 'pwm' : 'digital', -24.3, 15.42 - index * 2.54, `Digital I/O ${name}`));
+  // Power header. Distinct ground names match the named-anchor contract in the GLB.
+  [
+    ['IOREF', 'control', 20.5],
+    ['RESET', 'control', 17.96],
+    ['3V3', 'power', 15.42],
+    ['5V', 'power', 12.88],
+    ['GND.2', 'ground', 10.34],
+    ['GND.3', 'ground', 7.8],
+    ['VIN', 'power', 5.26],
+  ].forEach(([name, role, zMm]) => add(String(name), role as PinSignalRole, 24.3, Number(zMm), `${name} rail`, role === 'power' || role === 'ground'));
+  // Analog header.
+  ['A0', 'A1', 'A2', 'A3', 'A4', 'A5'].forEach((name, index) => add(name, name === 'A4' || name === 'A5' ? 'i2c' : 'analog', 24.3, -8.5 - index * 2.54, `${name} input`));
+
+  return pins;
+}
+
 export const COMPONENT_PRESETS: Record<string, CadComponentSpec> = {
+  'arduino-uno-r3': {
+    id: 'arduino-uno-r3',
+    name: 'Arduino Uno R3',
+    category: 'controller',
+    description: 'Arduino Uno R3 development board with ATmega328P, USB-B, barrel jack, header rows and on-board power circuitry.',
+    voltage: 5.0,
+    minVoltage: 5.0,
+    maxVoltage: 12.0,
+    currentMa: 50,
+    dimensions: { widthMm: 53.4, lengthMm: 68.6, heightMm: 1.6 },
+    bodyColor: '#0b4f9c',
+    pins: arduinoUnoPins(),
+    features: [
+      { name: 'usb_b_connector', type: 'box', dimensions: [14.5, 11.5, 15.5], position: [-25.8, 7.0, 23.5], color: '#c8ced8' },
+      { name: 'barrel_jack', type: 'box', dimensions: [13.0, 11.0, 14.0], position: [-17.5, 7.0, -24.5], color: '#12161d' },
+      { name: 'atmega328p_dip', type: 'box', dimensions: [10.0, 4.6, 35.5], position: [1.5, 4.0, -1.0], color: '#111318' },
+      { name: 'atmega16u2', type: 'box', dimensions: [7.0, 2.0, 7.0], position: [-17.0, 2.6, 2.5], color: '#171a20' },
+      { name: 'crystal_16mhz', type: 'box', dimensions: [10.5, 3.6, 4.8], position: [-6.5, 3.3, 13.0], color: '#c5c9c8' },
+      { name: 'reset_button', type: 'potentiometer', dimensions: [4.4, 2.0, 4.4], position: [-11.5, 3.0, 19.5], color: '#d9dde5' },
+      { name: 'power_led', type: 'led', dimensions: [1.8, 2.4, 1.8], position: [-5.5, 2.8, 19.0], color: '#31d17c' },
+      { name: 'tx_led', type: 'led', dimensions: [1.5, 1.8, 1.5], position: [-2.8, 2.5, 19.0], color: '#f5a623' },
+      { name: 'rx_led', type: 'led', dimensions: [1.5, 1.8, 1.5], position: [-0.4, 2.5, 19.0], color: '#f5a623' },
+      { name: 'capacitor_47uf_a', type: 'cylinder', dimensions: [3.6, 8.0, 0], position: [-18.8, 5.2, -9.5], color: '#20242c' },
+      { name: 'capacitor_47uf_b', type: 'cylinder', dimensions: [3.6, 8.0, 0], position: [-13.8, 5.2, -9.5], color: '#20242c' },
+      { name: 'voltage_regulator', type: 'box', dimensions: [7.5, 3.0, 6.0], position: [-16.5, 3.0, -15.5], color: '#20242c' },
+    ],
+    visualAsset: { key: 'arduino-uno-r3', quality: 'reference' },
+    protocols: ['gpio', 'i2c', 'spi', 'uart', 'pwm', 'analog'],
+    keywords: ['arduino', 'uno', 'atmega328p', 'microcontroller', 'development board'],
+    aliases: ['arduino uno', 'uno r3', 'arduino-uno-r3'],
+  },
+
   'hc-sr04-ultrasonic': {
     id: 'hc-sr04-ultrasonic',
     name: 'HC-SR04 Ultrasonic Distance Sensor',
