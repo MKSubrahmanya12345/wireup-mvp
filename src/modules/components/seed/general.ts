@@ -177,6 +177,67 @@ export const GENERAL: ComponentDefinition[] = [
   }),
 
   def({
+    id: 'slide-potentiometer-10k',
+    name: '10 kΩ slide potentiometer (fader)',
+    category: 'input_device',
+    description:
+      'Linear-taper 10 kΩ slide potentiometer (45 mm travel fader). Electrically identical to a rotary pot: the two ends go to VCC/GND and the wiper to an ADC pin, with position proportional to travel. Choose it over a rotary pot when the panel layout wants a visible, directly-labelled position — mixers, light dimmers, setpoint sliders.',
+    minVoltage: 0,
+    maxVoltage: 5,
+    currentRequirements: { typicalMa: 0.5, maxMa: 1, note: 'Divider current only: 5 V / 10 kΩ.' },
+    pins: [
+      pin('A', 'power', 'bidirectional', { required: true, signal: 'One end of the track to VCC', aliases: ['1', 'CCW'] }),
+      pin('WIPER', 'analog', 'output', { required: true, signal: 'Wiper to an ADC pin', aliases: ['2', 'W', 'S', 'SIG'] }),
+      pin('B', 'ground', 'bidirectional', { required: true, signal: 'Other end of the track to GND', aliases: ['3', 'CW'] }),
+    ],
+    keywords: ['slide potentiometer', 'fader', 'slider', 'analog input', 'volume slider', 'mixer', 'linear pot'],
+    aliases: ['slide pot', 'slider potentiometer', 'fader', 'slide potentiometer', 'linear potentiometer'],
+    simulator: {
+      part: 'wokwi-slide-potentiometer',
+      supported: true,
+      notes: 'Velxio maps the slider position to the SIG voltage — drag it and the ADC reading follows, same behaviour as the rotary pot.',
+    },
+    metadata: { electrical: true, resistanceOhm: 10000, taper: 'linear', requiresAdc: true, travelMm: 45 },
+  }),
+
+  def({
+    id: 'dip-switch-8',
+    name: '8-way DIP switch (SPST)',
+    category: 'input_device',
+    description:
+      'Row of eight independent slide switches in a standard 0.1" DIP package — the classic way to give a device a hard-wired address, mode or configuration word that survives power cycles. Each pole is a separate pair of pins (nA/nB); wire one side to the MCU pin and the other to GND, and enable the internal pull-up so OFF reads HIGH and ON reads LOW.',
+    minVoltage: 0,
+    maxVoltage: 5,
+    currentRequirements: { typicalMa: 0, maxMa: 25, note: 'Contact current only; 25 mA per pole absolute max — logic switching only.' },
+    pins: [
+      pin('1A', 'digital', 'bidirectional', { required: true, signal: 'Switch 1 pole, side A', aliases: ['1a'] }),
+      pin('1B', 'digital', 'bidirectional', { required: true, signal: 'Switch 1 pole, side B (wire to GND)', aliases: ['1b'] }),
+      pin('2A', 'digital', 'bidirectional', { required: true, signal: 'Switch 2 pole, side A', aliases: ['2a'] }),
+      pin('2B', 'digital', 'bidirectional', { required: true, signal: 'Switch 2 pole, side B (wire to GND)', aliases: ['2b'] }),
+      pin('3A', 'digital', 'bidirectional', { required: true, signal: 'Switch 3 pole, side A', aliases: ['3a'] }),
+      pin('3B', 'digital', 'bidirectional', { required: true, signal: 'Switch 3 pole, side B (wire to GND)', aliases: ['3b'] }),
+      pin('4A', 'digital', 'bidirectional', { required: true, signal: 'Switch 4 pole, side A', aliases: ['4a'] }),
+      pin('4B', 'digital', 'bidirectional', { required: true, signal: 'Switch 4 pole, side B (wire to GND)', aliases: ['4b'] }),
+      pin('5A', 'digital', 'bidirectional', { required: true, signal: 'Switch 5 pole, side A', aliases: ['5a'] }),
+      pin('5B', 'digital', 'bidirectional', { required: true, signal: 'Switch 5 pole, side B (wire to GND)', aliases: ['5b'] }),
+      pin('6A', 'digital', 'bidirectional', { required: true, signal: 'Switch 6 pole, side A', aliases: ['6a'] }),
+      pin('6B', 'digital', 'bidirectional', { required: true, signal: 'Switch 6 pole, side B (wire to GND)', aliases: ['6b'] }),
+      pin('7A', 'digital', 'bidirectional', { required: true, signal: 'Switch 7 pole, side A', aliases: ['7a'] }),
+      pin('7B', 'digital', 'bidirectional', { required: true, signal: 'Switch 7 pole, side B (wire to GND)', aliases: ['7b'] }),
+      pin('8A', 'digital', 'bidirectional', { required: true, signal: 'Switch 8 pole, side A', aliases: ['8a'] }),
+      pin('8B', 'digital', 'bidirectional', { required: true, signal: 'Switch 8 pole, side B (wire to GND)', aliases: ['8b'] }),
+    ],
+    keywords: ['dip switch', 'configuration', 'address select', 'mode select', 'dipswitch', '8 way switch'],
+    aliases: ['dip switch', 'dipswitch', 'dip-8', '8-way dip', 'configuration switch'],
+    simulator: {
+      part: 'wokwi-dip-switch-8',
+      supported: true,
+      notes: 'Velxio simulates all 8 poles independently (pin side A of each switch is the sense side — wire the B side to GND and pull A up).',
+    },
+    metadata: { electrical: true, noSupplyPins: true, poles: 8, latching: true, requiresPullup: true, recommendedDebounceMs: 20 },
+  }),
+
+  def({
     id: 'rotary-encoder-ky040',
     name: 'KY-040 rotary encoder module',
     category: 'input_device',
@@ -197,7 +258,11 @@ export const GENERAL: ComponentDefinition[] = [
     keywords: ['rotary encoder', 'ky-040', 'ky040', 'knob', 'dial', 'quadrature', 'menu', 'volume'],
     aliases: ['ky040', 'ky-040', 'rotary encoder', 'encoder knob', 'digital potentiometer knob'],
     exampleUsage: ['Menu navigation on an OLED', 'Setpoint adjustment on a thermostat'],
-    simulator: { supported: false, notes: 'Part id unverified — model as two phase-shifted digital inputs plus a button.' },
+    simulator: {
+      part: 'wokwi-ky-040',
+      supported: true,
+      notes: 'Velxio generates real quadrature on CLK/DT as you turn the knob (angle/stepSize are part properties) and SW goes active LOW when pressed.',
+    },
     metadata: {
       electrical: true,
       detentsPerRevolution: 20,
@@ -269,7 +334,11 @@ export const GENERAL: ComponentDefinition[] = [
     keywords: ['joystick', 'thumbstick', 'analog stick', '2-axis', 'ps2 joystick', 'control'],
     aliases: ['joystick', 'joystick module', 'thumb joystick', 'ky-023'],
     exampleUsage: ['Driving an RC car over Bluetooth', 'Pan/tilt camera control'],
-    simulator: { supported: false, notes: 'Model as two potentiometers and a button.' },
+    simulator: {
+      part: 'wokwi-analog-joystick',
+      supported: true,
+      notes: 'Velxio wires VRX→HORZ, VRY→VERT, SW→SEL: drag the stick and the ADC reads move, the switch goes active LOW.',
+    },
     metadata: { electrical: true, resistanceOhm: 10000, restValue10Bit: 512, requiresDeadband: true, requiresAdc: true },
   }),
 
