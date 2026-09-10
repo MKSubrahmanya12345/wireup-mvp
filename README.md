@@ -98,6 +98,7 @@ hardcoded. `.env.example` documents each variable; the validated shape lives in
 | `WIREUP_ENABLE_LLM_FIXER` | Allow the model to propose a changeset when deterministic fixes are not enough |
 | `WIREUP_ENABLE_LLM_VALIDATION` | Run the critical model review in addition to the rule engine |
 | `WIREUP_ENABLE_LLM_CODEGEN` | AI-first firmware authoring: the model writes the sketch logic against the grounded pin plan and the rooting gate keeps the managed blocks authoritative (default on; inert without Bedrock; falls back to the deterministic template on any violation) |
+| `WIREUP_ENABLE_BEHAVIOUR_RUNTIME` | Compile **and execute** the sketch to observe its behaviour. Defaults to on outside production and off inside it — see [Deploying](#deploying) |
 | `WIREUP_ENABLE_FIRMWARE_COMPILE` | Host compile gate: the sketch is type-checked against the stub Arduino core (g++/clang++) before a revision is frozen — generation, fixes and workbench edits all pass through it. Skipped honestly when no compiler is on PATH |
 | `WIREUP_AUTOSEED_COMPONENTS` | Seed the catalog into MongoDB when the collection is empty |
 | `WIREUP_MAX_REVISIONS`, `WIREUP_MAX_EVENTS` | Storage caps per project document |
@@ -413,7 +414,7 @@ All routes are Node runtime, `force-dynamic`, and return an envelope:
 | `POST /api/projects/:id/everflow/respond` | Body `{ taskId, value, note? }` → answer an AI→human ask; `409` when the ask is already closed |
 | `POST /api/projects/:id/everflow/inject` | Body `{ type: note\|idea\|correction\|resource, text, title? }` → file a human→AI addition |
 | `POST /api/projects/:id/everflow/continue` | Run another continuation pass now (bounded, idempotent) |
-| `GET /api/projects?limit=N` | `{ projects: […summaries], count }` |
+| `GET /api/projects?limit=N` | `{ projects: […summaries], count }` — operator view, behind the admin session (it returns every project's prompt) |
 | `GET /api/projects/:id` | `{ project, running }`; `404 not_found` when unknown |
 | `GET /api/projects/:id/events?after=SEQ` | `{ events, latestSeq, status, stage, revision, running, terminal }` |
 | `GET /api/projects/:id/diagram?target=wireup\|wokwi` | wireup: `{ diagram }`; wokwi: `{ diagram, skippedParts, skippedConnections, warnings }`; `409 diagram_not_ready` before the diagram exists |

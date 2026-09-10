@@ -35,17 +35,20 @@ const floatFrom = (fallback: number) =>
       return Number.isFinite(parsed) ? parsed : fallback;
     });
 
+/** Shared `true/1/yes/on` parsing, so a schema default and a read-time default behave alike. */
+function coerceBool(value: string | undefined, fallback: boolean): boolean {
+  if (value === undefined || value.trim() === '') return fallback;
+  const normalised = value.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalised)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalised)) return false;
+  return fallback;
+}
+
 const boolFrom = (fallback: boolean) =>
   z
     .string()
     .optional()
-    .transform((value) => {
-      if (value === undefined || value.trim() === '') return fallback;
-      const normalised = value.trim().toLowerCase();
-      if (['true', '1', 'yes', 'on'].includes(normalised)) return true;
-      if (['false', '0', 'no', 'off'].includes(normalised)) return false;
-      return fallback;
-    });
+    .transform((value) => coerceBool(value, fallback));
 
 const ServerEnvSchema = z.object({
   // --- MongoDB ---
@@ -82,6 +85,9 @@ const ServerEnvSchema = z.object({
   // Arduino core with g++/clang++ before a revision is frozen. Skipped
   // honestly when no compiler is on PATH.
   WIREUP_ENABLE_FIRMWARE_COMPILE: boolFrom(true),
+  // Deliberately NOT a boolFrom(true): this one's default depends on where the
+  // app is running, so the raw string is resolved in `read()` against NODE_ENV.
+  WIREUP_ENABLE_BEHAVIOUR_RUNTIME: z.string().optional(),
   WIREUP_AUTOSEED_COMPONENTS: boolFrom(true),
   WIREUP_MAX_REVISIONS: intFrom(12),
   WIREUP_MAX_EVENTS: intFrom(1500),
@@ -147,6 +153,13 @@ export interface ServerEnv {
     enableLlmValidation: boolean;
     enableLlmCodegen: boolean;
     enableFirmwareCompile: boolean;
+    /**
+     * Compile *and execute* the generated sketch against the stub runtime to
+     * observe its behaviour. On by default in development, off in production:
+     * executing generated native code on a public host is a capability to opt
+     * into, not one to inherit.
+     */
+    enableBehaviourRuntime: boolean;
     autoseedComponents: boolean;
     maxRevisions: number;
     maxEvents: number;
@@ -230,6 +243,13 @@ function read(): ServerEnv {
       enableLlmValidation: parsed.WIREUP_ENABLE_LLM_VALIDATION,
       enableLlmCodegen: parsed.WIREUP_ENABLE_LLM_CODEGEN,
       enableFirmwareCompile: parsed.WIREUP_ENABLE_FIRMWARE_COMPILE,
+      enableBehaviourRuntime: coerceBool(
+        parsed.WIREUP_ENABLE_BEHAVIOUR_RUNTIME,
+        // Unset ⇒ execute only off the internet. A laptop running `pnpm dev`
+        // is the developer's own machine; a production process is reachable by
+        // strangers and can be handed a prompt of their choosing.
+        (parsed.NODE_ENV ?? 'development') !== 'production',
+      ),
       autoseedComponents: parsed.WIREUP_AUTOSEED_COMPONENTS,
       maxRevisions: Math.max(1, parsed.WIREUP_MAX_REVISIONS),
       maxEvents: Math.max(50, parsed.WIREUP_MAX_EVENTS),

@@ -10,6 +10,10 @@ and admin variables → deploy the `render.yaml` Blueprint in this repo → open
 `https://<service>.onrender.com/api/health` once so the catalog seeds itself.
 Full steps below; the checklist at the end is the short version.
 
+> **Read [§13](#12-is-it-safe-to-hand-someone-the-url) before you put the URL in
+> a deck or a group chat.** It is the honest answer to "is it secure now", and it
+> names the two things that are deliberately open.
+
 ---
 
 ## 1. What this app needs from a host
@@ -347,9 +351,112 @@ json** writes a revision back.
 | CAD deploy says it cannot write | Expected on a separately hosted Velxio. §6's last paragraph. |
 | Every `NEXT_PUBLIC_*` change does nothing | It is build-time. Rebuild, not just redeploy. |
 
+
 ---
 
-## 12. Checklist
+## 12. Is it safe to hand someone the URL?
+
+Short answer: **the admin surface is locked, the demo surface is not — on
+purpose.** Wireup has no accounts, no per-user data and no billing, so the model
+it is safe to deploy under is *a single shared workspace that you are willing to
+pay for*. Here is exactly what follows from that.
+
+### Open by design, and what it costs
+
+| Endpoint | Why it is open | The cost of that |
+| --- | --- | --- |
+| `POST /api/projects` | that **is** the product — a judge with a URL types a prompt | every run spends Bedrock tokens and a few minutes of this container; there is **no rate limit and no per-IP cap**, so one hostile page can turn $7 of inference into $700 |
+| `GET`/`POST /api/projects/:id/*` | the workspace must be linkable to be demoable | knowing an id grants the firmware, the diagram, the zip download. Ids are 16 hex chars from `crypto.randomUUID()` (64 bits, not enumerable) — **but** `GET /api/projects` used to publish every id *with its prompt*, which is why that route now sits behind the admin session |
+| `GET /api/health`, `/api/health/live` | the platform probe and the UI banner | leaks configuration *shape* (region, model id, counts). No credential ever appears in it: `logger.ts` redacts the credential keys and `MONGODB_URI` is logged host-only with its userinfo replaced |
+
+If the money risk is not one you want to carry for a public link, the two things
+that fix it are a Cloudflare Access / `Auth Basic` app in front of the service,
+or a `WIREUP_REQUIRE_INVITE`-style gate on project creation. Say the word and I
+will add the second; it is ~30 lines and it changes the demo flow, so it is not
+a decision to make silently.
+
+### Closed now, and why each one was a real problem
+
+* **`/admin` and `/api/admin/*`** — were world-reachable, with a credential pair
+  committed to source that nothing called. Now env-driven, session-gated, and
+  closed when unconfigured (§7).
+* **The behaviour harness no longer runs by default in production.** This is the
+  one worth understanding, because it is not a web-shaped risk:
+  `WIREUP_ENABLE_BEHAVIOUR_RUNTIME`'s harness compiles the generated sketch
+  against the stub runtime and **executes it**, then reads its serial trace.
+  Generated-from-a-prompt source, compiled and run as the service user, on a box
+  whose environment contains `MONGODB_URI` and the AWS keys. Until now the child
+  inherited `process.env` wholesale, which is a credential handover, and it was
+  reachable anonymously because creating a project is.
+  Two changes:
+  1. **The child environment is now explicit** — `PATH`, the three `WIREUP_SIM_*`
+     values and nothing else, with `cwd` confined to the scratch directory. A
+     sketch that calls `getenv("MONGODB_URI")` gets `NULL` (verified by executing
+     exactly that probe against the harness: `WIREUP_SIM_MS` visible, credentials
+     missing). A run that wedges outside `loop()` is now killed at 30 s instead
+     of being waited on forever.
+  2. **It is off in production unless opted in.** Scrubbing the environment is
+     containment by omission, not a sandbox: same uid, same filesystem, same
+     `/proc` — and `/proc/<parent>/environ` is readable by a child of the same
+     user, so the credentials were never *safely* reachable-but-fine. The
+     honest fixes are isolation or not running it; until there is isolation, the
+     default is to not run it. **Nothing pretends otherwise**: runtime assertions
+     come back `status: skipped` with the reason, they are never counted as
+     passing, and the `failures` tally ignores skipped checks — so a build that
+     would have been flagged still reports its static results and its compile
+     gate normally.
+
+  To get runtime assertions on a hosted demo, choose one: run it on your own
+  machine (default on), or set `WIREUP_ENABLE_BEHAVIOUR_RUNTIME=true` on a
+  service whose traffic you control and accept that a prompt can execute native
+  code inside that container.
+* **Response headers** (`next.config.mjs`): `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: SAMEORIGIN` + `Content-Security-Policy: frame-ancestors
+  'self'` (so no third-party site can frame `/admin`'s login form), and
+  `Referrer-Policy: strict-origin-when-cross-origin` (so a project id does not
+  leak to an outbound link's referrer). Deliberately **not** a full CSP: the
+  console paints with inline `style` attributes, so a strict `style-src` would
+  strip the UI's appearance on the host while looking perfect in dev.
+* **`poweredByHeader: false`**, and the vendored `external/` tree never enters
+  the image (`.dockerignore`).
+
+### Not addressed, by omission rather than oversight
+
+* **Secret rotation is your job.** Render stores these as plain service env vars
+  (no KMS/secret-manager integration here). If a deploy log or a screenshot ever
+  shows `MONGODB_URI`, rotate the Atlas user; the AWS key should be scoped to
+  `bedrock:InvokeModel*` on the one model ARN you use — that single IAM policy
+  does more to bound the blast radius of anything on this list than any code
+  change in it.
+* **`pnpm audit` / lockfile review** was not part of this pass; run
+  `pnpm audit --audit-level=high` before you call a deploy reviewed, and note
+  `mongoose`/`zod` majors when they move.
+* **No request body size limits** beyond the app's own validators (prompts cap at
+  4 000 chars; the CAD routes accept whatever JSON arrives).
+* **Free/paid sleep still truncates a run** (§8) and **local disk is still
+  disposable** — availability properties, not confidentiality ones.
+
+### The 60-second adversarial check on a live deploy
+
+```bash
+BASE=https://<name>.onrender.com
+curl -sso /dev/null -w "project list without a session  -> %{http_code}  (want 401/503)\n" $BASE/api/projects
+curl -sso /dev/null -w "admin console without a session -> %{http_code}  (want 200, and the body must be the login card)\n" $BASE/admin
+curl -s  $BASE/admin | grep -c 'control-shell'                                          # want 0
+curl -sSo /dev/null -D- $BASE/ | grep -iE "x-frame-options|nosniff|referrer-policy"       # want 3
+curl -sS $BASE/api/health | node -pe 'const d=JSON.parse(0+require("fs").readFileSync(0,"utf8"));
+  "bedrock "+(d.bedrock.configured?"configured":"not configured")+" · catalog "+d.catalog.size+" · mongo "+d.mongo.ok'
+# and, from a browser devtools console on the deployed origin:
+#   fetch('/api/admin/cad/generate',{method:'POST',body:'{}'})  -> 401, not 200
+```
+
+If `grep -c 'control-shell'` on an unauthenticated `/admin` ever returns 1, the
+deployment is misconfigured — treat it as exposed and fix the variables before
+sharing the link.
+
+---
+
+## 13. Checklist
 
 - [ ] Atlas M0 cluster, allowlist `0.0.0.0/0`, app user (not admin), SRV string
 - [ ] `MONGODB_URI`, `MONGODB_DB`, `AWS_REGION`, `BEDROCK_MODEL_ID`, the two AWS keys
@@ -361,4 +468,9 @@ json** writes a revision back.
       framing permitted, and accepting Wireup's origin
 - [ ] `curl $BASE/api/health` → 200, `mongo.ok`, catalog count > 0, Bedrock state as intended
 - [ ] One end-to-end project run from the UI, then a canvas pull
+- [ ] `WIREUP_ENABLE_BEHAVIOUR_RUNTIME` left unset (no native execution on a
+      public host) or set `true` knowingly, with the tradeoff in §12 accepted
+- [ ] Bedrock IAM key scoped to `bedrock:InvokeModel*` on the model ARN in use
+- [ ] §12's adversarial curl block run against the live URL (unauthenticated
+      `/api/projects` → 401/503; unauthenticated `/admin` → login card, not the console)
 - [ ] Custom domain + forced HTTPS if the preview URL is going in a deck

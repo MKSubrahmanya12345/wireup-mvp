@@ -37,6 +37,40 @@ const nextConfig = {
   // No need to advertise the server stack on a public URL.
   poweredByHeader: false,
 
+  /**
+   * Baseline response headers for a deployment that now has a public hostname.
+   *
+   * Deliberately *not* a full CSP: the console paints with inline `style`
+   * attributes, so a strict `style-src` would quietly strip the UI's
+   * presentation on the host while looking identical in dev — the worst kind
+   * of deploy bug. These four do not depend on how the markup is written:
+   *
+   *  - `nosniff` stops a text endpoint being executed as script by a sniffing
+   *    browser (the diagram and .vlx endpoints hand back raw documents).
+   *  - `frame-ancestors 'self'` + SAMEORIGIN is clickjacking protection: it
+   *    stops another site framing Wireup, and it does not affect the embed in
+   *    the other direction — Wireup framing Velxio is a `frame-src` question,
+   *    and nothing here sets one, so the simulation page keeps working.
+   *  - `Referrer-Policy` keeps a project id (a capability, since knowing one
+   *    opens its API) out of a third-party origin when a page links outward.
+   *
+   * If a demo ever needs Wireup itself inside someone else's frame, relax the
+   * first two in the host's response config rather than removing them here.
+   */
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
+    ];
+  },
+
   // No `assetPrefix`/CDN and no `basePath` on purpose: everything the browser
   // is told to fetch here is a relative same-origin URL, so a build made on
   // Render's host serves correctly from any domain or preview URL. Baking an

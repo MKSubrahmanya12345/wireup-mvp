@@ -141,6 +141,13 @@ services:
       # No build-time telemetry pings from Render's container.
       - key: NEXT_TELEMETRY_DISABLED
         value: "1"
+      # Left UNSET on purpose. The behaviour harness compiles the generated
+      # sketch and EXECUTES it to read its serial trace; the default is off in
+      # production because that is arbitrary native code from prompt-influenced
+      # source, same uid, no sandbox. Set it to "true" only on a service whose
+      # traffic you control — docs/deploy-render.md §12.
+      # - key: WIREUP_ENABLE_BEHAVIOUR_RUNTIME
+      #   value: "true"
       # Build-time inlined (NEXT_PUBLIC_*), so it must be present at build, not
       # only at runtime — which is why it is a value here rather than a prompt.
       - key: NEXT_PUBLIC_APP_NAME

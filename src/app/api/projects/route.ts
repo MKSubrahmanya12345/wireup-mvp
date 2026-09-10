@@ -10,6 +10,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { BadRequestError, fromUnknown, jsonError, jsonOk, parseBody, readJson } from '@/lib/http';
+import { adminGate } from '@/lib/auth/admin';
 import { describeError, logger } from '@/lib/logging/logger';
 import { env } from '@/lib/validation/env';
 import { createProjectRecord, listProjectStates } from '@/lib/mongodb/projects';
@@ -68,7 +69,20 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * The whole workspace, for the operator — not for the app.
+ *
+ * Nothing in the UI calls this (the workspace reaches a project by id, and the
+ * landing page never lists other people's work), and its payload is every
+ * project's **prompt** plus its id. On a public host that turns an unguessable-
+ * id model into a directory listing: the ids handed out here open
+ * `/api/projects/:id`, the firmware, the zip download. So it rides behind the
+ * admin session, and `POST` above stays open — creating a project is the demo.
+ */
 export async function GET(request: NextRequest) {
+  const denied = adminGate(request);
+  if (denied) return denied;
+
   try {
     const rawLimit = request.nextUrl.searchParams.get('limit') ?? '25';
     const parsedLimit = Number.parseInt(rawLimit, 10);

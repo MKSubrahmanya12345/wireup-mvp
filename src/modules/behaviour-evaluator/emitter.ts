@@ -9,6 +9,8 @@
  */
 
 import { execFileSync } from 'node:child_process';
+
+import { env } from '@/lib/validation/env';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -39,6 +41,13 @@ export interface RunFirmwareResult {
 
 const SHIM_DIR = resolve(process.cwd(), 'scripts', 'firmware-shim-runtime');
 
+/**
+ * Backstop for the executed sketch, well above the simulated budget the shim
+ * self-limits by. A child that wedges outside `loop()` would otherwise be
+ * waited on forever by a synchronous call on the request path.
+ */
+const RUN_HARD_TIMEOUT_MS = 30_000;
+
 /** Headers that are materialised next to the sketch (so `#include "config.h"` resolves). */
 const HEADER_EXT = /\.(h|hpp)$/;
 /** Source files that are compiled to object code. */
@@ -55,6 +64,21 @@ export function compileAndRunFirmware(input: RunFirmwareOptions): RunFirmwareRes
     simulatedMs: 0,
     loopIterations: 0,
   };
+
+  // Compiling and *running* generated firmware is a capability, not a formality:
+  // whatever the sketch does happens as this user, on this filesystem, with
+  // this network position. Off by default in production (see
+  // `WIREUP_ENABLE_BEHAVIOUR_RUNTIME`), and reported through the same honest
+  // skip path a missing compiler uses — the report says "not run", never
+  // "passed".
+  if (!env().agent.enableBehaviourRuntime) {
+    return {
+      trace: emptyTrace,
+      error:
+        'the behaviour harness is disabled on this deployment (WIREUP_ENABLE_BEHAVIOUR_RUNTIME=false); ' +
+        'runtime assertions are reported as skipped rather than executed',
+    };
+  }
 
   const { code } = input;
   if (!code || code.files.length === 0) {
@@ -123,13 +147,40 @@ export function compileAndRunFirmware(input: RunFirmwareOptions): RunFirmwareRes
     execFileSync('g++', ['-std=gnu++17', '-w', '-fpermissive', '-I', workDir, '-I', SHIM_DIR, ...objectFiles, `${SHIM_DIR}/core.cpp`, '-o', binary], { maxBuffer: 8 * 1024 * 1024 });
 
     // 5. Execute and read the trace.
+    //
+    // The subject is a binary compiled from *generated* source, on a machine
+    // whose environment holds the deployment's credentials. So the child gets
+    // an explicit environment instead of `process.env`: inheriting it hands the
+    // sketch `MONGODB_URI`, the AWS keys and the admin password for free, and
+    // reading them back out of `environ` is a two-line `main()`. `cwd` is
+    // confined to the scratch directory for the same reason — a relative path
+    // should resolve against the harness, not against the checkout.
+    //
+    // This is containment by omission, not a sandbox: same user, same
+    // filesystem, same /proc. Which is exactly why the step is off by default
+    // in production — see `WIREUP_ENABLE_BEHAVIOUR_RUNTIME` and the note in
+    // docs/deploy-render.md.
+    // `NodeJS.ProcessEnv` declares `NODE_ENV` as required (Next's own type
+    // augmentation narrows it to three literals), so the child is *told* which
+    // mode it runs in rather than having the field cast away. Nothing else from
+    // the parent environment crosses this boundary.
+    const mode = process.env.NODE_ENV;
+    const childEnv: NodeJS.ProcessEnv = {
+      NODE_ENV: mode === 'production' || mode === 'test' ? mode : 'development',
+      PATH: process.env.PATH ?? '/usr/bin:/bin',
+      WIREUP_SCENARIO: scenarioPath,
+      WIREUP_TRACE_OUT: tracePath,
+      WIREUP_SIM_MS: String(input.simulateMs ?? 6000),
+    };
+
     execFileSync(binary, [], {
-      env: {
-        ...process.env,
-        WIREUP_SCENARIO: scenarioPath,
-        WIREUP_TRACE_OUT: tracePath,
-        WIREUP_SIM_MS: String(input.simulateMs ?? 6000),
-      },
+      cwd: workDir,
+      env: childEnv,
+      // The shim self-limits through WIREUP_SIM_MS; this is the backstop for a
+      // sketch that wedges outside `loop()` (a blocking static initialiser, a
+      // syscall that never returns), so an unkillable child can never pin an
+      // event-loop thread for the life of the process.
+      timeout: RUN_HARD_TIMEOUT_MS,
       maxBuffer: 8 * 1024 * 1024,
     });
 
