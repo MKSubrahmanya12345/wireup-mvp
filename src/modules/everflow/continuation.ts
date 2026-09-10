@@ -23,16 +23,18 @@
  */
 
 import type { AgentEvent } from '@/types/generation';
-import type { EverflowEvaluation, EverflowGraph, HumanTask } from '@/types/everflow';
+import type { EverflowEvaluation, EverflowGraph, HumanTask, IdeaGraphState } from '@/types/everflow';
 import type { ProjectState } from '@/types/project';
 
 import { appendEvents, getProjectState, saveProjectState } from '@/lib/mongodb/projects';
+import { env } from '@/lib/validation/env';
 import { createId } from '@/lib/validation/ids';
 import { nowIso } from '@/lib/validation/time';
 
 import { evaluateEverflow } from './evaluate';
 import { materializeGraph } from './materialize';
 import { planAutoResearch, researchNode } from './research';
+import { expansionMove, type ExpansionModel } from './decompose';
 import type { ResearchFinding } from '@/types/everflow';
 
 /* ------------------------------------------------------------------------- */
@@ -219,12 +221,41 @@ export interface EverflowPassResult {
   progressed: boolean;
 }
 
+export interface EverflowPassOptions {
+  maxHumanTasks?: number;
+  /**
+   * Idea-graph move wiring (runs when WIREUP_ENABLE_IDEA_GRAPH, default on).
+   * Tests inject a canned model here; production lazily wires Bedrock only
+   * when a model id is configured — so offline runs never touch the SDK.
+   */
+  ideaGraph?: {
+    enabled?: boolean;
+    model?: ExpansionModel;
+    maxExpansions?: number;
+  };
+}
+
+/** Lazily wire the Bedrock-backed model (this keeps the AWS SDK out of offline runs). */
+async function productionExpansionModel(): Promise<ExpansionModel | null> {
+  if (!env().bedrock.modelId) return null;
+  try {
+    const { bedrockExpansionModel } = await import('./expansion-model');
+    return bedrockExpansionModel();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Run one continuation pass against the store. Safe to call repeatedly; each
  * pass is small and idempotent, so the loop below stops as soon as it makes
- * no progress.
+ * no progress. When the idea graph is enabled, the pass also carries ONE
+ * idea-graph move (skeleton / expansion / stop decision) — same persistence,
+ * same events, same bounded budget.
  */
-export async function runEverflowPass(projectId: string, trigger: string, store: EverflowStore, maxHumanTasks?: number): Promise<EverflowPassResult | null> {
+export async function runEverflowPass(projectId: string, trigger: string, store: EverflowStore, maxHumanTasksOrOptions: number | EverflowPassOptions = EVERFLOW_DEFAULT_MAX_HUMAN_TASKS): Promise<EverflowPassResult | null> {
+  const options: EverflowPassOptions = typeof maxHumanTasksOrOptions === 'number' ? { maxHumanTasks: maxHumanTasksOrOptions } : maxHumanTasksOrOptions;
+  const maxHumanTasks = options.maxHumanTasks ?? EVERFLOW_DEFAULT_MAX_HUMAN_TASKS;
   const state = await store.getState(projectId);
   if (!state) return null;
 
@@ -232,6 +263,56 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
   let graph = materializeGraph(state);
   let evaluation = evaluateEverflow(state, graph, pass + 1);
   const plan = planContinuation(state, graph, evaluation, maxHumanTasks);
+
+  /* --- the idea-graph move (one per pass, flag-gated) ---------------------- */
+  let ideaGraph: IdeaGraphState | null = state.ideaGraph ?? null;
+  const ideaEvents: (AgentEvent & { seq?: number })[] = [];
+  let ideaTasks: HumanTask[] = [];
+  let ideaMoved = false;
+  const ideaEnabled = options.ideaGraph?.enabled ?? env().agent.ideaGraphEnabled;
+  if (ideaEnabled) {
+    const at = nowIso();
+    const model = options.ideaGraph?.model ?? (await productionExpansionModel());
+    const move = await expansionMove(state, {
+      maxExpansions: options.ideaGraph?.maxExpansions ?? env().agent.ideaGraphMaxExpansions,
+      ...(model ? { model } : {}),
+    });
+    ideaMoved = move.moved;
+    if (move.moved) {
+      ideaGraph = move.ideaGraph;
+      ideaTasks = move.newTasks.map((task) =>
+        makeTask(
+          {
+            direction: 'ai_to_human',
+            type: 'review',
+            title: task.title,
+            body: task.body,
+            asks: { shape: 'text', positiveOptions: ['Accepted as-is', 'Accepted'] },
+            linkedNodeIds: [task.linkedNodeId],
+            lookAt: { kind: 'project', ref: `/project/${projectId}/everflow`, label: 'See the idea graph' },
+            priority: 'medium',
+            defaultOnExpiry: task.defaultOnExpiry,
+            assumptionIfSkipped: task.assumptionIfSkipped,
+            source: 'ai',
+          },
+          at,
+        ),
+      );
+      const baseSeq = state.events.reduce((max, event) => Math.max(max, event.seq), 0);
+      move.events.forEach((event, index) => {
+        ideaEvents.push({
+          seq: baseSeq + 1 + index,
+          id: createId('evt'),
+          type: event.type,
+          status: event.status,
+          message: event.message,
+          timestamp: at,
+          stage: 'completed',
+          metadata: event.metadata,
+        });
+      });
+    }
+  }
 
   // The agent checks its low-confidence claims/decisions against the docs —
   // offline sources (catalog + corpus); the live web stays a deliberate act.
@@ -242,7 +323,7 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
   }
   const research = findings.length > 0 ? [...state.research, ...findings] : state.research;
 
-  const humanTasks = [...state.humanTasks, ...plan.newTasks, ...plan.followUps].map((task) =>
+  const humanTasks = [...state.humanTasks, ...plan.newTasks, ...plan.followUps, ...ideaTasks].map((task) =>
     plan.processedInjections.includes(task.id) ? { ...task, status: 'processed' as const, updatedAt: nowIso() } : task,
   );
 
@@ -251,6 +332,7 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
     humanTasks,
     research,
     everflow: { graph, evaluation, pass: pass + 1 },
+    ...(ideaMoved && ideaGraph ? { ideaGraph } : {}),
   };
   if (findings.length > 0) {
     // Re-project: the new evidence nodes join the graph and the brief.
@@ -263,10 +345,15 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
     humanTasks,
     ...(findings.length > 0 ? { research } : {}),
     everflow: next.everflow,
+    ...(ideaMoved && ideaGraph ? { ideaGraph } : {}),
   });
   const finalState = saved ?? next;
 
-  const progressed = plan.newTasks.length + plan.followUps.length + plan.processedInjections.length + findings.length > 0;
+  for (const event of ideaEvents) {
+    await store.appendEvent(projectId, event);
+  }
+
+  const progressed = plan.newTasks.length + plan.followUps.length + plan.processedInjections.length + findings.length + (ideaMoved ? 1 : 0) > 0;
   const pct = Math.round(evaluation.completion * 100);
 
   await store.appendEvent(projectId, {
@@ -276,7 +363,7 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
     message:
       evaluation.done
         ? `Everflow pass ${pass + 1} (${trigger}): every goal satisfied — the project is complete.`
-        : `Everflow pass ${pass + 1} (${trigger}): ${pct}% complete, ${evaluation.totals.openEnds} dangling, ${plan.newTasks.length + plan.followUps.length} ask(s) filed${findings.length > 0 ? `, ${findings.length} doc check(s) recorded` : ''}.`,
+        : `Everflow pass ${pass + 1} (${trigger}): ${pct}% complete, ${evaluation.totals.openEnds} dangling, ${plan.newTasks.length + plan.followUps.length + ideaTasks.length} ask(s) filed${ideaMoved ? ', idea graph advanced' : ''}${findings.length > 0 ? `, ${findings.length} doc check(s) recorded` : ''}.`,
     timestamp: nowIso(),
     stage: 'completed',
     metadata: {
@@ -286,9 +373,11 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
       done: evaluation.done,
       blockedOnHuman: evaluation.blockedOnHuman,
       openEnds: evaluation.totals.openEnds,
-      tasksFiled: plan.newTasks.length + plan.followUps.length,
+      tasksFiled: plan.newTasks.length + plan.followUps.length + ideaTasks.length,
       docsChecked: findings.length,
       injectionsProcessed: plan.processedInjections.length,
+      ideaGraphMoved: ideaMoved,
+      ...(ideaGraph ? { ideaGraphExpansions: ideaGraph.expansions, ideaGraphPhase: ideaGraph.phase } : {}),
     },
   });
 

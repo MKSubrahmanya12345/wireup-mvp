@@ -246,6 +246,20 @@ export async function respondToHumanTask(projectId: string, taskId: string, valu
       ? { ...candidate, status: 'answered' as const, response: { value, ...(note ? { note } : {}), at: nowIso() }, updatedAt: nowIso() }
       : candidate,
   );
+
+  /* An answered convergence/backstop ask is what RESUMES the idea graph —
+   * the pause is never lifted silently, only by the human's explicit answer. */
+  let ideaGraph = state.ideaGraph ?? null;
+  if (ideaGraph && ideaGraph.expansionPaused && isPositiveResponse(task, value)) {
+    ideaGraph = {
+      ...ideaGraph,
+      expansionPaused: false,
+      deadExpansions: 0,
+      pausedReason: null,
+    };
+    await saveProjectState(projectId, { ideaGraph });
+  }
+
   await saveProjectState(projectId, { humanTasks });
 
   const { appendEvents } = await import('@/lib/mongodb/projects');

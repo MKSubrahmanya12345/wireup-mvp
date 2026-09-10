@@ -190,6 +190,8 @@ export interface NodeGoal {
     | 'evidence_attached'
     | 'doubt_answered'
     | 'requirement_covered'
+    /** Idea graph: every leaf in the subtree has a run (passing or parked) test. */
+    | 'subtree_tested'
     | 'custom';
   /** Evaluator's current verdict (materialise declares `open`; evaluate decides). */
   state: 'open' | 'in_progress' | 'satisfied' | 'blocked_human' | 'waived';
