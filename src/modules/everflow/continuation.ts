@@ -494,12 +494,15 @@ export async function continueEverflow(
   projectId: string,
   trigger: string,
   store: EverflowStore,
-  options: { maxPasses?: number; maxHumanTasks?: number } = {},
+  options: { maxPasses?: number; maxHumanTasks?: number; ideaGraph?: EverflowPassOptions['ideaGraph'] } = {},
 ): Promise<EverflowPassResult | null> {
   const maxPasses = options.maxPasses ?? 3;
   let last: EverflowPassResult | null = null;
   for (let i = 0; i < maxPasses; i += 1) {
-    const result = await runEverflowPass(projectId, trigger, store, options.maxHumanTasks);
+    const result = await runEverflowPass(projectId, trigger, store, {
+      maxHumanTasks: options.maxHumanTasks,
+      ...(options.ideaGraph ? { ideaGraph: options.ideaGraph } : {}),
+    });
     if (!result) break;
     last = result;
     if (result.evaluation.done) break;
