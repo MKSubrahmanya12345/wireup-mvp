@@ -35,6 +35,8 @@ import { evaluateEverflow } from './evaluate';
 import { materializeGraph } from './materialize';
 import { planAutoResearch, researchNode } from './research';
 import { expansionMove, type ExpansionModel } from './decompose';
+import { testLadderMove } from './test-ladder';
+import { getCatalog } from '@/modules/components';
 import type { ResearchFinding } from '@/types/everflow';
 
 /* ------------------------------------------------------------------------- */
@@ -266,40 +268,93 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
 
   /* --- the idea-graph move (one per pass, flag-gated) ---------------------- */
   let ideaGraph: IdeaGraphState | null = state.ideaGraph ?? null;
+  /** Raw move events (seq assigned once, in order, below). */
+  const rawIdeaEvents: { type: AgentEvent['type']; status: AgentEvent['status']; message: string; metadata: Record<string, unknown> }[] = [];
+  /** The same events, sequenced and ready to append to the store. */
   const ideaEvents: (AgentEvent & { seq?: number })[] = [];
   let ideaTasks: HumanTask[] = [];
   let ideaMoved = false;
+  /** The ladder may repair artifacts — the pass then persists THAT state. */
+  let passState: ProjectState = state;
   const ideaEnabled = options.ideaGraph?.enabled ?? env().agent.ideaGraphEnabled;
   if (ideaEnabled) {
     const at = nowIso();
     const model = options.ideaGraph?.model ?? (await productionExpansionModel());
+    const makeIdeaTask = (task: {
+      type: 'review' | 'verify' | 'choose';
+      title: string;
+      body: string;
+      linkedNodeId: string;
+      defaultOnExpiry: 'defer' | 'assume' | 'halt';
+      assumptionIfSkipped: string;
+      shape: 'text' | 'boolean' | 'choice';
+      options?: string[];
+      positiveOptions?: string[];
+    }): HumanTask =>
+      makeTask(
+        {
+          direction: 'ai_to_human',
+          type: task.type,
+          title: task.title,
+          body: task.body,
+          asks: { shape: task.shape, ...(task.options ? { options: task.options } : {}), ...(task.positiveOptions ? { positiveOptions: task.positiveOptions } : {}) },
+          linkedNodeIds: [task.linkedNodeId],
+          lookAt: { kind: 'project', ref: `/project/${projectId}/everflow`, label: 'See the idea graph' },
+          priority: task.type === 'choose' ? 'high' : 'medium',
+          defaultOnExpiry: task.defaultOnExpiry,
+          assumptionIfSkipped: task.assumptionIfSkipped,
+          source: 'ai',
+        },
+        at,
+      );
+
     const move = await expansionMove(state, {
       maxExpansions: options.ideaGraph?.maxExpansions ?? env().agent.ideaGraphMaxExpansions,
       ...(model ? { model } : {}),
     });
-    ideaMoved = move.moved;
     if (move.moved) {
+      ideaMoved = true;
       ideaGraph = move.ideaGraph;
-      ideaTasks = move.newTasks.map((task) =>
-        makeTask(
-          {
-            direction: 'ai_to_human',
-            type: 'review',
-            title: task.title,
-            body: task.body,
-            asks: { shape: 'text', positiveOptions: ['Accepted as-is', 'Accepted'] },
-            linkedNodeIds: [task.linkedNodeId],
-            lookAt: { kind: 'project', ref: `/project/${projectId}/everflow`, label: 'See the idea graph' },
-            priority: 'medium',
-            defaultOnExpiry: task.defaultOnExpiry,
-            assumptionIfSkipped: task.assumptionIfSkipped,
-            source: 'ai',
-          },
-          at,
-        ),
-      );
+      rawIdeaEvents.push(...move.events);
+      ideaTasks.push(...move.newTasks.map((task) => makeIdeaTask({ ...task, shape: 'text', positiveOptions: ['Accepted as-is', 'Accepted'] })));
+    }
+
+    /* Phase hand-over: once the graph finished expanding, the ladder tests
+     * every leaf (repair within budget, escalate the stubborn ones). */
+    if (ideaGraph && ideaGraph.phase === 'testing') {
+      try {
+        const catalog = (await getCatalog()).components;
+        const ladder = await testLadderMove(state, { catalog, maxRepairs: env().agent.ideaGraphMaxNodeRepairs });
+        if (ladder.moved) {
+          ideaGraph = ladder.ideaGraph;
+          passState = ladder.state;
+          ideaMoved = true;
+          rawIdeaEvents.push(...ladder.events);
+          ideaTasks.push(
+            ...ladder.newTasks.map((task) =>
+              makeIdeaTask({
+                ...task,
+                positiveOptions: task.type === 'verify' ? ['Yes, it works'] : ['Accept as a documented limitation'],
+              }),
+            ),
+          );
+        }
+      } catch (error) {
+        // The ladder is best-effort inside the pass; a catalog outage must
+        // never fail the whole continuation pass — and is never faked.
+        rawIdeaEvents.push({
+          type: 'idea_graph_test',
+          status: 'failed',
+          message: `Ladder could not run (${error instanceof Error ? error.message : 'unknown'}) — the graph stays as-is; nothing was faked.`,
+          metadata: { kind: 'idea_graph.test', error: true },
+        });
+        ideaMoved = true;
+      }
+    }
+
+    if (ideaMoved) {
       const baseSeq = state.events.reduce((max, event) => Math.max(max, event.seq), 0);
-      move.events.forEach((event, index) => {
+      rawIdeaEvents.forEach((event, index) => {
         ideaEvents.push({
           seq: baseSeq + 1 + index,
           id: createId('evt'),
@@ -317,31 +372,32 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
   // The agent checks its low-confidence claims/decisions against the docs —
   // offline sources (catalog + corpus); the live web stays a deliberate act.
   const findings: ResearchFinding[] = [];
-  for (const pick of planAutoResearch(state, graph, 2)) {
-    const finding = await researchNode({ state, node: pick.node });
+  for (const pick of planAutoResearch(passState, graph, 2)) {
+    const finding = await researchNode({ state: passState, node: pick.node });
     if (finding) findings.push(finding);
   }
-  const research = findings.length > 0 ? [...state.research, ...findings] : state.research;
+  const research = findings.length > 0 ? [...passState.research, ...findings] : passState.research;
 
-  const humanTasks = [...state.humanTasks, ...plan.newTasks, ...plan.followUps, ...ideaTasks].map((task) =>
+  const humanTasks = [...passState.humanTasks, ...plan.newTasks, ...plan.followUps, ...ideaTasks].map((task) =>
     plan.processedInjections.includes(task.id) ? { ...task, status: 'processed' as const, updatedAt: nowIso() } : task,
   );
 
   let next: ProjectState = {
-    ...state,
+    ...passState,
     humanTasks,
     research,
     everflow: { graph, evaluation, pass: pass + 1 },
     ...(ideaMoved && ideaGraph ? { ideaGraph } : {}),
   };
-  if (findings.length > 0) {
-    // Re-project: the new evidence nodes join the graph and the brief.
+  if (findings.length > 0 || ideaMoved) {
+    // Re-project: new evidence/idea nodes join the graph and the brief.
     graph = materializeGraph(next);
     evaluation = evaluateEverflow(next, graph, pass + 1);
     next = { ...next, everflow: { graph, evaluation, pass: pass + 1 } };
   }
 
   const saved = await store.save(projectId, {
+    ...next,
     humanTasks,
     ...(findings.length > 0 ? { research } : {}),
     everflow: next.everflow,
