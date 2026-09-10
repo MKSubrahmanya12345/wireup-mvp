@@ -302,10 +302,21 @@ export async function respondToHumanTask(projectId: string, taskId: string, valu
   return { state: (await getProjectState(projectId))!, pass };
 }
 
+/**
+ * Whether 'steer' injections may be delivered mid-turn. The gate is the
+ * product of an explicit env flag AND an interruptible-capable model — with
+ * anything else the honest answer is no, and steer falls back to the same
+ * persisted path as every other injection (or is refused at the route).
+ */
+export function midTurnSteerEnabled(): boolean {
+  const parsed = env();
+  return parsed.agent.enableMidTurnSteer === true && parsed.bedrock.modelId === 'gpt-6-astra';
+}
+
 /** Register a human→ai addition (column two) and run a pass. */
 export async function createHumanInjection(
   projectId: string,
-  input: { type: 'note' | 'idea' | 'correction' | 'resource'; text: string; title?: string },
+  input: { type: 'note' | 'idea' | 'correction' | 'resource' | 'steer'; text: string; title?: string },
 ): Promise<EverflowChannelResult | null> {
   const state = await getProjectState(projectId);
   if (!state) return null;
@@ -340,7 +351,10 @@ export async function createHumanInjection(
       id: createId('evt'),
       type: 'injection_registered',
       status: 'info',
-      message: `You added (${input.type}): ${task.title}`,
+      message:
+        input.type === 'steer'
+          ? `Steer registered: ${task.title} — the current move finishes first; the planner folds it in at the next pass.`
+          : `You added (${input.type}): ${task.title}`,
       timestamp: at,
       stage: 'completed',
       metadata: { taskId: task.id, type: input.type },
