@@ -66,6 +66,12 @@ function lastSeq(events: ProjectState['events']): number {
 export interface RunOptions {
   /** Called with the persisted state after every stage (used by tests/API). */
   onProgress?: (project: ProjectState) => void;
+  /** Rebuild support: base revision for a replan (1 = initial generation). */
+  baseRevision?: number;
+  /** Why this run exists (`initial_generation` | `replanned_after_human_input`). */
+  reason?: ProjectState['revisions'][number]['reason'];
+  /** Trigger label for the everflow pass that follows a finalised run. */
+  trigger?: string;
 }
 
 /**
@@ -118,11 +124,16 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
     project = pipeline.project;
     stage = 'instructions';
 
+    const initialVersion = options.baseRevision ?? 1;
+    const initialReason = options.reason ?? 'initial_generation';
     const initialRevision = createRevision({
       project,
-      version: 1,
-      reason: 'initial_generation',
-      summary: `Initial build: ${project.components.length} part(s), ${project.pinAssignments.length} pin assignment(s), ${project.wiring?.connections.length ?? 0} wire(s), ${project.artifacts.code?.files.length ?? 0} firmware file(s).`,
+      version: initialVersion,
+      reason: initialReason,
+      summary:
+        initialReason === 'initial_generation'
+          ? `Initial build: ${project.components.length} part(s), ${project.pinAssignments.length} pin assignment(s), ${project.wiring?.connections.length ?? 0} wire(s), ${project.artifacts.code?.files.length ?? 0} firmware file(s).`
+          : `Replanned from the doubt session / human additions: ${project.components.length} part(s), ${project.wiring?.connections.length ?? 0} wire(s), ${project.artifacts.code?.files.length ?? 0} firmware file(s).`,
       stage: 'instructions',
     });
     project = { ...project, revisions: appendRevision(project, initialRevision) };
@@ -137,15 +148,15 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
       softwarePlan: project.softwarePlan,
       artifacts: project.artifacts,
       revisions: project.revisions,
-      revision: 1,
+      revision: initialVersion,
       llm: project.llm,
       status: 'validating',
       stage: 'validating',
     });
 
-    events.emit('revision_created', 'Revision v1 created — initial generation frozen for diffing.', {
+    events.emit('revision_created', `Revision v${initialVersion} created — ${initialReason === 'initial_generation' ? 'initial generation frozen for diffing' : 'replanned after human input'}.`, {
       stage: 'validating',
-      metadata: { version: 1, reason: 'initial_generation' },
+      metadata: { version: initialVersion, reason: initialReason },
     });
 
     /* ---------------- validate / fix loop ---------------- */
@@ -373,6 +384,30 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
       error: null,
     });
 
+    /*
+     * EVERFLOW — the run is not the end: evaluate the project graph and file
+     * the asks only a human can close (confirm assumptions, verify behaviour
+     * in the simulator). Best-effort: a failure here never fails the run.
+     */
+    try {
+      const { runEverflowPass, mongoEverflowStore } = await import('@/modules/everflow');
+      const pass = await runEverflowPass(projectId, options.trigger ?? 'generation_finalised', mongoEverflowStore(), env().agent.everflowMaxHumanTasks);
+      if (pass) {
+        logger.info(
+          {
+            projectId,
+            completion: Math.round(pass.evaluation.completion * 100),
+            done: pass.evaluation.done,
+            blockedOnHuman: pass.evaluation.blockedOnHuman,
+            tasksFiled: pass.plan.newTasks.length + pass.plan.followUps.length,
+          },
+          'everflow pass after finalisation',
+        );
+      }
+    } catch (error) {
+      logger.warn({ err: describeError(error).message, projectId }, 'everflow pass after finalisation failed (non-fatal)');
+    }
+
     await flusher.stop();
     running.delete(projectId);
     logger.info(
@@ -420,8 +455,8 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
  * Fire-and-forget entry point used by the API: the HTTP response returns
  * immediately with the new project id while the agent runs in the background.
  */
-export function startGeneration(projectId: string): void {
-  void runGeneration(projectId).catch((error) => {
+export function startGeneration(projectId: string, options: RunOptions = {}): void {
+  void runGeneration(projectId, options).catch((error) => {
     logger.error({ err: error, projectId }, 'background generation crashed');
   });
 }

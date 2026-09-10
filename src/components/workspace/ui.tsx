@@ -50,6 +50,7 @@ export function Badge({ tone = 'neutral', children }: { tone?: Tone; children: R
 }
 
 const STATUS_LABEL: Record<ProjectState['status'], string> = {
+  intake: 'doubt session',
   pending: 'queued',
   running: 'running',
   validating: 'validating',

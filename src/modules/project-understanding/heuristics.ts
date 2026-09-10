@@ -59,6 +59,8 @@ export const FEATURE_RULES: FeatureRule[] = [
   { feature: 'battery_power', pattern: /\b(battery|batteries|lipo|li-po|18650|aa\s*cells|9v|power\s*bank|portable)\b/i },
   { feature: 'telemetry', pattern: /\b(telemetry|log(ging)?|readout|report|dashboard|sensor\s*data)\b/i },
   { feature: 'autonomy', pattern: /\b(autonomous|self[-\s]driving|navigate|avoid|wander|patrol|follow)\b/i },
+  { feature: 'camera_vision', pattern: /\b(camera|cameras|webcam|webcams|opencv|open\s*cv|csi|computer\s*vision|face\s*recognition|facial|surveillance|security\s*camera|cctv|vision)\b/i, quantityKey: 'cameras', quantityNouns: ['camera', 'cameras', 'webcam', 'webcams'] },
+  { feature: 'web_app', pattern: /\b(website|web\s*site|web\s*app|webapp|dashboard|portal|web\s*server|web\s*page|register\w*|online)\b/i },
 ];
 
 export interface PlatformHint {
@@ -76,6 +78,8 @@ const PLATFORM_RULES: { pattern: RegExp; platform: string; componentId?: string;
   { pattern: /\besp[\s-]?8266\b|\bnode\s*mcu\b/i, platform: 'esp8266', confidence: 0.7 },
   { pattern: /\braspberry\s*pi\s*pico\b|\brp2040\b/i, platform: 'rp2040', confidence: 0.8 },
   { pattern: /\bstm32\b/i, platform: 'stm32', confidence: 0.7 },
+  // Single-board computer: the "software project on a box of hardware" class.
+  { pattern: /\brasp\w{0,9}\s*(berry)?\s*pi\b/i, platform: 'raspberry-pi', componentId: 'raspberry-pi-5', confidence: 0.98 },
 ];
 
 export interface PromptAnalysis {
@@ -155,7 +159,7 @@ function extractBehaviours(prompt: string): string[] {
 function extractExplicitParts(prompt: string): string[] {
   const parts = new Set<string>();
   const partPattern =
-    /\b(esp32|esp-32|arduino\s*uno|arduino\s*nano|l298n|l293d|tb6612fng|a4988|hc-05|hc-06|hc-sr04|dht11|dht22|mpu6050|mq-\d|ssd1306|lcd\s*1602|sg90|mg996r|28byj-?48|nema\s*17|lm7805|ams1117|lm2596|ws2812b?|neopixel|pir|ldr)\b/gi;
+    /\b(esp32|esp-32|arduino\s*uno|arduino\s*nano|l298n|l293d|tb6612fng|a4988|hc-05|hc-06|hc-sr04|dht11|dht22|mpu6050|mq-\d|ssd1306|lcd\s*1602|sg90|mg996r|28byj-?48|nema\s*17|lm7805|ams1117|lm2596|ws2812b?|neopixel|pir|ldr|raspberry\s*pi|pi\s*camera|usb\s*webcam|opencv|open\s*cv)\b/gi;
 
   let match: RegExpExecArray | null;
   while ((match = partPattern.exec(prompt)) !== null) {

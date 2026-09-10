@@ -37,6 +37,7 @@ export function PromptForm() {
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [direct, setDirect] = useState(false);
 
   const submit = useCallback(
     async (event?: FormEvent<HTMLFormElement>) => {
@@ -61,7 +62,7 @@ export function PromptForm() {
         const response = await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: trimmed }),
+          body: JSON.stringify({ prompt: trimmed, mode: direct ? 'direct' : 'everflow' }),
         });
 
         const payload = (await response.json().catch(() => null)) as
@@ -77,7 +78,11 @@ export function PromptForm() {
         const projectId = payload.data?.project?.id;
         if (!projectId) throw new Error('The server did not return a project id.');
 
-        setStage('Project created — the agent is starting, opening the workspace…');
+        setStage(
+          direct
+            ? 'Project created — the agent is starting, opening the workspace…'
+            : 'Project created — the doubt session is starting…',
+        );
         router.push(`/project/${projectId}`);
         router.refresh();
       } catch (submitError) {
@@ -127,13 +132,22 @@ export function PromptForm() {
             </span>
           ) : (
             <>
-              Name the parts you want, or just the behaviour. Wireup grounds the plan in a component database.
+              Name the parts you want, or just the behaviour. Wireup settles the open questions with you, then builds and keeps iterating.
               <span className="faint"> Cmd/Ctrl + Enter</span>
             </>
           )}
         </span>
+        <label className="prompt-form__direct">
+          <input
+            type="checkbox"
+            checked={direct}
+            onChange={(event) => setDirect(event.target.checked)}
+            disabled={busy}
+          />
+          skip the doubt session
+        </label>
         <button type="submit" className="btn btn--primary" disabled={busy || tooLong}>
-          {busy ? 'Opening bench…' : 'Build my plan'}
+          {busy ? 'Opening bench…' : direct ? 'Build it now' : 'Start with the questions'}
         </button>
       </div>
 

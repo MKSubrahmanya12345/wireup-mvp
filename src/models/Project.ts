@@ -11,6 +11,7 @@ import mongoose, { type Model, type Types } from 'mongoose';
 
 import type { ComponentSelection } from '@/types/component';
 import type { AgentEvent } from '@/types/generation';
+import type { ExpandedBrief, EverflowState, HumanTask, ProjectDoubt, ResearchFinding } from '@/types/everflow';
 import type {
   ChatMessage,
   GenerationError,
@@ -57,6 +58,15 @@ export interface ProjectDocument {
   };
   chat: ChatMessage[];
   revision: number;
+
+  /** Everflow: the doubt session, the two-directional human channel and the
+   *  materialised project graph with its last evaluation. */
+  doubts: ProjectDoubt[];
+  humanTasks: HumanTask[];
+  everflow: EverflowState;
+  intakeContext: string | null;
+  expandedBrief: ExpandedBrief | null;
+  research: ResearchFinding[];
 }
 
 const Mixed = mongoose.Schema.Types.Mixed;
@@ -70,6 +80,7 @@ const ProjectSchema = new mongoose.Schema(
       required: true,
       default: 'pending',
       enum: [
+        'intake',
         'pending',
         'running',
         'validating',
@@ -101,8 +112,18 @@ const ProjectSchema = new mongoose.Schema(
     events: { type: Mixed, default: [] },
     iteration: { type: Mixed, default: { current: 0, max: 0 } },
     llm: { type: Mixed, default: { calls: [] } },
-    chat: { type: Mixed, default: [] },
-    revision: { type: Number, default: 0 },
+  chat: { type: Mixed, default: [] },
+  revision: { type: Number, default: 0 },
+
+  doubts: { type: Mixed, default: [] },
+  humanTasks: { type: Mixed, default: [] },
+  everflow: {
+    type: Mixed,
+    default: { graph: null, evaluation: null, pass: 0 },
+  },
+  intakeContext: { type: String, default: null },
+  expandedBrief: { type: Mixed, default: null },
+  research: { type: Mixed, default: [] },
   },
   {
     timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },

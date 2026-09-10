@@ -223,3 +223,100 @@ export async function saveFirmwareFile(id: string, path: string, content: string
   return unwrap<FirmwareTurnPayload>(response);
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Everflow — the project graph + the two-directional human channel           */
+/* -------------------------------------------------------------------------- */
+
+import type { ExpandedBrief, EverflowEvaluation, EverflowGraph, HumanTask, ProjectDoubt, ResearchFinding } from '@/types/everflow';
+
+export interface EverflowPayload {
+  projectId: string;
+  status: ProjectState['status'];
+  stage?: ProjectState['stage'];
+  revision?: number;
+  graph: EverflowGraph;
+  evaluation: EverflowEvaluation;
+  doubts: ProjectDoubt[];
+  humanTasks: HumanTask[];
+  research?: ResearchFinding[];
+  expandedBrief?: ExpandedBrief | null;
+  brief?: string;
+}
+
+export async function fetchEverflow(id: string): Promise<EverflowPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/everflow`, { cache: 'no-store' });
+  return unwrap<EverflowPayload>(response);
+}
+
+export async function answerDoubt(
+  id: string,
+  input: { doubtId: string; value?: string; via: 'human' | 'skipped' },
+): Promise<{ project: ProjectState; openDoubts: number }> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/intake/answer`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ answer: input }),
+  });
+  return unwrap(response);
+}
+
+export async function buildProject(
+  id: string,
+  input: { rebuild?: boolean } = {},
+): Promise<{ project: ProjectState; started: boolean; rebuild?: boolean; nextRevision?: number; assumed?: number }> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/build`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return unwrap(response);
+}
+
+export async function respondToEverflowTask(id: string, taskId: string, value: string, note?: string): Promise<EverflowPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/everflow/respond`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ taskId, value, ...(note ? { note } : {}) }),
+  });
+  return unwrap<EverflowPayload>(response);
+}
+
+export async function createEverflowInjection(
+  id: string,
+  input: { type: 'note' | 'idea' | 'correction' | 'resource'; text: string; title?: string },
+): Promise<EverflowPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/everflow/inject`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return unwrap<EverflowPayload>(response);
+}
+
+export async function continueEverflowPass(id: string): Promise<EverflowPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/everflow/continue`, { method: 'POST' });
+  return unwrap<EverflowPayload>(response);
+}
+
+export interface ResearchPayload {
+  projectId: string;
+  nodeId: string;
+  found: boolean;
+  message?: string;
+  finding?: ResearchFinding;
+  graph?: EverflowGraph;
+  evaluation?: EverflowEvaluation;
+  doubts?: ProjectDoubt[];
+  humanTasks?: HumanTask[];
+  brief?: string | null;
+}
+
+export async function researchEverflowNode(id: string, nodeId: string, useWeb = false): Promise<ResearchPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/everflow/research`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ nodeId, useWeb }),
+  });
+  return unwrap<ResearchPayload>(response);
+}

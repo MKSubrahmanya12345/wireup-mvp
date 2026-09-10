@@ -28,17 +28,18 @@ UI polls, so what you watch on screen is exactly what the backend did.
 1. [Quickstart](#quickstart)
 2. [Configuration](#configuration)
 3. [How a project is built](#how-a-project-is-built)
-4. [Module map](#module-map)
-5. [Component catalog](#component-catalog)
-6. [Artifacts](#artifacts)
-7. [Validation and the targeted fix loop](#validation-and-the-targeted-fix-loop)
-8. [Event log and live UI](#event-log-and-live-ui)
-9. [HTTP API](#http-api)
-10. [Data model](#data-model)
-11. [Error handling and degraded operation](#error-handling-and-degraded-operation)
-12. [Repository layout](#repository-layout)
-13. [Design rules this codebase follows](#design-rules-this-codebase-follows)
-14. [Known limitations](#known-limitations)
+4. [Everflow — the project graph and goal loop](#everflow--the-project-graph-and-goal-loop)
+5. [Module map](#module-map)
+6. [Component catalog](#component-catalog)
+7. [Artifacts](#artifacts)
+8. [Validation and the targeted fix loop](#validation-and-the-targeted-fix-loop)
+9. [Event log and live UI](#event-log-and-live-ui)
+10. [HTTP API](#http-api)
+11. [Data model](#data-model)
+12. [Error handling and degraded operation](#error-handling-and-degraded-operation)
+13. [Repository layout](#repository-layout)
+14. [Design rules this codebase follows](#design-rules-this-codebase-follows)
+15. [Known limitations](#known-limitations)
 
 ---
 
@@ -140,16 +141,68 @@ USER PROMPT
             └── loop until passed or WIREUP_MAX_FIX_ITERATIONS is reached
 ```
 
-Project status moves `pending → running → validating ⇄ fixing →
+Project status moves `intake → pending → running → validating ⇄ fixing →
 completed | completed_with_warnings | failed`, and the stage field tracks the
 step currently executing (`understanding`, `catalog`, `generating`, `hardware`,
 `pins`, `wiring`, `software`, `code`, `libraries`, `diagram`, `instructions`,
 `validating`, `fixing`).
 
+Before the pipeline there is **phase 0 — the doubt session** (`intake` status,
+default for `POST /api/projects`): the agent sketches the smallest useful
+graph and lists the questions that actually matter — each with a *decider*
+(you / the agent / the agent with your veto), a consequence and a proposed
+default. Answers are folded into the prompt of every pipeline model stage; a
+skipped doubt becomes a recorded **assumption**, never a silent guess
+(`mode: "direct"` skips the session for one-shot builds).
+
+After finalisation the project enters the **everflow loop** (below) — the
+agent keeps iterating on the graph until its goals are met or parked behind
+asks you can answer.
+
 Revision **v1** is the initial generation; **v2+** are targeted fixes. Each
 revision freezes a snapshot (components, pin assignments, wiring, code, diagram,
 libraries, instructions) plus the changeset that produced it, so the UI can show
 exact diffs instead of "something changed".
+
+---
+
+## Everflow — the project graph and goal loop
+
+The layer that makes the agent *everflowing*: the project is a graph of nodes
+— intent, claims, assumptions, decisions, goals, artifacts, evidence, tasks —
+and **every node carries a completion goal**. After every pass, code (not the
+model) judges each goal; a goal that is unmet with no task working on it is
+**dangling** and is reported, not hidden. The agent is `done` only when every
+non-waived goal is satisfied and nothing dangles.
+
+The human is a tool in the loop, reached through **two columns that are never
+merged**:
+
+1. **AI needs you** — asks the agent filed (verify a behaviour in the
+   simulator, confirm an assumption, choose how to apply your idea). Each ask
+   has a *default-on-expiry*, so the agent never blocks on you.
+2. **You add to AI** — information the agent cannot have (ideas, corrections,
+   parts you own, where the device lives). Registered as facts on the next
+   pass; a design change needs your explicit *apply*, which rebuilds the
+   project as a new, diff-able revision.
+
+The live view is the **Everflow tab** of the project hub: the graph canvas
+(every node's goal state at a glance, click a node for its evidence), the
+two-column human channel, and the completion ribbon with the rendered project
+brief. The first pass runs automatically when generation finalises; more
+passes run on demand (`POST …/everflow/continue`) and are bounded by
+`WIREUP_EVERFLOW_MAX_PASSES`.
+
+Messy briefs (often dictated) are expanded at intake into a global project
+document — clean goal, platform, implied components with quantities,
+behaviours, assumptions and open questions — shown in the doubt session and
+folded into the build. The agent also has a **research tool**: per node it
+checks the component catalog, a bundled docs corpus (cited) and, optionally,
+the live web (flagged for your review), recording findings as cited evidence.
+It never invents — no source, no finding.
+
+Full design, invariants and the verification harness:
+[`docs/everflow-architecture.md`](docs/everflow-architecture.md) · `pnpm verify:everflow`.
 
 ---
 
@@ -170,6 +223,7 @@ exact diffs instead of "something changed".
 | `src/modules/validator/` | `rules.ts` (deterministic engine, the source of engineering truth), `llm.ts` (critical review that may add but never remove engine findings), `index.ts` |
 | `src/modules/fixer/` | `strategies.ts` (deterministic change planning per issue code), `llm.ts` (model changeset), `codePatch.ts` (surgical firmware edits), `apply.ts` (apply + re-derive dependent artifacts), `index.ts` |
 | `src/modules/orchestrator/` | `pipeline.ts` (stage execution with fallbacks), `revisions.ts` (freezing), `persistence.ts` (writes + event flushing), `context.ts`, `index.ts` (`runGeneration`, `startGeneration`, `isRunning`) |
+| `src/modules/everflow/` | `intake.ts` (doubt session: deterministic seeds + LLM merge + context), `materialize.ts` (state → graph, stable ids), `evaluate.ts` (deterministic goal judge + dangling detection + brief), `continuation.ts` (planner + bounded pass runner), `index.ts` (orchestrated entry points) |
 | `src/lib/bedrock/` | Single reusable client: `client.ts` (`converse`, model resolution, retries, timeouts, token usage, `describeBedrockConfig`), `structured.ts` (JSON extraction + zod parse + repair), `prompts.ts`, `operations.ts` (the only place prompts are built) |
 | `src/lib/mongodb/` | `client.ts` (connection + typed connection errors), `projects.ts` (state, events, LLM calls, stalled-project recovery), `components.ts` (catalog reads/upserts with seed fallback) |
 | `src/lib/logging/` | `logger.ts` (structured logs, `describeError`), `events.ts` (agent event log with sequence cursor and sinks) |
@@ -314,7 +368,13 @@ All routes are Node runtime, `force-dynamic`, and return an envelope:
 
 | Method & path | Response |
 | --- | --- |
-| `POST /api/projects` | Body `{ prompt (8–4000 chars), name? }` → `201 { project, started: true }`; generation runs in the background |
+| `POST /api/projects` | Body `{ prompt (8–4000 chars), name?, mode: "everflow"\|"direct" }` → `201 { project, started, intake? }`; `everflow` (default) opens the doubt session, `direct` runs generation in the background |
+| `POST /api/projects/:id/intake/answer` | Body `{ answer: { doubtId, value?, via }, answers?: […] }` → `{ project, openDoubts }`; `via: "skipped"` records an assumption; `409` outside intake |
+| `POST /api/projects/:id/build` | Body `{ rebuild? }` → starts the build (unanswered doubts become assumptions); `rebuild` on a finished project files a new revision (`replanned_after_human_input`); `409` while running |
+| `GET /api/projects/:id/everflow` | Live materialised graph + goal evaluation + doubts + both human-channel columns + the project brief |
+| `POST /api/projects/:id/everflow/respond` | Body `{ taskId, value, note? }` → answer an AI→human ask; `409` when the ask is already closed |
+| `POST /api/projects/:id/everflow/inject` | Body `{ type: note\|idea\|correction\|resource, text, title? }` → file a human→AI addition |
+| `POST /api/projects/:id/everflow/continue` | Run another continuation pass now (bounded, idempotent) |
 | `GET /api/projects?limit=N` | `{ projects: […summaries], count }` |
 | `GET /api/projects/:id` | `{ project, running }`; `404 not_found` when unknown |
 | `GET /api/projects/:id/events?after=SEQ` | `{ events, latestSeq, status, stage, revision, running, terminal }` |
@@ -333,7 +393,9 @@ Two Mongoose models (`src/models/`):
   selections, hardware plan, pin assignments, wiring, software plan, all four
   artifacts, the latest validation result, the revision history (each with a
   snapshot and its changeset), the event log, iteration counters and the model
-  call log.
+  call log — plus the everflow state: the doubt session (`doubts`,
+  `intakeContext`), the two-directional human channel (`humanTasks`) and the
+  last materialised graph + evaluation (`everflow`).
 
 `src/lib/mongodb/projects.ts` exposes `createProjectRecord`, `getProjectState`,
 `listProjectStates`, `getProjectEvents(id, after)`, `saveProjectState`,
@@ -418,10 +480,15 @@ src/lib/bedrock/                  reusable client, structured output, prompts
 src/lib/http.ts                   API envelope helpers
 src/models/                       Mongoose schemas
 src/modules/                      the pipeline (one directory per module)
+                                  + everflow/ (graph, goals, intake, passes)
 src/app/api/                      HTTP routes
-src/app/                          pages: /, /project/[id], error, not-found
+src/app/                          pages: /, /project/[id] (+everflow, parts,
+                                  wiring, diagram, simulation, firmware, guide,
+                                  quality, log), error, not-found
 src/components/                   PromptForm + workspace (console, cards,
                                   syntax highlighting, polling hook)
+                                  + everflow/ (graph canvas, doubt session,
+                                  two-column human channel)
 ```
 
 ---
@@ -442,6 +509,10 @@ src/components/                   PromptForm + workspace (console, cards,
   bill of materials are all computed from the structured plan.
 * **Module separation.** Each pipeline concern lives in its own module with a
   narrow interface; prompts are built only in `src/lib/bedrock/operations.ts`.
+* **Goals are judged by code.** A goal is satisfied by a passed check or a
+  positive human answer — never by model confidence. Dangling nodes (unmet
+  goal, no task) are reported, not hidden, and the agent never blocks on a
+  human: every ask carries a default-on-expiry.
 * **Strict TypeScript**, pnpm only, no authentication, no code execution or
   simulator runs — Wireup plans and generates, it does not flash hardware.
 
@@ -467,6 +538,11 @@ src/components/                   PromptForm + workspace (console, cards,
   structure) is rejected in favour of the deterministic template.
 * The event log is polled (not streamed over a socket) by design, so the UI
   latency is bounded by the poll interval.
+* Everflow's loop is offline-complete: intake, materialisation, goal
+  evaluation and the planner all run with no model and no network. The LLM
+  only *adds* doubts at intake and powers the pipeline the loop iterates on;
+  with Bedrock disabled the loop still converges (and still asks humans for
+  what it cannot prove).
 * Catalog coverage is finite by construction: a project needing a part that is
   not seeded will be reported as an uncovered requirement rather than invented.
 l be reported as an uncovered requirement rather than invented.

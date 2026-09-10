@@ -9,6 +9,7 @@ import type { Types } from 'mongoose';
 
 import { getProjectModel, type ProjectDocument } from '@/models/Project';
 import type { AgentEvent } from '@/types/generation';
+import type { ExpandedBrief, EverflowState, HumanTask, ProjectDoubt, ResearchFinding } from '@/types/everflow';
 import type { ChatMessage, ProjectArtifacts, ProjectState, ProjectStatus } from '@/types/project';
 
 import { createLogger, describeError } from '@/lib/logging/logger';
@@ -29,6 +30,8 @@ const EMPTY_ARTIFACTS: ProjectArtifacts = {
   libraries: null,
   instructions: null,
 };
+
+const EMPTY_EVERFLOW: EverflowState = { graph: null, evaluation: null, pass: 0 };
 
 function iso(value: Date | string | null | undefined): string | null {
   if (!value) return null;
@@ -69,6 +72,12 @@ export function serializeProject(raw: RawProject): ProjectState {
     },
     chat: Array.isArray(raw.chat) ? (raw.chat as ChatMessage[]) : [],
     revision: typeof raw.revision === 'number' ? raw.revision : 0,
+    doubts: Array.isArray(raw.doubts) ? (raw.doubts as ProjectDoubt[]) : [],
+    humanTasks: Array.isArray(raw.humanTasks) ? (raw.humanTasks as HumanTask[]) : [],
+    everflow: { ...EMPTY_EVERFLOW, ...(raw.everflow ?? {}) },
+    intakeContext: typeof raw.intakeContext === 'string' ? raw.intakeContext : null,
+    expandedBrief: (raw.expandedBrief as ExpandedBrief | null) ?? null,
+    research: Array.isArray(raw.research) ? (raw.research as ResearchFinding[]) : [],
   };
 }
 
@@ -116,6 +125,12 @@ export async function createProjectRecord(input: CreateProjectInput): Promise<Pr
     iteration: { current: 0, max: input.maxIterations ?? env().agent.maxFixIterations },
     llm: { calls: [] },
     revision: 0,
+    doubts: [],
+    humanTasks: [],
+    everflow: EMPTY_EVERFLOW,
+    intakeContext: null,
+    expandedBrief: null,
+    research: [],
   } satisfies Partial<ProjectDocument>);
 
   logger.info('project created', { id: doc._id.toString() });

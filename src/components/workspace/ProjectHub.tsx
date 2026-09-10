@@ -20,13 +20,15 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import type { AgentEvent } from '@/types/generation';
 import type { GenerationStage, ProjectState } from '@/types/project';
 
-import { buildSteps, humanStageLabel, isInProgress, statusPhrase } from '@/lib/project-presentation';
+import { buildSteps, humanStageLabel, isIntake, isInProgress, statusPhrase } from '@/lib/project-presentation';
 import { useProjectStream } from './useProjectStream';
 import { HubContext, type HubValue } from './hub-context';
 import { StatusBadge } from './ui';
+import { IntakeSession } from '@/components/everflow/IntakeSession';
 
 const TABS = [
   { href: '', label: 'Overview', short: 'Overview' },
+  { href: '/everflow', label: 'Everflow', short: 'Everflow' },
   { href: '/parts', label: 'Parts & BOM', short: 'Parts' },
   { href: '/wiring', label: 'Wiring & Pins', short: 'Wiring' },
   { href: '/diagram', label: 'Diagram & Simulator', short: 'Diagram' },
@@ -109,6 +111,12 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
         </span>
       </header>
 
+      {isIntake(status) ? (
+        <main className="hub__content hub__content--intake">
+          <IntakeSession />
+        </main>
+      ) : (
+        <>
        <div className={`hub__status${inProgress ? ' hub__status--working' : ''}${status === 'failed' ? ' hub__status--failed' : ''}`}>
         <div className="hub__inner">
            <div className="hub__kicker">
@@ -143,6 +151,8 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
       </nav>
 
       <main className="hub__content">{children}</main>
+        </>
+      )}
     </HubContext.Provider>
   );
 }
