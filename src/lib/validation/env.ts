@@ -109,6 +109,27 @@ const ServerEnvSchema = z.object({
   WIREUP_ENABLE_WEB_DOCS: boolFrom(true),
   WIREUP_WEB_DOCS_TIMEOUT_MS: intFrom(4000),
 
+  // --- Idea graph (recursive decomposition + per-node tests + reviewer + swarm) ---
+  // Master switch. When off, the everflow loop behaves exactly as before.
+  WIREUP_ENABLE_IDEA_GRAPH: boolFrom(true),
+  // BACKSTOP on total expansions (never the normal way the graph finishes):
+  // hitting it files an ask and says so out loud.
+  WIREUP_IDEA_GRAPH_MAX_EXPANSIONS: intFrom(40),
+  // Targeted repairs allowed per node before the ladder escalates to a
+  // left-drawer ask (default-on-expiry: defer).
+  WIREUP_IDEA_GRAPH_MAX_NODE_REPAIRS: intFrom(2),
+  // Tier-2 mid-turn steering: only ever active when the configured model is
+  // gpt-6-astra; the default persisted (Tier-1) path is guarded and can
+  // never be broken by this flag.
+  WIREUP_ENABLE_MID_TURN_STEER: boolFrom(false),
+  // Optional per-swarm-role model overrides (fall back to the shared
+  // validation model, then the main model — never to a silently different
+  // model).
+  WIREUP_SWARM_ROLE_MODEL_HARDWARE: optionalString,
+  WIREUP_SWARM_ROLE_MODEL_FIRMWARE: optionalString,
+  WIREUP_SWARM_ROLE_MODEL_WEB: optionalString,
+  WIREUP_SWARM_ROLE_MODEL_MECHANICS: optionalString,
+
   // --- Networking ---
   WIREUP_DNS_RESULT_ORDER: optionalString,
 
@@ -155,6 +176,16 @@ export interface ServerEnv {
     everflowMaxHumanTasks: number;
     webDocsEnabled: boolean;
     webDocsTimeoutMs: number;
+    ideaGraphEnabled: boolean;
+    ideaGraphMaxExpansions: number;
+    ideaGraphMaxNodeRepairs: number;
+    enableMidTurnSteer: boolean;
+    swarmRoleModels: {
+      hardware?: string;
+      firmware?: string;
+      web?: string;
+      mechanics?: string;
+    };
   };
   net: {
     dnsResultOrder: DnsResultOrder;
@@ -225,6 +256,16 @@ function read(): ServerEnv {
       everflowMaxHumanTasks: Math.max(1, parsed.WIREUP_EVERFLOW_MAX_HUMAN_TASKS),
       webDocsEnabled: parsed.WIREUP_ENABLE_WEB_DOCS,
       webDocsTimeoutMs: Math.max(500, parsed.WIREUP_WEB_DOCS_TIMEOUT_MS),
+      ideaGraphEnabled: parsed.WIREUP_ENABLE_IDEA_GRAPH,
+      ideaGraphMaxExpansions: Math.max(1, parsed.WIREUP_IDEA_GRAPH_MAX_EXPANSIONS),
+      ideaGraphMaxNodeRepairs: Math.max(0, parsed.WIREUP_IDEA_GRAPH_MAX_NODE_REPAIRS),
+      enableMidTurnSteer: parsed.WIREUP_ENABLE_MID_TURN_STEER,
+      swarmRoleModels: {
+        ...(parsed.WIREUP_SWARM_ROLE_MODEL_HARDWARE ? { hardware: parsed.WIREUP_SWARM_ROLE_MODEL_HARDWARE } : {}),
+        ...(parsed.WIREUP_SWARM_ROLE_MODEL_FIRMWARE ? { firmware: parsed.WIREUP_SWARM_ROLE_MODEL_FIRMWARE } : {}),
+        ...(parsed.WIREUP_SWARM_ROLE_MODEL_WEB ? { web: parsed.WIREUP_SWARM_ROLE_MODEL_WEB } : {}),
+        ...(parsed.WIREUP_SWARM_ROLE_MODEL_MECHANICS ? { mechanics: parsed.WIREUP_SWARM_ROLE_MODEL_MECHANICS } : {}),
+      },
     },
     net: {
       dnsResultOrder: parseDnsResultOrder(parsed.WIREUP_DNS_RESULT_ORDER),

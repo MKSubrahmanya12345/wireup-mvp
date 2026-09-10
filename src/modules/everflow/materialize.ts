@@ -488,5 +488,27 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
     }
   }
 
+  /* ---------------- idea graph: the decomposition subtree ------------------
+   * Persisted idea-graph nodes (subsystem / test_result / review) join the
+   * projected graph so the UI watches one tree. The graph stays a pure
+   * projection: these nodes ARE project state (state.ideaGraph), re-rendered
+   * on every pass, never mutated here. Breaking this loop must never break
+   * the build — hence the defensive shape checks.
+   */
+  const ideaGraph = state.ideaGraph;
+  if (ideaGraph && Array.isArray(ideaGraph.nodes)) {
+    for (const ideaNode of ideaGraph.nodes) {
+      if (!ideaNode || typeof ideaNode.id !== 'string' || seen.has(ideaNode.id)) continue;
+      seen.add(ideaNode.id);
+      nodes.push(ideaNode);
+    }
+    for (const edge of ideaGraph.edges ?? []) {
+      if (!edge || typeof edge.id !== 'string') continue;
+      if (edges.some((existing) => existing.id === edge.id)) continue;
+      if (!seen.has(edge.from) || !seen.has(edge.to)) continue;
+      edges.push(edge);
+    }
+  }
+
   return { projectId: state.id, nodes, edges, updatedAt: at };
 }

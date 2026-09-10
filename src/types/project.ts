@@ -7,7 +7,7 @@ import type { ComponentSelection, LibraryRequirement, PowerBudget } from './comp
 import type { BehavioralSpec } from './behavioral';
 import type { Diagram } from './diagram';
 import type { AgentEvent } from './generation';
-import type { ExpandedBrief, EverflowState, HumanTask, ProjectDoubt, ResearchFinding } from './everflow';
+import type { ExpandedBrief, EverflowState, HumanTask, IdeaGraphState, ProjectDoubt, ResearchFinding } from './everflow';
 import type { ValidationResult } from './validation';
 import type { PinAssignment, WiringPlan } from './wiring';
 
@@ -361,4 +361,11 @@ export interface ProjectState {
   expandedBrief: ExpandedBrief | null;
   /** The agent's docs/web research findings (cited evidence). */
   research: ResearchFinding[];
+  /**
+   * The idea graph — the recursive decomposition, per-node tests, reviewer
+   * verdict and swarm assignments. Optional so pre-idea-graph persisted
+   * documents and hand-built fixtures stay valid; `materializeGraph` renders
+   * it into the same projected graph when present.
+   */
+  ideaGraph?: IdeaGraphState | null;
 }

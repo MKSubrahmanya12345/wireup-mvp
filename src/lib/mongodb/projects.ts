@@ -91,6 +91,7 @@ export function serializeProject(raw: RawProject): ProjectState {
     intakeContext: typeof raw.intakeContext === 'string' ? raw.intakeContext : null,
     expandedBrief: (raw.expandedBrief as ExpandedBrief | null) ?? null,
     research: Array.isArray(raw.research) ? (raw.research as ResearchFinding[]) : [],
+    ideaGraph: (raw.ideaGraph as ProjectState['ideaGraph']) ?? null,
   };
 }
 
