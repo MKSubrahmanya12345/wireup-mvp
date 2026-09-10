@@ -13,6 +13,7 @@ import { BadRequestError, fromUnknown, jsonError, jsonOk, parseBody, readJson } 
 import { describeError, logger } from '@/lib/logging/logger';
 import { env } from '@/lib/validation/env';
 import { createProjectRecord, listProjectStates } from '@/lib/mongodb/projects';
+import { startIntake } from '@/modules/everflow';
 import { startGeneration } from '@/modules/orchestrator';
 
 export const runtime = 'nodejs';
@@ -26,6 +27,12 @@ const CreateProjectSchema = z.object({
     .min(8, 'Describe the project you want built (at least 8 characters).')
     .max(4000, 'Prompts are limited to 4000 characters.'),
   name: z.string().trim().min(1).max(120).optional(),
+  /**
+   * `everflow` (default) — the prompt goes through the doubt session first;
+   * the build starts from /build once the session is answered. `direct` —
+   * the old one-shot behaviour: the pipeline starts immediately.
+   */
+  mode: z.enum(['everflow', 'direct']).default('everflow'),
 });
 
 export async function POST(request: NextRequest) {
@@ -38,6 +45,14 @@ export async function POST(request: NextRequest) {
       ...(parsed.name ? { name: parsed.name } : {}),
       maxIterations: env().agent.maxFixIterations,
     });
+
+    if (parsed.mode === 'everflow') {
+      // The doubt session runs in the background; the client polls the
+      // project until `doubts` appear (status stays `intake`).
+      startIntake(project.id);
+      logger.info({ projectId: project.id }, 'project created, intake (doubt session) started');
+      return jsonOk({ project, started: false, intake: true }, { status: 201 });
+    }
 
     // The agent runs in the background; the client polls /events for progress.
     startGeneration(project.id);

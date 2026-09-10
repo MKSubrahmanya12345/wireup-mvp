@@ -86,6 +86,18 @@ const ServerEnvSchema = z.object({
   WIREUP_MAX_REVISIONS: intFrom(12),
   WIREUP_MAX_EVENTS: intFrom(1500),
 
+  // --- Everflow (the iteration loop over the project graph) ---
+  // Passes per trigger before the loop yields (each pass is idempotent and
+  // small; the loop also stops as soon as it stops making progress).
+  WIREUP_EVERFLOW_MAX_PASSES: intFrom(3),
+  // Open human-channel tasks allowed per project before new asks stay parked.
+  WIREUP_EVERFLOW_MAX_HUMAN_TASKS: intFrom(12),
+  // Research tool: allow the agent to pull a snippet from the cited page
+  // (best-effort; offline sources always work and web findings are flagged
+  // for human review).
+  WIREUP_ENABLE_WEB_DOCS: boolFrom(true),
+  WIREUP_WEB_DOCS_TIMEOUT_MS: intFrom(4000),
+
   // --- Networking ---
   WIREUP_DNS_RESULT_ORDER: optionalString,
 
@@ -122,6 +134,10 @@ export interface ServerEnv {
     autoseedComponents: boolean;
     maxRevisions: number;
     maxEvents: number;
+    everflowMaxPasses: number;
+    everflowMaxHumanTasks: number;
+    webDocsEnabled: boolean;
+    webDocsTimeoutMs: number;
   };
   net: {
     dnsResultOrder: DnsResultOrder;
@@ -177,6 +193,10 @@ function read(): ServerEnv {
       autoseedComponents: parsed.WIREUP_AUTOSEED_COMPONENTS,
       maxRevisions: Math.max(1, parsed.WIREUP_MAX_REVISIONS),
       maxEvents: Math.max(50, parsed.WIREUP_MAX_EVENTS),
+      everflowMaxPasses: Math.max(1, parsed.WIREUP_EVERFLOW_MAX_PASSES),
+      everflowMaxHumanTasks: Math.max(1, parsed.WIREUP_EVERFLOW_MAX_HUMAN_TASKS),
+      webDocsEnabled: parsed.WIREUP_ENABLE_WEB_DOCS,
+      webDocsTimeoutMs: Math.max(500, parsed.WIREUP_WEB_DOCS_TIMEOUT_MS),
     },
     net: {
       dnsResultOrder: parseDnsResultOrder(parsed.WIREUP_DNS_RESULT_ORDER),

@@ -81,6 +81,12 @@ function initialProject(prompt: string): ProjectState {
     llm: { calls: [] },
     chat: [],
     revision: 0,
+    doubts: [],
+    humanTasks: [],
+    everflow: { graph: null, evaluation: null, pass: 0 },
+    intakeContext: null,
+    expandedBrief: null,
+    research: [],
   };
 }
 

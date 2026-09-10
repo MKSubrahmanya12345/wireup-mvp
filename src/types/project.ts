@@ -7,10 +7,13 @@ import type { ComponentSelection, LibraryRequirement, PowerBudget } from './comp
 import type { BehavioralSpec } from './behavioral';
 import type { Diagram } from './diagram';
 import type { AgentEvent } from './generation';
+import type { ExpandedBrief, EverflowState, HumanTask, ProjectDoubt, ResearchFinding } from './everflow';
 import type { ValidationResult } from './validation';
 import type { PinAssignment, WiringPlan } from './wiring';
 
 export type ProjectStatus =
+  /** Phase 0: the doubt session is waiting for (or has collected) answers. */
+  | 'intake'
   | 'pending'
   | 'running'
   | 'validating'
@@ -236,7 +239,7 @@ export interface RevisionSnapshot {
 
 export interface ProjectRevision {
   version: number;
-  reason: 'initial_generation' | 'targeted_fix' | 'firmware_edit';
+  reason: 'initial_generation' | 'targeted_fix' | 'firmware_edit' | 'replanned_after_human_input';
   createdAt: string;
   summary: string;
   stage: GenerationStage;
@@ -338,4 +341,24 @@ export interface ProjectState {
   chat: ChatMessage[];
   /** Current revision number (1 = initial generation). */
   revision: number;
+
+  /* ---------------- Everflow (the project graph + human channel) ---------------- */
+  /** Intake doubt session: the questions the agent asked before building. */
+  doubts: ProjectDoubt[];
+  /**
+   * The two-directional human channel. `ai_to_human` = asks the agent files;
+   * `human_to_ai` = additions the human makes that the agent cannot have.
+   */
+  humanTasks: HumanTask[];
+  /** Materialised project graph + last evaluation (see /modules/everflow). */
+  everflow: EverflowState;
+  /**
+   * Resolved doubt-session context, folded into the prompt the understanding
+   * stage sees. Null until the session produces answers.
+   */
+  intakeContext: string | null;
+  /** The messy prompt normalised into the global project document. */
+  expandedBrief: ExpandedBrief | null;
+  /** The agent's docs/web research findings (cited evidence). */
+  research: ResearchFinding[];
 }

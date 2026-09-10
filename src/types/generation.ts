@@ -67,6 +67,15 @@ export type AgentEventType =
   | 'fix_completed'
   | 'final_project_completed'
   | 'generation_failed'
+  /** Everflow — the project graph loop. */
+  | 'intake_completed'
+  | 'intake_answered'
+  | 'everflow_pass'
+  | 'human_task_filed'
+  | 'human_task_answered'
+  | 'injection_registered'
+  | 'rebuild_started'
+  | 'research_completed'
   | 'info';
 
 export type AgentEventStatus = 'started' | 'completed' | 'failed' | 'info';

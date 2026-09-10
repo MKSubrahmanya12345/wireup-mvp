@@ -450,3 +450,86 @@ ${FIX_JSON_CONTRACT}
 
 Reply with the JSON object only.`;
 }
+
+/* ------------------------------------------------------------------------- */
+/* CALL 0 — INTAKE (the doubt session)                                        */
+/* ------------------------------------------------------------------------- */
+
+export const INTAKE_JSON_CONTRACT = `Return a single JSON object with EXACTLY this shape:
+
+{
+  "name": "<short human name for the project>",
+  "summary": "<one sentence: what this project is and who it is for>",
+  "doubts": [
+    {
+      "question": "<one specific question>",
+      "consequence": "<what breaks or changes if this is guessed wrong>",
+      "decider": "human" | "ai" | "ai_with_veto",
+      "blocking": true | false,
+      "options": ["<up to 4 concrete options>"],
+      "proposedDefault": "<your best default>",
+      "confidence": 0.0
+    }
+  ],
+  "claims": [ { "label": "<short>", "content": "<one stated fact from the prompt>" } ],
+  "expanded": {
+    "goal": "<one clean sentence: what the finished thing does>",
+    "platform": "<normalized hardware that runs it, or null>",
+    "components": [ { "name": "<part>", "quantity": 1, "role": "<one-phrase role>" } ],
+    "behaviours": ["<must-do behaviour>"],
+    "assumptions": ["<what you had to assume>"],
+    "openQuestions": ["<what the brief does not answer>"]
+  }
+}`;
+
+export interface IntakePromptInput {
+  prompt: string;
+  preAnalysis: string;
+}
+
+/**
+ * The intake call is deliberately the opposite of the generation call: it
+ * must NOT design anything. Its only jobs are naming the project and finding
+ * the questions that genuinely need the human, or that need a recorded
+ * decision.
+ */
+export function buildIntakeUserPrompt(input: IntakePromptInput): string {
+  return `USER PROJECT REQUEST (not yet built — we are in the doubt session):
+"""
+${input.prompt}
+"""
+
+PRE-ANALYSIS (heuristics — factual, not a decision):
+${input.preAnalysis}
+
+Your job:
+1. Give the project a short, concrete name.
+2. List the DOUBTS that matter. Rules:
+   - A doubt is a real fork: two different answers lead to two different builds.
+   - decider "human" ONLY for context the user alone has (who it is for, where it
+     lives, budget, what they already own, taste). Technical choices (part, pin,
+     library, protocol) are "ai" or "ai_with_veto" — pick a concrete default and
+     set your honest confidence (0..1).
+   - At most 4 doubts. No padding. If a doubt has no fork, do not ask it.
+   - "blocking": true only when the build would be materially wrong without it
+     (controller, power source, the primary use case). At most 2 blocking.
+   - Every doubt needs 2-4 concrete options (or [] for free-text context) and a
+     proposedDefault, unless the user must supply lived context.
+3. List up to 6 CLAIMS: facts stated in the prompt (quantities, features,
+   environment), each one sentence.
+4. EXPAND the brief into the global project document. The user often dictates
+   this in a messy voice note (typos, cut-off words, no structure). Your job:
+   - "goal": one clean sentence describing what the finished thing DOES.
+   - "platform": the hardware that runs it if stated (normalized name),
+     otherwise null.
+   - "components": every part the brief implies, with a quantity (1 when
+     unstated) and a one-phrase role. Include what the user meant even when
+     the words are garbled ("multiple corsm" = several cameras).
+   - "behaviours": 2-6 must-do behaviours in plain language.
+   - "assumptions": things you had to assume to make sense of the brief.
+   - "openQuestions": what the brief genuinely does not answer (max 4).
+   Never invent requirements the brief does not imply.
+${INTAKE_JSON_CONTRACT}
+
+Reply with the JSON object only.`;
+}
