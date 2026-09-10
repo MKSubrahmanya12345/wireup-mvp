@@ -59,11 +59,11 @@ Other scripts:
 
 | Script | What it does |
 | --- | --- |
-| `pnpm dev` | Next.js dev server |
+| `pnpm dev` | Next.js dev server on **Turbopack** — the fastest dev loop; use it unless you hit a Turbopack-specific problem |
 | `pnpm build` / `pnpm start` | Production build / serve |
 | `pnpm typecheck` | `tsc --noEmit` (strict) |
 | `pnpm seed` | Idempotent catalog upsert. `-- --dry-run` validates only, `-- --reset` wipes the collection first, `-- --force` seeds despite integrity problems |
-| `pnpm dev:turbo` | Same dev server on Turbopack. Cold start and per-route compile are several times faster than the default webpack pass; use it unless you hit a Turbopack-specific problem |
+| `pnpm dev:webpack` | Same dev server on the classic webpack pass. Slower to compile (watcher also covers `external/`) — kept as the fallback for Turbopack-specific problems |
 | `pnpm diagnose:bedrock` | Walks configuration → DNS → TLS → a real Bedrock `Converse` call and stops at the first failure with the exact thing to check. Exits 0 only when a round trip succeeds |
 | `pnpm verify:offline` | Runs the real pipeline, validator and fixer with `*.amazonaws.com` DNS forced to fail, and asserts the project is still complete and the outage is reported honestly. Needs no credentials, no MongoDB and no network |
 | `pnpm verify:llm-codegen` | Proves the AI-first codegen rooting gate offline with canned model plans (good, hallucinated pin, aliased pin, hijacked constant, foreign include, contract breach, provider failure); the happy-path sketch is compiled against the firmware shim. `WIREUP_ENABLE_LLM_CODEGEN=false … --flag-off` also proves the flag disables the stage |
