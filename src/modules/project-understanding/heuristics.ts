@@ -38,7 +38,7 @@ export interface FeatureRule {
 export const FEATURE_RULES: FeatureRule[] = [
   { feature: 'bluetooth', pattern: /\b(blue\s*tooth|bluetooth|\bbt\b|ble\b|hc[-\s]?0[56]|spp|phone\s+control|control\s+from\s+(my\s+)?phone|android|app\s+control)\b/i, quantityKey: 'bluetooth_modules' },
   { feature: 'wifi', pattern: /\b(wi[-\s]?fi|wifi|web\s*server|http|mqtt|esp\s*now|websocket|ota)\b/i },
-  { feature: 'motor_control', pattern: /\b(dc\s*motor|motor|motors|wheels?|drive\s*train|drivetrain|rc\s*car|robot\s*car|tank|rover|gear\s*motor)\b/i, quantityKey: 'motors', quantityNouns: ['dc motor', 'motor', 'gear motor', 'wheel motor'] },
+  { feature: 'motor_control', pattern: /\b(dc\s*motor|motor|motors|wheels?|drive\s*train|drivetrain|rc[-\s]*car|robot[-\s]*car|remote[-\s]*controlled\s+(?:car|vehicle|truck)|tank|rover|gear\s*motor)\b/i, quantityKey: 'motors', quantityNouns: ['dc motor', 'motor', 'gear motor', 'wheel motor'] },
   { feature: 'stepper', pattern: /\b(stepper|stepper\s*motor|nema\s*17|28byj|cnc|extruder)\b/i, quantityKey: 'steppers', quantityNouns: ['stepper', 'stepper motor'] },
   { feature: 'servo', pattern: /\b(servo|servos|sg90|mg99|pan\s*tilt|steering\s*servo)\b/i, quantityKey: 'servos', quantityNouns: ['servo', 'micro servo'] },
   { feature: 'temperature_humidity', pattern: /\b(dht\s*11|dht\s*22|am2302|temperature|humidity|thermometer|weather\s*station)\b/i },
@@ -206,6 +206,14 @@ export function analyzePrompt(prompt: string): PromptAnalysis {
   }
 
   const quantities = extractQuantities(text, features);
+  // A generic RC/robot car is a differential-drive request even when the user
+  // does not spell out "two motors". Keep an explicit count ("one motor",
+  // "four motors") authoritative, but never let an omitted count collapse the
+  // drive train to one motor later in the planner.
+  if (features.includes('motor_control') && quantities.motors === undefined && /\b(rc[-\s]*car|robot[-\s]*car|remote[-\s]*controlled\s+(?:car|vehicle|truck)|tank|rover)\b/i.test(text)) {
+    quantities.motors = 2;
+    notes.push('RC-style vehicle detected without a motor count; defaulting to two drive motors.');
+  }
   const communicationHints: string[] = [];
   if (features.includes('bluetooth')) communicationHints.push('Bluetooth link to a phone/host required');
   if (features.includes('wifi')) communicationHints.push('Wi-Fi connectivity required');

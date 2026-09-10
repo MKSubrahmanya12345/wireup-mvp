@@ -456,10 +456,24 @@ export async function planHardware(input: HardwarePlannerInput, events?: AgentEv
     metadata: { catalogSize: catalog.length },
   });
 
-  const { drafts: modelDrafts, unmatched, provisional, demand } = normaliseModelSelections(
+  const { drafts: normalisedModelDrafts, unmatched, provisional, demand } = normaliseModelSelections(
     input.modelComponents,
     catalog,
   );
+
+  const modelNotes: string[] = [];
+  const vehiclePrompt = /\b(rc[-\s]*car|robot[-\s]*car|tank|rover|remote[-\s]*controlled\s+(?:car|vehicle|truck))\b/i.test(analysis.prompt);
+  const explicitlyRequestsLighting = analysis.features.includes('lighting') || /\b(led|neopixel|lamp|status\s+light)\b/i.test(analysis.prompt);
+  // A hallucinated LED + resistor pair was previously able to become the
+  // visible "RC car" circuit when the model omitted all drive hardware. Keep
+  // user-requested lighting, but remove that unrelated pair from a vehicle
+  // build; the deterministic motor/driver rules below then own the topology.
+  const modelDrafts = vehiclePrompt && !explicitlyRequestsLighting
+    ? normalisedModelDrafts.filter((draft) => !/(?:led|resistor)/i.test(draft.componentId))
+    : normalisedModelDrafts;
+  if (modelDrafts.length !== normalisedModelDrafts.length) {
+    modelNotes.push('Removed an unrelated model-selected LED/resistor pair from the RC vehicle; it was not requested and cannot replace the drive train.');
+  }
 
   /*
    * Provisional parts join the working catalog so every downstream stage — pin
@@ -557,6 +571,7 @@ export async function planHardware(input: HardwarePlannerInput, events?: AgentEv
   );
 
   const notes = [
+    ...modelNotes,
     ...defaults.notes,
     ...provisionalNotes,
     ...unmatched.map((entry) => `Model requested "${entry.query}" which is not in the component database (${entry.reason}).`),

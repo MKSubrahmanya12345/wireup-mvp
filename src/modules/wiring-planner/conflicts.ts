@@ -348,6 +348,42 @@ export function detectConflicts(input: ConflictInput): WiringConflict[] {
     }
   }
 
+  /* --- Passive pin over-connection ----------------------------------------- */
+  // A resistor terminal (and similar two-terminal passive) is one electrical
+  // node, not a second GPIO input. Two model wires landing on the same
+  // terminal, as in resistor-1.1 → MCU:D18 and resistor-1.1 → MCU:D4, create
+  // an accidental short and should never be exported as if they were a valid
+  // RC circuit. MCU outputs may fan out, so this rule is intentionally limited
+  // to passive component pins.
+  const passivePinUses = new Map<string, { instanceId: string; pin: string; connectionIds: string[]; neighbours: string[] }>();
+  for (const connection of connections) {
+    if (connection.kind !== 'signal') continue;
+    for (const [endpoint, neighbour] of [
+      [connection.from, connection.to],
+      [connection.to, connection.from],
+    ] as const) {
+      const entry = index.get(endpoint.instanceId);
+      if (entry?.definition?.category !== 'passive') continue;
+      const key = `${endpoint.instanceId}.${endpoint.pin.toLowerCase()}`;
+      const current = passivePinUses.get(key) ?? { instanceId: endpoint.instanceId, pin: endpoint.pin, connectionIds: [], neighbours: [] };
+      current.connectionIds.push(connection.id);
+      current.neighbours.push(`${neighbour.instanceId}.${neighbour.pin}`);
+      passivePinUses.set(key, current);
+    }
+  }
+  for (const use of passivePinUses.values()) {
+    const uniqueNeighbours = new Set(use.neighbours);
+    if (uniqueNeighbours.size < 2) continue;
+    conflicts.push(
+      conflict('duplicate_connection', 'error', `${use.instanceId}.${use.pin} has multiple signal wires (${[...uniqueNeighbours].join(', ')}). This passive terminal would short those nets together.`, {
+        instanceIds: [use.instanceId, ...[...uniqueNeighbours].map((value) => value.split('.')[0] as string)],
+        pins: [use.pin],
+        connectionIds: use.connectionIds,
+        suggestion: 'Keep one wire on this passive terminal, or use a separate terminal/component for the second signal.',
+      }),
+    );
+  }
+
   /* --- Voltage relationships ---------------------------------------------- */
   for (const connection of connections) {
     if (connection.kind !== 'power' || connection.voltage === undefined) continue;
