@@ -41,6 +41,7 @@ export function humanStageLabel(stage: GenerationStage | undefined | null): stri
 /* -------------------------------------------------------------------------- */
 
 const STATUS_PHRASE: Record<ProjectStatus, string> = {
+  intake: 'The doubt session is ready \u2014 answer what only you know',
   pending: 'Waiting to start\u2026',
   running: 'Building your project',
   validating: 'Checking your build',
@@ -55,9 +56,14 @@ export function statusPhrase(status: ProjectStatus | undefined | null): string {
   return STATUS_PHRASE[status ?? 'pending'];
 }
 
+/** Phase 0: the doubt session gates the build. */
+export function isIntake(status: ProjectStatus | undefined | null): boolean {
+  return status === 'intake';
+}
+
 /** Whether a status means "still going" (not terminal). */
 export function isInProgress(status: ProjectStatus | undefined | null): boolean {
-  return status !== undefined && status !== null && !(status === 'completed' || status === 'completed_with_warnings' || status === 'completed_with_errors' || status === 'failed');
+  return status !== undefined && status !== null && !(status === 'completed' || status === 'completed_with_warnings' || status === 'completed_with_errors' || status === 'failed' || status === 'intake');
 }
 
 /* -------------------------------------------------------------------------- */

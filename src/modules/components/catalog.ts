@@ -19,10 +19,12 @@ import { MICROCONTROLLERS } from './seed/microcontrollers';
 import { MOTION } from './seed/motion';
 import { MOTORS } from './seed/motors';
 import { POWER } from './seed/power';
+import { SBC } from './seed/sbc';
 import { SENSORS } from './seed/sensors';
 
 export const SEED_COMPONENTS: ComponentDefinition[] = [
   ...MICROCONTROLLERS,
+  ...SBC,
   ...MOTORS,
   ...MOTION,
   ...SENSORS,

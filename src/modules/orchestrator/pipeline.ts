@@ -75,6 +75,13 @@ type StagePatch = Partial<
   >
 >;
 
+/** The prompt the model sees: the user's words plus the resolved doubt-session context. */
+function effectivePrompt(base: ProjectState): string {
+  return base.intakeContext ? `${base.prompt}
+
+${base.intakeContext}` : base.prompt;
+}
+
 export async function runPipeline(input: PipelineInput): Promise<PipelineOutput> {
   const { events, onStage } = input;
   const base = input.project;
@@ -104,7 +111,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   const requirementsHandle = events.start('requirements_started', 'Reading the request and extracting requirements...', {
     stage: 'understanding',
   });
-  const understanding = understandPrompt(base.prompt, events);
+  const understanding = understandPrompt(effectivePrompt(base), events);
   const analysis = understanding.analysis;
   let requirements = understanding.requirementsDraft;
 
@@ -125,7 +132,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
   await stage({ requirements, status: 'running' }, 'understanding');
 
   /* --- 2. Component database ---------------------------------------------- */
-  const context = await buildGenerationContext({ prompt: base.prompt, analysis, events });
+  const context = await buildGenerationContext({ prompt: effectivePrompt(base), analysis, events });
   const catalog = context.catalog;
   notes.push(...context.notes);
   await stage({}, 'catalog');
@@ -151,7 +158,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
     try {
       const response = await generateProjectSpec({
-        prompt: base.prompt,
+        prompt: effectivePrompt(base),
         requirementsDraft: `${formatAnalysisForPrompt(analysis)}\n\n${truncate(JSON.stringify(requirements, null, 2), 4000)}`,
         catalogContext: context.catalogContext,
         mcuContext: context.mcuContext,
@@ -209,7 +216,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
 
   /* --- 4. Requirements (model + heuristics merged) ------------------------- */
   requirements = normalizeRequirements(modelPayload.requirements, {
-    prompt: base.prompt,
+    prompt: effectivePrompt(base),
     analysis,
     draft: understanding.requirementsDraft,
   });
@@ -317,7 +324,7 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineOutput>
     ...(profile ? { profile } : {}),
     revision: 1,
     modelCode: modelPayload.code,
-    prompt: base.prompt,
+    prompt: effectivePrompt(base),
     ...(bedrock.configured ? { llmProvider: bedrockSketchPlanProvider() } : {}),
     onLlmCall: (call) => llmCalls.push(call),
     events,
