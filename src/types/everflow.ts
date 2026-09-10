@@ -29,7 +29,11 @@ export type EverflowNodeKind =
   | 'doubt'
   | 'evidence'
   | 'task'
-  | 'artifact';
+  | 'artifact'
+  /* Idea graph — recursive decomposition of the intent into subsystems. */
+  | 'subsystem'
+  | 'test_result'
+  | 'review';
 
 export type EverflowNodeStatus = 'proposed' | 'active' | 'blocked' | 'human_review' | 'complete' | 'rejected';
 
@@ -51,6 +55,124 @@ export interface EverflowEdge {
   note?: string;
 }
 
+/* ------------------------------------------------------------------------- */
+/* Idea graph — decomposition, per-node tests, swarms, review                  */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * The test ladder rungs, cheapest first. A leaf's test is the CHEAPEST rung
+ * that can actually falsify the node — reusing the existing machinery
+ * (catalog service, validator checks, compile shim, behavioural evaluator,
+ * codegen rooting gate, human verify asks), never a new engine.
+ */
+export type TestRung = 'catalog' | 'electrical' | 'compile' | 'behavioral' | 'rooting' | 'human_verify';
+
+/**
+ * The per-node test contract. `assertion` is human language; `checkId`
+ * points at the deterministic check the verdict maps to (a validation check
+ * id like `power.budget`, a behavioural assertion id, a catalog part id, an
+ * artifact path, or the id of a filed human ask). Status is written by the
+ * ladder — never by the model.
+ */
+export interface NodeTestSpec {
+  rung: TestRung;
+  assertion: string;
+  checkId?: string;
+  status: 'untested' | 'running' | 'passed' | 'failed' | 'blocked_human';
+  lastRunAt?: string;
+  /** What the test actually saw on its last run (shown verbatim). */
+  message?: string;
+}
+
+/** Why a node stopped (or did not stop) expanding — recorded, never implied. */
+export type StopRule = 'R1_testability' | 'R2_decision_power' | 'R3_convergence' | 'R4_risk_gated' | 'budget_backstop';
+
+export type ExpansionState = 'unexpanded' | 'expanded' | 'leaf' | 'stopped';
+
+/** Real-world stakes: risk_gated nodes may not stop without a safety test. */
+export type StakeLevel = 'normal' | 'risk_gated';
+
+/** The L1 responsibility classes. Swarm roles map onto these 1:1. */
+export type SubsystemClass =
+  | 'POWER'
+  | 'DRIVE'
+  | 'STEERING'
+  | 'CONTROL_LINK'
+  | 'SENSING'
+  | 'BRAIN'
+  | 'STRUCTURE'
+  | 'SAFETY'
+  | 'OUTPUT'
+  | 'OTHER';
+
+/** Planning labels for the execution swarm — ownership, not a new runtime. */
+export type SwarmRole = 'hardware-swarm' | 'firmware-swarm' | 'web-swarm' | 'mechanics-swarm';
+
+export interface SwarmAssignment {
+  role: SwarmRole;
+  /** The subtree root (an L1 subsystem node id). */
+  subtreeRootId: string;
+  nodeIds: string[];
+  /** How the role ran: sequential is the default and always honest. */
+  execution: 'sequential';
+  /** Per-role model override actually in effect (`null` = shared main model or none). */
+  modelId: string | null;
+  completed: boolean;
+  completedAt: string | null;
+  /** What the role reported when it finished its subtree. */
+  summary?: string;
+}
+
+/** What the fresh-context reviewer may return. It never edits — FAIL/ESCALATE carry proposals/questions only. */
+export type ReviewerVerdict = 'PASS' | 'FAIL' | 'ESCALATE';
+
+export interface ReviewerFinding {
+  /** Short machine-ish id, stable per finding kind + subject. */
+  id: string;
+  severity: 'blocking' | 'advisory';
+  summary: string;
+  /** Evidence: which node/test/artifact the finding is about. */
+  subjectNodeId?: string;
+  proposal?: string;
+}
+
+export interface ReviewerRecord {
+  verdict: ReviewerVerdict;
+  findings: ReviewerFinding[];
+  /** ESCALATE carries the question for the human; FAIL carries proposals. */
+  question?: string;
+  /** `llm` = the configured review model answered; `rules` = the deterministic fallback. */
+  reviewedBy: 'llm' | 'rules';
+  modelId?: string | null;
+  at: string;
+}
+
+/**
+ * The idea graph itself — the decomposition half of Everflow. Persisted on
+ * the project (it IS state, not a projection: expanding it changes what the
+ * build does next), but rendered by materialising its nodes into the same
+ * `EverflowGraph` the UI already draws. The build never depends on the
+ * rendering; breaking the rendered graph can never break the build.
+ */
+export interface IdeaGraphState {
+  /** The L0 intent — always the everflow intent node (`ev-intent`). */
+  rootId: string;
+  /** subsystem / test_result / review nodes created by the idea-graph loop. */
+  nodes: EverflowNode[];
+  edges: EverflowEdge[];
+  /** Where the loop is — informational, the loop itself is bounded per move. */
+  phase: 'idle' | 'expanding' | 'testing' | 'reviewing' | 'swarming' | 'done';
+  /** BACKSTOP: total expansions performed. Trips an ask; never the normal finish. */
+  expansions: number;
+  /** R3: expansions that added no new edge into artifacts/tests/decisions. */
+  deadExpansions: number;
+  /** R3: whole-graph expansion pause (with a filed review ask). */
+  expansionPaused: boolean;
+  pausedReason: string | null;
+  reviewer: ReviewerRecord | null;
+  swarms: SwarmAssignment[] | null;
+}
+
 /**
  * The completion contract of a single node. The criterion is human language;
  * `kind` selects the deterministic check the evaluator runs against the
@@ -68,6 +190,8 @@ export interface NodeGoal {
     | 'evidence_attached'
     | 'doubt_answered'
     | 'requirement_covered'
+    /** Idea graph: every leaf in the subtree has a run (passing or parked) test. */
+    | 'subtree_tested'
     | 'custom';
   /** Evaluator's current verdict (materialise declares `open`; evaluate decides). */
   state: 'open' | 'in_progress' | 'satisfied' | 'blocked_human' | 'waived';
@@ -93,10 +217,30 @@ export interface EverflowNode {
   /** Internal reference (component id, issue id, check id, assertion id…). */
   ref?: string;
   source: {
-    origin: 'intake' | 'pipeline' | 'human' | 'continuation' | 'research';
+    origin: 'intake' | 'pipeline' | 'human' | 'continuation' | 'research' | 'expansion' | 'ladder' | 'reviewer' | 'swarm';
     stage?: string;
     revision?: number;
   };
+  /* --- Idea graph fields (present on subsystem/test_result/review nodes) --- */
+  /** Depth: the intent is level 0, its L1 subsystems level 1, and so on. */
+  level?: number;
+  /** Parent subsystem / intent node id, when the node is part of a subtree. */
+  parentId?: string | null;
+  /** The attached test this node must pass before it counts as done. */
+  testSpec?: NodeTestSpec | null;
+  /** Lifecycle of the expansion move for this node. */
+  expansionState?: ExpansionState;
+  /** How many targeted repairs this node needed (iteration history, kept visible). */
+  repairCount?: number;
+  /** Risk-gated nodes (power chains, actuators near humans, radio) may not stop without a safety test. */
+  stakes?: StakeLevel;
+  /** The L1 responsibility this node belongs to (denormalised for the UI/swarm). */
+  subsystemClass?: SubsystemClass;
+  /** Swarm role owning this node's subtree, once assigned. */
+  swarmRole?: SwarmRole;
+  /** Which stop rule decided this node's expansion fate (with the recorded reason). */
+  stopRule?: StopRule;
+  stopReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -163,7 +307,9 @@ export type HumanTaskType =
   | 'note'
   | 'idea'
   | 'correction'
-  | 'resource';
+  | 'resource'
+  /** Mid-thought steering. Tier 1 (default): persisted, folded in next pass. */
+  | 'steer';
 
 export type ResponseShape = 'boolean' | 'choice' | 'text' | 'measurement';
 

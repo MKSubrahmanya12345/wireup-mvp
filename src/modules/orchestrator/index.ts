@@ -390,8 +390,14 @@ export async function runGeneration(projectId: string, options: RunOptions = {})
      * in the simulator). Best-effort: a failure here never fails the run.
      */
     try {
-      const { runEverflowPass, mongoEverflowStore } = await import('@/modules/everflow');
-      const pass = await runEverflowPass(projectId, options.trigger ?? 'generation_finalised', mongoEverflowStore(), env().agent.everflowMaxHumanTasks);
+      const { continueEverflow, mongoEverflowStore } = await import('@/modules/everflow');
+      // The bounded loop, not a single pass: the build hands over to the idea
+      // graph and it keeps making progress (expansions, stop decisions) until
+      // it runs out of progress or pauses on a human ask — never unbounded.
+      const pass = await continueEverflow(projectId, options.trigger ?? 'generation_finalised', mongoEverflowStore(), {
+        maxPasses: env().agent.everflowMaxPasses,
+        maxHumanTasks: env().agent.everflowMaxHumanTasks,
+      });
       if (pass) {
         logger.info(
           {

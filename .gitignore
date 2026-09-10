@@ -6,8 +6,10 @@ node_modules/
 # next.js
 .next/
 out/
-build/
-dist/
+# Root-anchored deliberately: a bare `build/` also matches
+# src/app/api/projects/[id]/build/ and silently swallows that API route.
+/build/
+/dist/
 
 # production artifacts
 *.tsbuildinfo

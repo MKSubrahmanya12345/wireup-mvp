@@ -13,14 +13,14 @@ import { z } from 'zod';
 import { BadRequestError, fromUnknown, jsonError, jsonOk, parseBody, readJson } from '@/lib/http';
 import { describeError, logger } from '@/lib/logging/logger';
 import { getProjectState } from '@/lib/mongodb/projects';
-import { createHumanInjection, evaluateEverflow, materializeGraph } from '@/modules/everflow';
+import { createHumanInjection, evaluateEverflow, materializeGraph, midTurnSteerEnabled } from '@/modules/everflow';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const BodySchema = z.object({
-  type: z.enum(['note', 'idea', 'correction', 'resource']),
+  type: z.enum(['note', 'idea', 'correction', 'resource', 'steer']),
   text: z.string().trim().min(3).max(2000),
   title: z.string().trim().max(120).optional(),
 });
@@ -35,6 +35,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!state) return jsonError(404, { code: 'not_found', message: 'Project not found.' });
     if (state.status === 'intake') {
       return jsonError(409, { code: 'not_in_intake', message: 'Answer the doubt session first; additions are accepted once the build exists.' });
+    }
+    // Steer is the one gated primitive: mid-turn delivery needs the flag AND an
+    // interruptible model. Off (the default) it is refused honestly — the other
+    // four types never touch this gate, so the default path cannot break.
+    if (parsed.type === 'steer' && !midTurnSteerEnabled()) {
+      return jsonError(409, {
+        code: 'steer_disabled',
+        message: 'Mid-turn steering is off (needs WIREUP_ENABLE_MID_TURN_STEER=true and model gpt-6-astra). Send it as a note instead — it lands on the graph the same way and is read on the next pass.',
+      });
     }
 
     const result = await createHumanInjection(id, parsed);

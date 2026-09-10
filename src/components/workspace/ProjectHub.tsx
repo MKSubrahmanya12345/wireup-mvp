@@ -25,6 +25,7 @@ import { useProjectStream } from './useProjectStream';
 import { HubContext, type HubValue } from './hub-context';
 import { StatusBadge } from './ui';
 import { IntakeSession } from '@/components/everflow/IntakeSession';
+import { DrawerVeil, HumanDrawers, type DrawerSide } from './HumanDrawers';
 
 const TABS = [
   { href: '', label: 'Overview', short: 'Overview' },
@@ -42,6 +43,7 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
   const pathname = usePathname();
   const stream = useProjectStream(projectId, initial);
   const [details, setDetails] = useState(false);
+  const [drawer, setDrawer] = useState<DrawerSide | null>(null);
 
   const project = stream.project;
   const base = `/project/${projectId}`;
@@ -59,6 +61,7 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
     [stream, details, toggleDetails],
   );
 
+  const openAsks = project?.humanTasks?.filter((task) => task.direction === 'ai_to_human' && task.status === 'open').length ?? 0;
   const steps = buildSteps(project);
   const status = project?.status ?? 'pending';
   const inProgress = isInProgress(status);
@@ -100,6 +103,24 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
           <Link href={`${base}/log`} className="btn btn--ghost btn--sm">
             run log
           </Link>
+
+          <button
+            type="button"
+            className={`btn btn--sm${openAsks > 0 ? ' btn--attention' : ''}${drawer === 'left' ? ' btn--on' : ''}`}
+            onClick={() => setDrawer((current) => (current === 'left' ? null : 'left'))}
+            title="Asks the agent filed for you — it never blocks on you"
+          >
+            needs you{openAsks > 0 ? ` (${openAsks})` : ''}
+          </button>
+
+          <button
+            type="button"
+            className={`btn btn--sm${drawer === 'right' ? ' btn--on' : ''}`}
+            onClick={() => setDrawer((current) => (current === 'right' ? null : 'right'))}
+            title="Add a note, idea, correction, resource or steer mid-thought"
+          >
+            mid-thought
+          </button>
 
           <button type="button" className="btn btn--sm" onClick={toggleDetails} title="Show internal ids, provenance and raw data">
             {details ? 'details: on' : 'details'}
@@ -153,6 +174,11 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
       <main className="hub__content">{children}</main>
         </>
       )}
+
+      {/* The two drawers — same live project, no second poll. */}
+      <DrawerVeil open={drawer !== null} onClose={() => setDrawer(null)} />
+      <HumanDrawers side="left" open={drawer === 'left'} onClose={() => setDrawer(null)} />
+      <HumanDrawers side="right" open={drawer === 'right'} onClose={() => setDrawer(null)} />
     </HubContext.Provider>
   );
 }
