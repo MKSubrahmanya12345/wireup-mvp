@@ -62,6 +62,7 @@ export {
 } from './decompose';
 export { runNodeTest, testLadderMove, repairNode, pendingTestNodes } from './test-ladder';
 export { buildReviewerInput, rulesBasedReview, reviewerMove, type ReviewerInput } from './reviewer';
+export { assignSwarms, swarmMove, roleForClass, modelForRole, SWARM_BY_CLASS, SWARM_ROLE_ORDER } from './swarm';
 export {
   continueEverflow,
   mongoEverflowStore,

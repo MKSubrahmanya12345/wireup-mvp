@@ -37,6 +37,7 @@ import { planAutoResearch, researchNode } from './research';
 import { expansionMove, type ExpansionModel } from './decompose';
 import { testLadderMove } from './test-ladder';
 import { reviewerMove, type ReviewerInput } from './reviewer';
+import { swarmMove } from './swarm';
 import { getCatalog } from '@/modules/components';
 import type { ResearchFinding } from '@/types/everflow';
 
@@ -350,6 +351,27 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
           status: 'failed',
           message: `Ladder could not run (${error instanceof Error ? error.message : 'unknown'}) — the graph stays as-is; nothing was faked.`,
           metadata: { kind: 'idea_graph.test', error: true },
+        });
+        ideaMoved = true;
+      }
+    }
+
+    /* Phase hand-over: the reviewer passed → the swarm owns the subtrees
+     * (sequential, graph-only communication). */
+    if (ideaGraph && ideaGraph.phase === 'swarming') {
+      try {
+        const swarm = swarmMove(passState);
+        if (swarm.moved) {
+          ideaGraph = swarm.ideaGraph;
+          ideaMoved = true;
+          rawIdeaEvents.push(...swarm.events);
+        }
+      } catch (error) {
+        rawIdeaEvents.push({
+          type: 'idea_graph_swarm',
+          status: 'info',
+          message: `Swarm move failed (${error instanceof Error ? error.message : 'unknown'}) — assignments unchanged.`,
+          metadata: { kind: 'idea_graph.swarm', error: true },
         });
         ideaMoved = true;
       }
