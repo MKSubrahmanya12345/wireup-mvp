@@ -27,6 +27,7 @@
     "verify:workbench": "tsx scripts/verify-firmware-workbench.ts",
     "verify:cad-link": "tsx scripts/verify-cad-link.ts",
     "verify:everflow": "tsx scripts/verify-everflow.ts",
+    "verify:graph": "tsx scripts/verify-graph.ts",
     "export:cad-catalog": "tsx scripts/export-cad-catalog-to-velxio.ts",
     "verify:simulator": "tsx scripts/verify-simulator-link.ts",
     "verify:contracts": "tsx scripts/verify-contracts.ts",

@@ -243,7 +243,7 @@ export interface EverflowPayload {
   expandedBrief?: ExpandedBrief | null;
   brief?: string;
   /** What the human channel may do in this deployment (steer gate lives server-side). */
-  capabilities?: { midTurnSteer: boolean };
+  capabilities?: { midTurnSteer: boolean; steerTier?: 'off' | 'tier1' | 'tier1.5' };
 }
 
 /** Payload of /everflow/respond and /everflow/inject (fresh humanTasks included). */

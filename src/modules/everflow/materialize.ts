@@ -22,14 +22,9 @@ import type { EverflowEdge, EverflowGraph, EverflowNode } from '@/types/everflow
 import type { ProjectState } from '@/types/project';
 
 import { nowIso } from '@/lib/validation/time';
-
-function slug(value: string, max = 48): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, max) || 'node';
-}
+// The ONE slug/edge-id implementation (shared with the evaluator, so a human
+// answer always matches the node it was filed against, however long the id).
+import { edgeId, slug, uniqueNodeId } from '@/modules/graph';
 
 interface NodeSpec {
   id: string;
@@ -69,16 +64,23 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
   const edges: EverflowEdge[] = [];
   const seen = new Set<string>();
 
-  const add = (spec: NodeSpec): void => {
-    if (seen.has(spec.id)) return;
-    seen.add(spec.id);
-    nodes.push(node(spec, at));
+  // `add` returns the final id: on a slug collision the node is kept under
+  // a hash-suffixed id instead of being silently dropped (the old `seen`
+  // guard lost the node AND left its edges pointing at the wrong twin).
+  const add = (spec: NodeSpec): string => {
+    const id = uniqueNodeId(spec.id, seen);
+    seen.add(id);
+    nodes.push(node({ ...spec, id }, at));
+    return id;
   };
   const link = (from: string, to: string, kind: EverflowEdge['kind'], note?: string): void => {
     if (from === to) return;
-    const edge = { id: `edge-${slug(from)}-${kind}-${slug(to)}`, from, to, kind, ...(note ? { note } : {}) };
-    if (edges.some((existing) => existing.id === edge.id)) return;
-    edges.push(edge);
+    // The id carries a hash of the full triple: distinct edges can never
+    // collide (the old truncated-slug id dropped the second of two long
+    // edges sharing a prefix), while the same triple still dedups.
+    const id = edgeId(from, kind, to);
+    if (edges.some((existing) => existing.id === id)) return;
+    edges.push({ id, from, to, kind, ...(note ? { note } : {}) });
   };
 
   const requirements = state.requirements;
@@ -211,7 +213,7 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
 
   for (const library of state.softwarePlan?.libraries ?? []) {
     if (library.builtIn) continue;
-    add({
+    const libId = add({
       id: `ev-decision-lib-${slug(library.name)}`,
       kind: 'decision',
       label: `Library: ${library.name}`,
@@ -227,7 +229,7 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
       ref: library.name,
       source: { origin: 'pipeline', stage: 'software' },
     });
-    link(intentId, `ev-decision-lib-${slug(library.name)}`, 'part_of');
+    link(intentId, libId, 'part_of');
   }
 
   for (const rev of state.revisions) {
@@ -252,9 +254,8 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
   /* ---------------- goals ---------------- */
   const assertions = requirements?.behavioralSpec?.assertions ?? [];
   for (const assertion of assertions) {
-    const id = `ev-goal-behaviour-${slug(assertion.id)}`;
-    add({
-      id,
+    const id = add({
+      id: `ev-goal-behaviour-${slug(assertion.id)}`,
       kind: 'goal',
       label: `Behaviour: ${assertion.title}`,
       content: `The build must ${assertion.title.toLowerCase()}.`,
@@ -308,7 +309,7 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
 
   /* ---------------- artifacts: the workspace files ---------------- */
   for (const file of artifacts.code?.files ?? []) {
-    add({
+    const artId = add({
       id: `ev-art-${slug(file.path)}`,
       kind: 'artifact',
       label: file.path,
@@ -324,7 +325,7 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
       file: { path: file.path },
       source: { origin: 'pipeline', stage: 'code' },
     });
-    link(`ev-art-${slug(file.path)}`, 'ev-goal-artifacts', 'produces');
+    link(artId, 'ev-goal-artifacts', 'produces');
   }
   if (artifacts.diagram) {
     add({
@@ -387,7 +388,7 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
   /* ---------------- evidence ---------------- */
   for (const check of state.validation?.checks ?? []) {
     if (check.status !== 'passed') continue;
-    add({
+    const evId = add({
       id: `ev-evidence-${slug(check.id)}`,
       kind: 'evidence',
       label: check.name,
@@ -404,17 +405,16 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
     });
     if (check.id.startsWith('behavioral.')) {
       const assertionId = check.id.slice('behavioral.'.length);
-      link(`ev-evidence-${slug(check.id)}`, `ev-goal-behaviour-${slug(assertionId)}`, 'verified_by');
+      link(evId, `ev-goal-behaviour-${slug(assertionId)}`, 'verified_by');
     } else if (check.domain === 'structure' || check.id.includes('compile')) {
-      link(`ev-evidence-${slug(check.id)}`, 'ev-goal-validation', 'verified_by');
+      link(evId, 'ev-goal-validation', 'verified_by');
     }
   }
 
   for (const task of state.humanTasks) {
     if (task.direction === 'ai_to_human' && task.response) {
-      const id = `ev-evidence-task-${task.id}`;
-      add({
-        id,
+      const id = add({
+        id: `ev-evidence-task-${task.id}`,
         kind: 'evidence',
         label: `Human answer: ${task.title}`,
         content: `${task.response.value}${task.response.note ? ` — ${task.response.note}` : ''}`,
@@ -431,32 +431,6 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
       for (const linked of task.linkedNodeIds) {
         link(id, linked, 'verified_by');
       }
-    }
-  }
-
-  /* ---------------- research: the agent's cited documentation findings ---- */
-  for (const finding of state.research) {
-    const target = nodes.find((node) => node.id === finding.nodeId);
-    if (!target) continue;
-    const id = `ev-research-${finding.id}`;
-    add({
-      id,
-      kind: 'evidence',
-      label: `Checked docs: ${target.label}`,
-      content: finding.facts.slice(0, 3).join(' ') + (finding.facts.length > 3 ? ' …' : ''),
-      owner: 'ai',
-      confidence: finding.confidence,
-      goal: {
-        criterion: 'Citation recorded; informs — does not satisfy on its own.',
-        kind: 'custom',
-        state: 'satisfied',
-      },
-      ref: finding.id,
-      source: { origin: 'research', stage: finding.title },
-    });
-    link(id, finding.nodeId, 'verified_by');
-    if (finding.needsHumanCheck) {
-      link(intentId, id, 'supports');
     }
   }
 
@@ -507,6 +481,34 @@ export function materializeGraph(state: ProjectState): EverflowGraph {
       if (edges.some((existing) => existing.id === edge.id)) continue;
       if (!seen.has(edge.from) || !seen.has(edge.to)) continue;
       edges.push(edge);
+    }
+  }
+
+  /* ---------------- research: the agent's cited documentation findings ----
+   * AFTER the idea merge: findings may target subsystem nodes, which did
+   * not exist yet when this block ran earlier (the finding was skipped).
+   */
+  for (const finding of state.research) {
+    const target = nodes.find((node) => node.id === finding.nodeId);
+    if (!target) continue;
+    const id = add({
+      id: `ev-research-${finding.id}`,
+      kind: 'evidence',
+      label: `Checked docs: ${target.label}`,
+      content: finding.facts.slice(0, 3).join(' ') + (finding.facts.length > 3 ? ' …' : ''),
+      owner: 'ai',
+      confidence: finding.confidence,
+      goal: {
+        criterion: 'Citation recorded; informs — does not satisfy on its own.',
+        kind: 'custom',
+        state: 'satisfied',
+      },
+      ref: finding.id,
+      source: { origin: 'research', stage: finding.title },
+    });
+    link(id, finding.nodeId, 'verified_by');
+    if (finding.needsHumanCheck) {
+      link(intentId, id, 'supports');
     }
   }
 

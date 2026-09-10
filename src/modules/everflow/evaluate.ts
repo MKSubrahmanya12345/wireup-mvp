@@ -15,6 +15,9 @@ import type { EverflowEvaluation, EverflowGraph, GoalEvaluation, NodeGoal, NextA
 import type { ProjectState } from '@/types/project';
 
 import { nowIso } from '@/lib/validation/time';
+// The shared slug: the goal node was materialised with it, so the human
+// answer matches for long/odd assertion ids (the old inline regex differed).
+import { slug } from '@/modules/graph';
 import { subtreeTestedVerdict } from './decompose';
 
 const POSITIVE = new Set(['yes', 'true', 'ok', 'okay', 'confirmed', 'correct', 'confirmed, as-is', 'apply — replan as a new revision', 'good', 'y']);
@@ -144,7 +147,7 @@ function evaluateGoal(node: { id: string; goal: NodeGoal; ref?: string }, ctx: C
       if (check?.status === 'passed') {
         return { state: 'satisfied', evidence: `Behavioural evaluator: ${check.message}` };
       }
-      const human = humanSatisfied(ctx, assertionId, `ev-goal-behaviour-${assertionId.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}`);
+      const human = humanSatisfied(ctx, assertionId, `ev-goal-behaviour-${slug(assertionId)}`);
       if (human.ok) return { state: 'satisfied', evidence: human.note ?? 'Confirmed by a human test.', satisfiedBy: human.by };
       if (check?.status === 'failed') {
         return { state: 'in_progress', evidence: `Evaluator says not yet: ${check.message}` };

@@ -61,7 +61,7 @@ export function WiringPanel() {
         </span>
       }
     >
-      <WiringGraph connections={connections} controllerInstanceId={controllerInstanceId} labels={labels} />
+      <WiringGraph connections={connections} controllerInstanceId={controllerInstanceId} labels={labels} filter={filter} />
 
       <div className="legend">
         <span className="legend__item">
