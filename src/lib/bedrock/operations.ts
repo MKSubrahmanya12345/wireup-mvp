@@ -22,6 +22,8 @@ import {
 } from '@/lib/bedrock/prompts';
 import { runStructuredCall, type StructuredCallResult } from '@/lib/bedrock/structured';
 import type { BedrockOp } from '@/lib/bedrock/client';
+import { defaultEffort, parseEffort } from '@/lib/models';
+import { env } from '@/lib/validation/env';
 
 export interface BedrockOperationResult extends StructuredCallResult {
   op: BedrockOp;
@@ -44,6 +46,7 @@ export async function generateProjectSpec(input: GenerationPromptInput): Promise
     op: 'generation',
     system: [ENGINEER_PERSONA],
     user: buildGenerationUserPrompt(input),
+    effort: defaultEffort('generation'),
   });
   return { ...result, op: 'generation' };
 }
@@ -56,6 +59,7 @@ export async function reviewProject(input: ValidationPromptInput): Promise<Bedro
     user: buildValidationUserPrompt(input),
     // Validation output is small; a lower temperature keeps it consistent.
     temperature: 0,
+    effort: parseEffort(env().models.effortValidation, defaultEffort('validation')),
   });
   return { ...result, op: 'validation' };
 }
@@ -67,6 +71,7 @@ export async function proposeFixChanges(input: FixPromptInput): Promise<BedrockO
     system: [ENGINEER_PERSONA, FIXER_PERSONA],
     user: buildFixUserPrompt(input),
     temperature: 0.1,
+    effort: parseEffort(env().models.effortFix, defaultEffort('fix')),
   });
   return { ...result, op: 'fix' };
 }
@@ -83,6 +88,7 @@ export async function proposeIntake(input: IntakePromptInput): Promise<BedrockOp
     system: [ENGINEER_PERSONA, INTAKE_PERSONA],
     user: buildIntakeUserPrompt(input),
     temperature: 0.2,
+    effort: defaultEffort('intake'),
   });
   return { ...result, op: 'intake' };
 }
@@ -128,6 +134,7 @@ export async function proposeExpansion(input: ExpansionPromptInput): Promise<Bed
     system: [ENGINEER_PERSONA, EXPANSION_PERSONA],
     user,
     temperature: 0.2,
+    effort: parseEffort(env().models.effortExpansion, defaultEffort('idea_expansion')),
   });
   return { ...result, op: 'idea_expansion' };
 }
@@ -147,6 +154,7 @@ export async function proposeDecisionPower(input: { nodeLabel: string; nodeConte
     user,
     temperature: 0,
     maxTokens: 300,
+    effort: parseEffort(env().models.effortR2, defaultEffort('idea_r2')),
   });
   return { ...result, op: 'idea_expansion' };
 }
@@ -160,6 +168,7 @@ export async function proposeIdeaReview(input: { reviewDocument: string }): Prom
     ],
     user: input.reviewDocument,
     temperature: 0,
+    effort: parseEffort(env().models.effortReview, defaultEffort('idea_review')),
   });
   return { ...result, op: 'idea_review' };
 }

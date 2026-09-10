@@ -81,6 +81,26 @@ const ServerEnvSchema = z.object({
   BEDROCK_TIMEOUT_MS: intFrom(120_000),
   BEDROCK_MAX_RETRIES: intFrom(2),
 
+  // --- Direct model APIs (optional; Bedrock stays the default transport) ---
+  // When set AND the routed model id matches the family, calls go direct
+  // (Astra: OpenAI Responses; Fable: Anthropic Messages). Otherwise the same
+  // model ids are served through Bedrock Converse.
+  OPENAI_API_KEY: optionalString,
+  ANTHROPIC_API_KEY: optionalString,
+
+  // Reasoning effort per operation for the Astra/Fable families
+  // (low|medium|high|xhigh|max; generic models ignore these).
+  WIREUP_MODEL_EFFORT_EXPANSION: optionalString,
+  WIREUP_MODEL_EFFORT_R2: optionalString,
+  WIREUP_MODEL_EFFORT_REVIEW: optionalString,
+  WIREUP_MODEL_EFFORT_VALIDATION: optionalString,
+  WIREUP_MODEL_EFFORT_FIX: optionalString,
+
+  // Run the continuation pass as a StateGraph (checkpoints + steer folding
+  // at node boundaries). Default on; any error falls back to the legacy
+  // path, so this flag can never break the build.
+  WIREUP_ENABLE_GRAPH_PASS: boolFrom(true),
+
   // --- Agent behaviour ---
   WIREUP_MAX_FIX_ITERATIONS: intFrom(3),
   WIREUP_ENABLE_LLM_FIXER: boolFrom(true),
@@ -137,6 +157,16 @@ const ServerEnvSchema = z.object({
 });
 
 export interface ServerEnv {
+  models: {
+    openaiApiKey?: string;
+    anthropicApiKey?: string;
+    effortExpansion?: string;
+    effortR2?: string;
+    effortReview?: string;
+    effortValidation?: string;
+    effortFix?: string;
+    enableGraphPass: boolean;
+  };
   mongodb: {
     uri: string;
     dbName: string;
@@ -212,6 +242,16 @@ function read(): ServerEnv {
   const parsed = ServerEnvSchema.parse(process.env);
 
   return {
+    models: {
+      openaiApiKey: parsed.OPENAI_API_KEY,
+      anthropicApiKey: parsed.ANTHROPIC_API_KEY,
+      effortExpansion: parsed.WIREUP_MODEL_EFFORT_EXPANSION,
+      effortR2: parsed.WIREUP_MODEL_EFFORT_R2,
+      effortReview: parsed.WIREUP_MODEL_EFFORT_REVIEW,
+      effortValidation: parsed.WIREUP_MODEL_EFFORT_VALIDATION,
+      effortFix: parsed.WIREUP_MODEL_EFFORT_FIX,
+      enableGraphPass: parsed.WIREUP_ENABLE_GRAPH_PASS,
+    },
     mongodb: {
       uri: parsed.MONGODB_URI ?? '',
       dbName: parsed.MONGODB_DB ?? 'wireup',
