@@ -172,6 +172,9 @@ export const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
   'wokwi-gas-sensor': 'gas-sensor',
   'wokwi-relay-module': 'relay',
   'wokwi-ks2e-m-dc5': 'ks2e-m-dc5',
+  // DC motor — the Velxio catalog has a `dc-motor` entry for a generic
+  // DC motor that the firmware can drive via an H-bridge (e.g. L298N).
+  'wokwi-dc-motor': 'dc-motor',
   'wokwi-membrane-keypad': 'membrane-keypad',
   'wokwi-ir-receiver': 'ir-receiver',
   'wokwi-analog-joystick': 'analog-joystick',
