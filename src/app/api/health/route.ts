@@ -54,6 +54,14 @@ export async function GET() {
       status: healthy ? 'ready' : 'degraded',
       checkedAt: new Date().toISOString(),
       durationMs: Date.now() - startedAt,
+      store: {
+        mode: configuration.store.mode,
+        persistent: configuration.store.mode === 'mongo',
+        note:
+          configuration.store.mode === 'memory'
+            ? `In-memory store active (WIREUP_IN_MEMORY_STORE=${configuration.store.autoSelected ? 'auto: MONGODB_URI not set' : 'forced'}) — projects are lost on server restart.`
+            : 'MongoDB persistence active.',
+      },
       mongo,
       catalog,
       bedrock: {
@@ -75,6 +83,9 @@ export async function GET() {
         maxEvents: configuration.agent.maxEvents,
       },
       notes: [
+        configuration.store.mode === 'memory'
+          ? `In-memory store active${configuration.store.autoSelected ? ' (MONGODB_URI not set)' : ' (forced)'} — projects live in this process only.`
+          : `MongoDB persistence active (${configuration.mongodb.dbName}).`,
         mongo.ok ? `MongoDB reachable (${mongo.components ?? 0} component document(s)).` : `MongoDB unreachable: ${mongo.error ?? 'unknown error'}`,
         catalog.size > 0
           ? `Component database: ${catalog.size} part(s) from ${catalog.source}.`

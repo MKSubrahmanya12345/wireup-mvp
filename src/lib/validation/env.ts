@@ -51,6 +51,17 @@ const ServerEnvSchema = z.object({
   // --- MongoDB ---
   MONGODB_URI: optionalString,
   MONGODB_DB: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : 'wireup')),
+  // `auto` (default): use Mongo when MONGODB_URI is set, otherwise run on the
+  // in-process store (loudly). `true`/`false` force one side explicitly.
+  WIREUP_IN_MEMORY_STORE: z
+    .string()
+    .optional()
+    .transform((v) => {
+      const normalised = v?.trim().toLowerCase();
+      if (normalised === 'true' || normalised === '1' || normalised === 'yes' || normalised === 'on') return 'memory';
+      if (normalised === 'false' || normalised === '0' || normalised === 'no' || normalised === 'off') return 'mongo';
+      return 'auto';
+    }),
 
   // --- Amazon Bedrock ---
   AWS_REGION: z.string().optional().transform((v) => (v && v.trim() ? v.trim() : 'us-east-1')),
@@ -108,6 +119,12 @@ export interface ServerEnv {
   mongodb: {
     uri: string;
     dbName: string;
+  };
+  store: {
+    /** `memory` = in-process store (data lost on restart, stated everywhere). */
+    mode: 'mongo' | 'memory';
+    /** True when memory mode came from the auto default rather than an explicit opt-in. */
+    autoSelected: boolean;
   };
   bedrock: {
     region: string;
@@ -167,6 +184,17 @@ function read(): ServerEnv {
     mongodb: {
       uri: parsed.MONGODB_URI ?? '',
       dbName: parsed.MONGODB_DB ?? 'wireup',
+    },
+    store: {
+      mode:
+        parsed.WIREUP_IN_MEMORY_STORE === 'memory'
+          ? 'memory'
+          : parsed.WIREUP_IN_MEMORY_STORE === 'mongo'
+            ? 'mongo'
+            : parsed.MONGODB_URI && parsed.MONGODB_URI.trim().length > 0
+              ? 'mongo'
+              : 'memory',
+      autoSelected: parsed.WIREUP_IN_MEMORY_STORE === 'auto',
     },
     bedrock: {
       region: parsed.AWS_REGION ?? 'us-east-1',
