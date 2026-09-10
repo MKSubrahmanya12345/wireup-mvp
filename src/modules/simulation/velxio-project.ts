@@ -122,7 +122,7 @@ export const BOARD_KIND_BY_WOKWI_TYPE: Record<string, string> = {
  * user actually designed. The diagram still names the controller (`ref`), so
  * fall back to that before falling back to a guess.
  */
-const BOARD_KIND_BY_CATALOG_ID: Record<string, string> = {
+export const BOARD_KIND_BY_CATALOG_ID: Record<string, string> = {
   'esp32-devkit-v1': 'esp32',
   'arduino-uno-r3': 'arduino-uno',
   'arduino-nano': 'arduino-nano',
