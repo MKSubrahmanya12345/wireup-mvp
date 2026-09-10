@@ -2,12 +2,13 @@
 
 /**
  * DIAGRAM — the picture of your build plus the file to load into a simulator.
- * The canvas is front and centre; the per-part coordinate table and raw JSON are
- * only shown under "details". "Open in Wokwi" projects the diagram into the
- * simulator format on demand.
+ * The canvas is front and centre, and the generated simulator `diagram.json`
+ * is visible as soon as the canonical diagram exists. The per-part coordinate
+ * table and richer Wireup graph remain under "details"; the simulator
+ * projection is never hidden behind that switch or a second user action.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { Diagram, DiagramComponent } from '@/types/diagram';
 
@@ -100,24 +101,40 @@ function DiagramCanvas({ diagram }: { diagram: Diagram }) {
 
 export function DiagramPanel() {
   const { project, running, details } = useHub();
+  const projectId = project?.id ?? null;
+  const revision = project?.revision ?? 0;
   const diagram = project?.artifacts.diagram ?? null;
   const [wokwi, setWokwi] = useState<DiagramPayload | null>(null);
   const [wokwiState, setWokwiState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [wokwiError, setWokwiError] = useState<string | null>(null);
 
   const loadWokwi = useCallback(async () => {
-    if (!project) return;
+    if (!projectId) return;
     setWokwiState('loading');
     setWokwiError(null);
     try {
-      const payload = await fetchDiagram(project.id, 'wokwi');
+      const payload = await fetchDiagram(projectId, 'wokwi');
       setWokwi(payload);
       setWokwiState('idle');
     } catch (error) {
       setWokwiState('error');
       setWokwiError(error instanceof Error ? error.message : String(error));
     }
-  }, [project]);
+  }, [projectId]);
+
+  // `diagram.json` is a generated artifact, not a hidden "open in simulator"
+  // side effect. Build the projection automatically whenever a new revision
+  // arrives, so the file is present even if the user never touches a button.
+  useEffect(() => {
+    if (!projectId || !diagram) {
+      setWokwi(null);
+      setWokwiState('idle');
+      setWokwiError(null);
+      return;
+    }
+    setWokwi(null);
+    void loadWokwi();
+  }, [diagram ? true : false, projectId, revision, loadWokwi]);
 
   if (!diagram) {
     return (
@@ -131,6 +148,7 @@ export function DiagramPanel() {
     );
   }
 
+  const canonicalJson = JSON.stringify(diagram, null, 2);
   const wokwiJson = wokwi ? JSON.stringify(wokwi.diagram, null, 2) : '';
 
   return (
@@ -141,9 +159,10 @@ export function DiagramPanel() {
       actions={
         <span className="row row--tight">
           <button type="button" className="btn btn--sm" onClick={() => void loadWokwi()} disabled={wokwiState === 'loading'}>
-            {wokwiState === 'loading' ? 'projecting…' : wokwi ? 're-project' : 'open in Wokwi'}
+            {wokwiState === 'loading' ? 'building…' : 'refresh diagram.json'}
           </button>
-          {details && wokwiJson ? <CopyButton text={wokwiJson} label="copy" /> : null}
+          {wokwiJson ? <CopyButton text={wokwiJson} label="copy" /> : null}
+          {wokwiJson ? <DownloadButton filename="diagram.json" content={wokwiJson} label="download" /> : null}
         </span>
       }
       footer={
@@ -167,37 +186,82 @@ export function DiagramPanel() {
         </span>
       </div>
 
-      {wokwiState === 'loading' ? <Loader label="Projecting the diagram into the Wokwi format" /> : null}
-      {wokwiState === 'error' ? <Notice tone="err" title="Projection failed">{wokwiError}</Notice> : null}
+      <section className="diagram__export" aria-label="Canonical generated diagram">
+        <div className="code__toolbar">
+          <span className="mono-sm">canonical source graph</span>
+          <Badge tone="ok">diagram.json</Badge>
+          <Badge>Wireup format</Badge>
+          <span className="card__spacer" style={{ flex: 1 }} />
+          <CopyButton text={canonicalJson} label="copy" />
+          <DownloadButton filename="wireup-diagram.json" content={canonicalJson} label="download" />
+        </div>
+        <p className="small muted" style={{ margin: '8px 0' }}>
+          This is the authoritative generated graph: the selected controller, every drive motor, motor driver, power
+          source and planned connection remain here even when a simulator target cannot model a physical part.
+        </p>
+        <CodeView content={canonicalJson} language="json" maxHeight={360} />
+      </section>
 
-      {wokwi ? (
-        <>
-          {wokwi.warnings && wokwi.warnings.length > 0 ? (
-            <Notice tone="warn" title={`${wokwi.warnings.length} thing${wokwi.warnings.length === 1 ? '' : 's'} Wokwi couldn't represent`}>
-              <ul className="list list--tight" style={{ margin: 0 }}>
-                {wokwi.warnings.map((warning) => (
-                  <li key={warning} className="small">
-                    {warning}
-                  </li>
-                ))}
-              </ul>
-            </Notice>
-          ) : (
-            <p className="small muted" style={{ marginTop: 8 }}>
-              Save this as <span className="mono-sm">diagram.json</span> next to your <span className="mono-sm">sketch.ino</span> and open it in the Wokwi simulator.
+      {wokwiState === 'loading' ? <Loader label="Generating simulator diagram.json in the Wokwi format" /> : null}
+      {wokwiState === 'error' ? <Notice tone="err" title="Could not generate diagram.json">{wokwiError}</Notice> : null}
+
+      <section className="diagram__export" aria-label="Generated diagram.json">
+        <div className="code__toolbar">
+          <span className="mono-sm">generated file</span>
+          <Badge tone={wokwiJson ? 'ok' : 'neutral'}>diagram.json</Badge>
+          <Badge>Wokwi format</Badge>
+          <span className="card__spacer" style={{ flex: 1 }} />
+          {wokwiJson ? <CopyButton text={wokwiJson} label="copy" /> : null}
+          {wokwiJson ? <DownloadButton filename="diagram.json" content={wokwiJson} label="download" /> : null}
+        </div>
+
+        {wokwi ? (
+          <>
+            <p className="small muted" style={{ margin: '8px 0' }}>
+              Generated automatically from the canonical Wireup graph at revision {wokwi.revision}. It contains only
+              verified native Wokwi parts; anything the target cannot simulate is listed below rather than replaced.
             </p>
-          )}
-          {details && wokwiJson ? (
-            <div className="code__toolbar" style={{ marginTop: 10 }}>
-              <span className="mono-sm">wokwi diagram.json</span>
-              <Badge>json</Badge>
-              <span className="card__spacer" style={{ flex: 1 }} />
-              <DownloadButton filename="diagram.json" content={wokwiJson} label="download" />
+            {wokwi.warnings && wokwi.warnings.length > 0 ? (
+              <Notice tone="warn" title={`${wokwi.warnings.length} simulator note${wokwi.warnings.length === 1 ? '' : 's'}`}>
+                <ul className="list list--tight" style={{ margin: 0 }}>
+                  {wokwi.warnings.map((warning) => (
+                    <li key={warning} className="small">
+                      {warning}
+                    </li>
+                  ))}
+                </ul>
+              </Notice>
+            ) : (
+              <Notice tone="ok" title="diagram.json generated">
+                Save or download this file next to <span className="mono-sm">sketch.ino</span> and open it in Wokwi.
+              </Notice>
+            )}
+            <div className="row row--tight" style={{ margin: '10px 0 6px' }}>
+              <Badge>{Array.isArray((wokwi.diagram as { parts?: unknown[] }).parts) ? (wokwi.diagram as { parts: unknown[] }).parts.length : 0} native parts</Badge>
+              <Badge>{Array.isArray((wokwi.diagram as { connections?: unknown[] }).connections) ? (wokwi.diagram as { connections: unknown[] }).connections.length : 0} wires</Badge>
+              {(wokwi.skippedParts?.length ?? 0) > 0 ? <Badge tone="warn">{wokwi.skippedParts?.length} parts omitted honestly</Badge> : null}
+              {(wokwi.skippedConnections?.length ?? 0) > 0 ? <Badge tone="warn">{wokwi.skippedConnections?.length} wires omitted</Badge> : null}
             </div>
-          ) : null}
-          {details && wokwiJson ? <CodeView content={wokwiJson} language="json" maxHeight={420} /> : null}
-        </>
-      ) : null}
+            {(wokwi.skippedParts?.length ?? 0) > 0 ? (
+              <div className="small muted" style={{ marginBottom: 10 }}>
+                <strong>Not substituted:</strong>
+                <ul className="list list--tight" style={{ margin: '4px 0 0' }}>
+                  {wokwi.skippedParts?.map((part) => (
+                    <li key={part.id}>
+                      <span className="mono-sm">{part.ref}</span> — {part.reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {wokwiJson ? <CodeView content={wokwiJson} language="json" maxHeight={420} /> : null}
+          </>
+        ) : wokwiState !== 'loading' && !wokwiError ? (
+          <p className="small muted" style={{ margin: '10px 0 0' }}>
+            The generated file will appear here automatically when the projection is ready.
+          </p>
+        ) : null}
+      </section>
 
       {details ? (
         <>
@@ -226,8 +290,6 @@ export function DiagramPanel() {
               </tbody>
             </table>
           </div>
-          <SectionTitle>Raw diagram</SectionTitle>
-          <CodeView content={JSON.stringify(diagram, null, 2)} language="json" maxHeight={420} />
         </>
       ) : null}
     </Card>

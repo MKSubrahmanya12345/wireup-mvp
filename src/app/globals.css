@@ -1241,6 +1241,22 @@ pre,
 /* ---------------------------------------------------------------------------
    Diagram
    --------------------------------------------------------------------------- */
+.diagram__export {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-sunken);
+}
+
+.diagram__export > p,
+.diagram__export > .notice,
+.diagram__export > .row,
+.diagram__export > .small {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
 .diagram {
   width: 100%;
   overflow: auto;

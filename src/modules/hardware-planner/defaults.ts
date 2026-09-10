@@ -248,6 +248,25 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
     additions.push({ componentId, quantity: Math.max(1, quantity), role, reason, required: true, source: 'planner', ...extra });
   };
 
+  /** Add to an existing model choice instead of treating one instance as enough. */
+  const addQuantity = (componentId: string, quantity: number, role: ComponentRole, reason: string) => {
+    if (!byId.has(componentId)) {
+      notes.push(`Engineering default "${componentId}" is not in the catalog and was skipped.`);
+      return;
+    }
+    const amount = Math.max(1, Math.min(12, Math.round(quantity)));
+    const existingAddition = additions.find((draft) => draft.componentId === componentId);
+    if (existingAddition) {
+      existingAddition.quantity = Math.min(24, existingAddition.quantity + amount);
+      existingAddition.required = true;
+      return;
+    }
+    // A same-id draft will be merged with this planner addition by
+    // `mergeDrafts`, preserving the model's selection while enforcing the
+    // requested quantity.
+    additions.push({ componentId, quantity: amount, role, reason, required: true, source: 'planner' });
+  };
+
   const features = new Set(analysis.features.map((feature) => feature.toLowerCase()));
   const totalQuantity = (predicate: (definition: ComponentDefinition) => boolean) =>
     [...drafts, ...additions].reduce((sum, draft) => {
@@ -291,6 +310,10 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
 
   for (const rule of FEATURE_PART_RULES) {
     if (!features.has(rule.feature)) continue;
+    // Drive motors are quantity-sensitive and vehicle prompts have a
+    // deterministic two-motor default. They are enforced below rather than
+    // using the generic presence check in this feature loop.
+    if (rule.feature === 'motor_control') continue;
 
     const covered = [...drafts, ...additions].some((draft) => {
       const definition = definitionOf(draft.componentId);
@@ -308,6 +331,42 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
     const quantity = typeof requested === 'number' && requested > 0 ? Math.min(12, Math.round(requested)) : 1;
     add(chosen, quantity, rule.role, rule.reason);
     notes.push(`Added ${definitionOf(chosen)?.name ?? chosen} for the "${rule.feature}" requirement (deterministic feature rule).`);
+  }
+
+  /* 1c. Drive motor quantity -------------------------------------------------- */
+  if (features.has('motor_control')) {
+    const vehiclePrompt = /\b(rc[-\s]*car|robot[-\s]*car|tank|rover|remote[-\s]*controlled\s+(?:car|vehicle|truck))\b/i.test(analysis.prompt);
+    const requested = requirements.quantities?.motors;
+    const targetQuantity = typeof requested === 'number' && requested > 0
+      ? Math.min(12, Math.round(requested))
+      : vehiclePrompt
+        ? 2
+        : 1;
+
+    // Only a real DC motor satisfies a car's drive train. A model-selected
+    // LED, resistor, servo, or stepper must not make this requirement look
+    // covered; neither should a single selected motor hide the second one.
+    const driveMotorDrafts = [...drafts, ...additions].filter((draft) => {
+      const definition = definitionOf(draft.componentId);
+      return definition?.category === 'motor' && definition.motorRequirements?.motorType === 'dc';
+    });
+    const currentQuantity = driveMotorDrafts.reduce((sum, draft) => sum + draft.quantity, 0);
+    if (currentQuantity < targetQuantity) {
+      const existing = driveMotorDrafts[0];
+      const componentId = existing?.componentId ?? 'dc-motor-generic-6v';
+      const amount = targetQuantity - currentQuantity;
+      addQuantity(
+        componentId,
+        amount,
+        'actuator',
+        vehiclePrompt
+          ? `RC-style drive train requires ${targetQuantity} DC gear motors; added ${amount} missing drive motor(s) instead of accepting an unrelated model-selected part.`
+          : `Motor control requires ${targetQuantity} DC motor(s); added ${amount} missing motor(s) to match the requested quantity.`,
+      );
+      notes.push(
+        `${vehiclePrompt ? 'RC vehicle' : 'Motor'} hardware enforced: ${targetQuantity} DC drive motor(s) required; ${amount} added by the deterministic quantity rule.`,
+      );
+    }
   }
 
   /* 2. Motor drivers --------------------------------------------------------- */
