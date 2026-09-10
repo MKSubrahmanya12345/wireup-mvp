@@ -183,6 +183,18 @@ export function applyCanvasToDiagram(payload: VlxCanvasPayload, diagram: Diagram
   const unmapped: string[] = [];
   const canvasComponents: DiagramComponent[] = [];
   const canvasBoardIds = new Set(payload.boards.map((board) => board.id));
+  const canvasComponentIds = new Set(payload.components.map((c) => c.id));
+
+  // Determine which previously-managed components exist on the canvas.
+  // Only replace those — keep the rest of the original diagram intact.
+  const previouslyManagedOnCanvas = new Set(
+    diagram.components
+      .filter((component) => {
+        const isManaged = Boolean(component.simulator?.part && managedTypes.has(component.simulator.part));
+        return isManaged && canvasComponentIds.has(component.id);
+      })
+      .map((component) => component.id)
+  );
 
   for (const component of payload.components) {
     if (canvasBoardIds.has(component.id)) continue;
@@ -232,7 +244,9 @@ export function applyCanvasToDiagram(payload: VlxCanvasPayload, diagram: Diagram
     });
   }
 
-  const preserved = diagram.components.filter((component) => !previouslyManaged.has(component.id));
+  // Preserve components that were NOT replaced by the canvas (either because
+  // they were never managed, or because they don't exist on the canvas).
+  const preserved = diagram.components.filter((component) => !previouslyManagedOnCanvas.has(component.id));
   const nextComponents = [...preserved, ...canvasComponents];
   const nextIds = new Set(nextComponents.map((component) => component.id));
 
