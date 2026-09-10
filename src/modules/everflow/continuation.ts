@@ -187,7 +187,7 @@ export function planContinuation(state: ProjectState, graph: EverflowGraph, eval
     if (task.direction !== 'human_to_ai' || task.status !== 'open') continue;
     result.processedInjections.push(task.id);
     result.description.push(`Registered your addition: "${task.title}".`);
-    if (task.type === 'idea' || task.type === 'correction' || task.type === 'resource') {
+    if (task.type === 'idea' || task.type === 'correction' || task.type === 'resource' || task.type === 'steer') {
       const apply = makeTask(
         {
           direction: 'ai_to_human',
