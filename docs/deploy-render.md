@@ -428,9 +428,19 @@ a decision to make silently.
   `bedrock:InvokeModel*` on the one model ARN you use — that single IAM policy
   does more to bound the blast radius of anything on this list than any code
   change in it.
-* **`pnpm audit` / lockfile review** was not part of this pass; run
-  `pnpm audit --audit-level=high` before you call a deploy reviewed, and note
-  `mongoose`/`zod` majors when they move.
+* **Dependency advisories: 4 found, 0 actionable here.** `pnpm audit` reports
+  2 high + 2 moderate and every one is the same package — `postcss`, reached
+  only as `next@15.5.25 → postcss@8.4.31`. All four are in CSS handling
+  (`PreviousMap` following a `sourceMappingURL` comment, unescaped `</style>` in
+  stringify output), i.e. reachable by feeding *untrusted CSS* through postcss.
+  Wireup's server never does that: stylesheets are the two files it imports at
+  build, and no request body becomes CSS. So it is a build-pipeline advisory
+  with no server-side entry point, and the fix is Next bumping its own
+  transitive dep, not this app.
+  `pnpm.overrides: { postcss: ">=8.5.23" }` would silence the audit, but pinning
+  a compiler PostCSS-major Next did not test is precisely the "fine in dev,
+  wrong on the host" class of bug — so it is listed as a choice, not applied.
+  `sharp`, `mongoose`, `zod`, `react`: nothing.
 * **No request body size limits** beyond the app's own validators (prompts cap at
   4 000 chars; the CAD routes accept whatever JSON arrives).
 * **Free/paid sleep still truncates a run** (§8) and **local disk is still
