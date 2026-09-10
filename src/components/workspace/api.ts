@@ -242,6 +242,38 @@ export interface EverflowPayload {
   research?: ResearchFinding[];
   expandedBrief?: ExpandedBrief | null;
   brief?: string;
+  /** What the human channel may do in this deployment (steer gate lives server-side). */
+  capabilities?: { midTurnSteer: boolean };
+}
+
+/** Payload of /everflow/respond and /everflow/inject (fresh humanTasks included). */
+export interface EverflowActionPayload {
+  projectId: string;
+  status: ProjectState['status'];
+  humanTasks: HumanTask[];
+}
+
+/** Answer an open AI→human ask (left drawer). */
+export async function respondEverflowAsk(id: string, taskId: string, value: string, note?: string): Promise<EverflowActionPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/everflow/respond`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ taskId, value, ...(note ? { note } : {}) }),
+  });
+  return unwrap<EverflowActionPayload>(response);
+}
+
+/** Register a human→AI addition (right drawer). Steer is refused (409) unless the server gate is on. */
+export async function injectEverflowThought(
+  id: string,
+  input: { type: 'note' | 'idea' | 'correction' | 'resource' | 'steer'; text: string; title?: string },
+): Promise<EverflowActionPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/everflow/inject`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return unwrap<EverflowActionPayload>(response);
 }
 
 export async function fetchEverflow(id: string): Promise<EverflowPayload> {

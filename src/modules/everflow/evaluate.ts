@@ -15,6 +15,7 @@ import type { EverflowEvaluation, EverflowGraph, GoalEvaluation, NodeGoal, NextA
 import type { ProjectState } from '@/types/project';
 
 import { nowIso } from '@/lib/validation/time';
+import { subtreeTestedVerdict } from './decompose';
 
 const POSITIVE = new Set(['yes', 'true', 'ok', 'okay', 'confirmed', 'correct', 'confirmed, as-is', 'apply — replan as a new revision', 'good', 'y']);
 
@@ -102,7 +103,7 @@ function humanSatisfied(ctx: CheckContext, checkId?: string, nodeRef?: string): 
   return { ok: false };
 }
 
-function evaluateGoal(node: { goal: NodeGoal; ref?: string }, ctx: CheckContext): { state: NodeGoal['state']; evidence: string; satisfiedBy?: string } {
+function evaluateGoal(node: { id: string; goal: NodeGoal; ref?: string }, ctx: CheckContext): { state: NodeGoal['state']; evidence: string; satisfiedBy?: string } {
   const { goal } = node;
   const state = ctx.state;
   const artifacts = state.artifacts;
@@ -181,6 +182,18 @@ function evaluateGoal(node: { goal: NodeGoal; ref?: string }, ctx: CheckContext)
       }
       if (!state.validation) return { state: 'in_progress', evidence: 'Validation has not run yet.' };
       return { state: 'satisfied', evidence: 'No open coverage issue names this requirement.' };
+    }
+
+    case 'subtree_tested': {
+      // Idea-graph subsystem goals: judged by code against the persisted tree.
+      const ideaGraph = state.ideaGraph;
+      if (!ideaGraph) return { state: 'in_progress', evidence: 'No idea graph on the project yet.' };
+      const openAskNodeIds = new Set<string>();
+      for (const task of state.humanTasks) {
+        if (task.status !== 'open') continue;
+        for (const linked of task.linkedNodeIds) openAskNodeIds.add(linked);
+      }
+      return subtreeTestedVerdict(ideaGraph, node.id, openAskNodeIds);
     }
 
     case 'evidence_attached': {

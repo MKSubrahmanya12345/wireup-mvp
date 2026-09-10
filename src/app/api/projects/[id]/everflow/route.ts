@@ -11,7 +11,7 @@ import type { NextRequest } from 'next/server';
 import { fromUnknown, jsonError, jsonOk } from '@/lib/http';
 import { describeError, logger } from '@/lib/logging/logger';
 import { getProjectState } from '@/lib/mongodb/projects';
-import { evaluateEverflow, materializeGraph } from '@/modules/everflow';
+import { evaluateEverflow, materializeGraph, midTurnSteerEnabled } from '@/modules/everflow';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       research: state.research,
       expandedBrief: state.expandedBrief,
       brief: evaluation.brief,
+      capabilities: { midTurnSteer: midTurnSteerEnabled() },
     });
   } catch (error) {
     const described = describeError(error);

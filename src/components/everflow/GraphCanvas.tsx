@@ -22,6 +22,9 @@ const KIND_LABEL: Record<EverflowNodeKind, string> = {
   evidence: 'EVIDENCE',
   task: 'TASK',
   artifact: 'ARTIFACT',
+  subsystem: 'SUBSYSTEM',
+  test_result: 'TEST',
+  review: 'REVIEW',
 };
 
 export function GraphCanvas({

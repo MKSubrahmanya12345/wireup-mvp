@@ -1,10 +1,13 @@
 import Link from 'next/link';
 
 import { PromptForm } from '@/components/PromptForm';
+import { env } from '@/lib/validation/env';
 
 export const dynamic = 'force-dynamic';
 
 export default function HomePage() {
+  // State the store mode loudly: a demo that forgets persistence is a lie.
+  const memoryStore = env().store.mode === 'memory';
   return (
     <>
       <header className="topbar">
@@ -36,6 +39,25 @@ export default function HomePage() {
 
       <main className="landing">
         <div className="landing__inner">
+          {memoryStore ? (
+            <div
+              className="store-banner"
+              style={{
+                border: '1px solid var(--border-strong)',
+                background: 'var(--bg-sunken)',
+                borderRadius: 10,
+                padding: '10px 14px',
+                marginBottom: 18,
+                fontSize: 13.5,
+                lineHeight: 1.45,
+              }}
+            >
+              <strong>Dev mode — in-memory store.</strong> <code>MONGODB_URI</code> is not set, so projects live in
+              this server process and are <em>lost on restart</em>. Everything else works: the doubt session, the
+              build, the idea graph and both human channels. Set <code>MONGODB_URI</code> in <code>.env</code> for
+              persistent storage.
+            </div>
+          ) : null}
           <div className="landing__beacon" aria-hidden="true">
             <span className="landing__beacon-orbit landing__beacon-orbit--outer" />
             <span className="landing__beacon-orbit landing__beacon-orbit--inner" />

@@ -45,6 +45,25 @@ export { DOCS_CORPUS, type CorpusEntry } from './docs-corpus';
 export { evaluateEverflow, isPositiveResponse } from './evaluate';
 export { materializeGraph } from './materialize';
 export {
+  classifyProject,
+  decideStop,
+  deterministicChildren,
+  emptyIdeaGraphState,
+  expansionMove,
+  levelOneSeeds,
+  pickNodeToExpand,
+  subtreeOf,
+  leavesOf,
+  subtreeTestedVerdict,
+  nullExpansionModel,
+  type ExpansionModel,
+  type ProposedChild,
+  type ProjectClass,
+} from './decompose';
+export { runNodeTest, testLadderMove, repairNode, pendingTestNodes } from './test-ladder';
+export { buildReviewerInput, rulesBasedReview, reviewerMove, type ReviewerInput } from './reviewer';
+export { assignSwarms, swarmMove, roleForClass, modelForRole, SWARM_BY_CLASS, SWARM_ROLE_ORDER } from './swarm';
+export {
   continueEverflow,
   mongoEverflowStore,
   planContinuation,
@@ -246,6 +265,20 @@ export async function respondToHumanTask(projectId: string, taskId: string, valu
       ? { ...candidate, status: 'answered' as const, response: { value, ...(note ? { note } : {}), at: nowIso() }, updatedAt: nowIso() }
       : candidate,
   );
+
+  /* An answered convergence/backstop ask is what RESUMES the idea graph —
+   * the pause is never lifted silently, only by the human's explicit answer. */
+  let ideaGraph = state.ideaGraph ?? null;
+  if (ideaGraph && ideaGraph.expansionPaused && isPositiveResponse(task, value)) {
+    ideaGraph = {
+      ...ideaGraph,
+      expansionPaused: false,
+      deadExpansions: 0,
+      pausedReason: null,
+    };
+    await saveProjectState(projectId, { ideaGraph });
+  }
+
   await saveProjectState(projectId, { humanTasks });
 
   const { appendEvents } = await import('@/lib/mongodb/projects');
@@ -269,10 +302,21 @@ export async function respondToHumanTask(projectId: string, taskId: string, valu
   return { state: (await getProjectState(projectId))!, pass };
 }
 
+/**
+ * Whether 'steer' injections may be delivered mid-turn. The gate is the
+ * product of an explicit env flag AND an interruptible-capable model — with
+ * anything else the honest answer is no, and steer falls back to the same
+ * persisted path as every other injection (or is refused at the route).
+ */
+export function midTurnSteerEnabled(): boolean {
+  const parsed = env();
+  return parsed.agent.enableMidTurnSteer === true && parsed.bedrock.modelId === 'gpt-6-astra';
+}
+
 /** Register a human→ai addition (column two) and run a pass. */
 export async function createHumanInjection(
   projectId: string,
-  input: { type: 'note' | 'idea' | 'correction' | 'resource'; text: string; title?: string },
+  input: { type: 'note' | 'idea' | 'correction' | 'resource' | 'steer'; text: string; title?: string },
 ): Promise<EverflowChannelResult | null> {
   const state = await getProjectState(projectId);
   if (!state) return null;
@@ -307,7 +351,10 @@ export async function createHumanInjection(
       id: createId('evt'),
       type: 'injection_registered',
       status: 'info',
-      message: `You added (${input.type}): ${task.title}`,
+      message:
+        input.type === 'steer'
+          ? `Steer registered: ${task.title} — the current move finishes first; the planner folds it in at the next pass.`
+          : `You added (${input.type}): ${task.title}`,
       timestamp: at,
       stage: 'completed',
       metadata: { taskId: task.id, type: input.type },

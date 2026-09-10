@@ -23,16 +23,22 @@
  */
 
 import type { AgentEvent } from '@/types/generation';
-import type { EverflowEvaluation, EverflowGraph, HumanTask } from '@/types/everflow';
+import type { EverflowEvaluation, EverflowGraph, HumanTask, IdeaGraphState } from '@/types/everflow';
 import type { ProjectState } from '@/types/project';
 
 import { appendEvents, getProjectState, saveProjectState } from '@/lib/mongodb/projects';
+import { env } from '@/lib/validation/env';
 import { createId } from '@/lib/validation/ids';
 import { nowIso } from '@/lib/validation/time';
 
 import { evaluateEverflow } from './evaluate';
 import { materializeGraph } from './materialize';
 import { planAutoResearch, researchNode } from './research';
+import { expansionMove, type ExpansionModel } from './decompose';
+import { testLadderMove } from './test-ladder';
+import { reviewerMove, type ReviewerInput } from './reviewer';
+import { swarmMove } from './swarm';
+import { getCatalog } from '@/modules/components';
 import type { ResearchFinding } from '@/types/everflow';
 
 /* ------------------------------------------------------------------------- */
@@ -181,7 +187,7 @@ export function planContinuation(state: ProjectState, graph: EverflowGraph, eval
     if (task.direction !== 'human_to_ai' || task.status !== 'open') continue;
     result.processedInjections.push(task.id);
     result.description.push(`Registered your addition: "${task.title}".`);
-    if (task.type === 'idea' || task.type === 'correction' || task.type === 'resource') {
+    if (task.type === 'idea' || task.type === 'correction' || task.type === 'resource' || task.type === 'steer') {
       const apply = makeTask(
         {
           direction: 'ai_to_human',
@@ -219,12 +225,43 @@ export interface EverflowPassResult {
   progressed: boolean;
 }
 
+export interface EverflowPassOptions {
+  maxHumanTasks?: number;
+  /**
+   * Idea-graph move wiring (runs when WIREUP_ENABLE_IDEA_GRAPH, default on).
+   * Tests inject a canned model here; production lazily wires Bedrock only
+   * when a model id is configured — so offline runs never touch the SDK.
+   */
+  ideaGraph?: {
+    enabled?: boolean;
+    model?: ExpansionModel;
+    maxExpansions?: number;
+    /** Injected fresh-context reviewer (tests); production wires Bedrock lazily. */
+    reviewerModel?: { review(input: ReviewerInput): Promise<{ verdict: string; findings: unknown[]; question?: string } | null | 'unavailable'> } | null;
+  };
+}
+
+/** Lazily wire the Bedrock-backed model (this keeps the AWS SDK out of offline runs). */
+async function productionExpansionModel(): Promise<ExpansionModel | null> {
+  if (!env().bedrock.modelId) return null;
+  try {
+    const { bedrockExpansionModel } = await import('./expansion-model');
+    return bedrockExpansionModel();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Run one continuation pass against the store. Safe to call repeatedly; each
  * pass is small and idempotent, so the loop below stops as soon as it makes
- * no progress.
+ * no progress. When the idea graph is enabled, the pass also carries ONE
+ * idea-graph move (skeleton / expansion / stop decision) — same persistence,
+ * same events, same bounded budget.
  */
-export async function runEverflowPass(projectId: string, trigger: string, store: EverflowStore, maxHumanTasks?: number): Promise<EverflowPassResult | null> {
+export async function runEverflowPass(projectId: string, trigger: string, store: EverflowStore, maxHumanTasksOrOptions: number | EverflowPassOptions = EVERFLOW_DEFAULT_MAX_HUMAN_TASKS): Promise<EverflowPassResult | null> {
+  const options: EverflowPassOptions = typeof maxHumanTasksOrOptions === 'number' ? { maxHumanTasks: maxHumanTasksOrOptions } : maxHumanTasksOrOptions;
+  const maxHumanTasks = options.maxHumanTasks ?? EVERFLOW_DEFAULT_MAX_HUMAN_TASKS;
   const state = await store.getState(projectId);
   if (!state) return null;
 
@@ -233,40 +270,191 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
   let evaluation = evaluateEverflow(state, graph, pass + 1);
   const plan = planContinuation(state, graph, evaluation, maxHumanTasks);
 
+  /* --- the idea-graph move (one per pass, flag-gated) ---------------------- */
+  let ideaGraph: IdeaGraphState | null = state.ideaGraph ?? null;
+  /** Raw move events (seq assigned once, in order, below). */
+  const rawIdeaEvents: { type: AgentEvent['type']; status: AgentEvent['status']; message: string; metadata: Record<string, unknown> }[] = [];
+  /** The same events, sequenced and ready to append to the store. */
+  const ideaEvents: (AgentEvent & { seq?: number })[] = [];
+  let ideaTasks: HumanTask[] = [];
+  let ideaMoved = false;
+  /** The ladder may repair artifacts — the pass then persists THAT state. */
+  let passState: ProjectState = state;
+  const ideaEnabled = options.ideaGraph?.enabled ?? env().agent.ideaGraphEnabled;
+  if (ideaEnabled) {
+    const at = nowIso();
+    const model = options.ideaGraph?.model ?? (await productionExpansionModel());
+    const makeIdeaTask = (task: {
+      type: 'review' | 'verify' | 'choose';
+      title: string;
+      body: string;
+      linkedNodeId: string;
+      defaultOnExpiry: 'defer' | 'assume' | 'halt';
+      assumptionIfSkipped: string;
+      shape: 'text' | 'boolean' | 'choice';
+      options?: string[];
+      positiveOptions?: string[];
+    }): HumanTask =>
+      makeTask(
+        {
+          direction: 'ai_to_human',
+          type: task.type,
+          title: task.title,
+          body: task.body,
+          asks: { shape: task.shape, ...(task.options ? { options: task.options } : {}), ...(task.positiveOptions ? { positiveOptions: task.positiveOptions } : {}) },
+          linkedNodeIds: [task.linkedNodeId],
+          lookAt: { kind: 'project', ref: `/project/${projectId}/everflow`, label: 'See the idea graph' },
+          priority: task.type === 'choose' ? 'high' : 'medium',
+          defaultOnExpiry: task.defaultOnExpiry,
+          assumptionIfSkipped: task.assumptionIfSkipped,
+          source: 'ai',
+        },
+        at,
+      );
+
+    const move = await expansionMove(state, {
+      maxExpansions: options.ideaGraph?.maxExpansions ?? env().agent.ideaGraphMaxExpansions,
+      ...(model ? { model } : {}),
+    });
+    if (move.moved) {
+      ideaMoved = true;
+      ideaGraph = move.ideaGraph;
+      rawIdeaEvents.push(...move.events);
+      ideaTasks.push(...move.newTasks.map((task) => makeIdeaTask({ ...task, shape: 'text', positiveOptions: ['Accepted as-is', 'Accepted'] })));
+    }
+
+    /* Phase hand-over: once the graph finished expanding, the ladder tests
+     * every leaf (repair within budget, escalate the stubborn ones). */
+    if (ideaGraph && ideaGraph.phase === 'testing') {
+      try {
+        const catalog = (await getCatalog()).components;
+        const ladder = await testLadderMove(state, { catalog, maxRepairs: env().agent.ideaGraphMaxNodeRepairs });
+        if (ladder.moved) {
+          ideaGraph = ladder.ideaGraph;
+          passState = ladder.state;
+          ideaMoved = true;
+          rawIdeaEvents.push(...ladder.events);
+          ideaTasks.push(
+            ...ladder.newTasks.map((task) =>
+              makeIdeaTask({
+                ...task,
+                positiveOptions: task.type === 'verify' ? ['Yes, it works'] : ['Accept as a documented limitation'],
+              }),
+            ),
+          );
+        }
+      } catch (error) {
+        // The ladder is best-effort inside the pass; a catalog outage must
+        // never fail the whole continuation pass — and is never faked.
+        rawIdeaEvents.push({
+          type: 'idea_graph_test',
+          status: 'failed',
+          message: `Ladder could not run (${error instanceof Error ? error.message : 'unknown'}) — the graph stays as-is; nothing was faked.`,
+          metadata: { kind: 'idea_graph.test', error: true },
+        });
+        ideaMoved = true;
+      }
+    }
+
+    /* Phase hand-over: the reviewer passed → the swarm owns the subtrees
+     * (sequential, graph-only communication). */
+    if (ideaGraph && ideaGraph.phase === 'swarming') {
+      try {
+        const swarm = swarmMove(passState);
+        if (swarm.moved) {
+          ideaGraph = swarm.ideaGraph;
+          ideaMoved = true;
+          rawIdeaEvents.push(...swarm.events);
+        }
+      } catch (error) {
+        rawIdeaEvents.push({
+          type: 'idea_graph_swarm',
+          status: 'info',
+          message: `Swarm move failed (${error instanceof Error ? error.message : 'unknown'}) — assignments unchanged.`,
+          metadata: { kind: 'idea_graph.swarm', error: true },
+        });
+        ideaMoved = true;
+      }
+    }
+
+    /* Phase hand-over: every leaf tested and no verdict yet → the
+     * fresh-context reviewer runs ONCE (it never edits). */
+    if (ideaGraph && ideaGraph.phase === 'reviewing' && !ideaGraph.reviewer) {
+      try {
+        const review = await reviewerMove(passState, options.ideaGraph?.reviewerModel ?? null);
+        ideaGraph = review.ideaGraph;
+        ideaMoved = true;
+        rawIdeaEvents.push(...review.events);
+        ideaTasks.push(...review.newTasks.map((task) => makeIdeaTask({ ...task, shape: 'text', positiveOptions: ['Accepted as-is', 'Accepted'] })));
+      } catch (error) {
+        rawIdeaEvents.push({
+          type: 'idea_graph_review',
+          status: 'failed',
+          message: `Reviewer could not run (${error instanceof Error ? error.message : 'unknown'}) — no verdict was invented.`,
+          metadata: { kind: 'idea_graph.review', error: true },
+        });
+        ideaMoved = true;
+      }
+    }
+
+    if (ideaMoved) {
+      const baseSeq = state.events.reduce((max, event) => Math.max(max, event.seq), 0);
+      rawIdeaEvents.forEach((event, index) => {
+        ideaEvents.push({
+          seq: baseSeq + 1 + index,
+          id: createId('evt'),
+          type: event.type,
+          status: event.status,
+          message: event.message,
+          timestamp: at,
+          stage: 'completed',
+          metadata: event.metadata,
+        });
+      });
+    }
+  }
+
   // The agent checks its low-confidence claims/decisions against the docs —
   // offline sources (catalog + corpus); the live web stays a deliberate act.
   const findings: ResearchFinding[] = [];
-  for (const pick of planAutoResearch(state, graph, 2)) {
-    const finding = await researchNode({ state, node: pick.node });
+  for (const pick of planAutoResearch(passState, graph, 2)) {
+    const finding = await researchNode({ state: passState, node: pick.node });
     if (finding) findings.push(finding);
   }
-  const research = findings.length > 0 ? [...state.research, ...findings] : state.research;
+  const research = findings.length > 0 ? [...passState.research, ...findings] : passState.research;
 
-  const humanTasks = [...state.humanTasks, ...plan.newTasks, ...plan.followUps].map((task) =>
+  const humanTasks = [...passState.humanTasks, ...plan.newTasks, ...plan.followUps, ...ideaTasks].map((task) =>
     plan.processedInjections.includes(task.id) ? { ...task, status: 'processed' as const, updatedAt: nowIso() } : task,
   );
 
   let next: ProjectState = {
-    ...state,
+    ...passState,
     humanTasks,
     research,
     everflow: { graph, evaluation, pass: pass + 1 },
+    ...(ideaMoved && ideaGraph ? { ideaGraph } : {}),
   };
-  if (findings.length > 0) {
-    // Re-project: the new evidence nodes join the graph and the brief.
+  if (findings.length > 0 || ideaMoved) {
+    // Re-project: new evidence/idea nodes join the graph and the brief.
     graph = materializeGraph(next);
     evaluation = evaluateEverflow(next, graph, pass + 1);
     next = { ...next, everflow: { graph, evaluation, pass: pass + 1 } };
   }
 
   const saved = await store.save(projectId, {
+    ...next,
     humanTasks,
     ...(findings.length > 0 ? { research } : {}),
     everflow: next.everflow,
+    ...(ideaMoved && ideaGraph ? { ideaGraph } : {}),
   });
   const finalState = saved ?? next;
 
-  const progressed = plan.newTasks.length + plan.followUps.length + plan.processedInjections.length + findings.length > 0;
+  for (const event of ideaEvents) {
+    await store.appendEvent(projectId, event);
+  }
+
+  const progressed = plan.newTasks.length + plan.followUps.length + plan.processedInjections.length + findings.length + (ideaMoved ? 1 : 0) > 0;
   const pct = Math.round(evaluation.completion * 100);
 
   await store.appendEvent(projectId, {
@@ -276,7 +464,7 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
     message:
       evaluation.done
         ? `Everflow pass ${pass + 1} (${trigger}): every goal satisfied — the project is complete.`
-        : `Everflow pass ${pass + 1} (${trigger}): ${pct}% complete, ${evaluation.totals.openEnds} dangling, ${plan.newTasks.length + plan.followUps.length} ask(s) filed${findings.length > 0 ? `, ${findings.length} doc check(s) recorded` : ''}.`,
+        : `Everflow pass ${pass + 1} (${trigger}): ${pct}% complete, ${evaluation.totals.openEnds} dangling, ${plan.newTasks.length + plan.followUps.length + ideaTasks.length} ask(s) filed${ideaMoved ? ', idea graph advanced' : ''}${findings.length > 0 ? `, ${findings.length} doc check(s) recorded` : ''}.`,
     timestamp: nowIso(),
     stage: 'completed',
     metadata: {
@@ -286,9 +474,11 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
       done: evaluation.done,
       blockedOnHuman: evaluation.blockedOnHuman,
       openEnds: evaluation.totals.openEnds,
-      tasksFiled: plan.newTasks.length + plan.followUps.length,
+      tasksFiled: plan.newTasks.length + plan.followUps.length + ideaTasks.length,
       docsChecked: findings.length,
       injectionsProcessed: plan.processedInjections.length,
+      ideaGraphMoved: ideaMoved,
+      ...(ideaGraph ? { ideaGraphExpansions: ideaGraph.expansions, ideaGraphPhase: ideaGraph.phase } : {}),
     },
   });
 
@@ -304,12 +494,15 @@ export async function continueEverflow(
   projectId: string,
   trigger: string,
   store: EverflowStore,
-  options: { maxPasses?: number; maxHumanTasks?: number } = {},
+  options: { maxPasses?: number; maxHumanTasks?: number; ideaGraph?: EverflowPassOptions['ideaGraph'] } = {},
 ): Promise<EverflowPassResult | null> {
   const maxPasses = options.maxPasses ?? 3;
   let last: EverflowPassResult | null = null;
   for (let i = 0; i < maxPasses; i += 1) {
-    const result = await runEverflowPass(projectId, trigger, store, options.maxHumanTasks);
+    const result = await runEverflowPass(projectId, trigger, store, {
+      maxHumanTasks: options.maxHumanTasks,
+      ...(options.ideaGraph ? { ideaGraph: options.ideaGraph } : {}),
+    });
     if (!result) break;
     last = result;
     if (result.evaluation.done) break;

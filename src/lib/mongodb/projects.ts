@@ -17,8 +17,21 @@ import { connectMongo } from '@/lib/mongodb/client';
 import { env } from '@/lib/validation/env';
 import { createId } from '@/lib/validation/ids';
 import { nowIso } from '@/lib/validation/time';
+import {
+  memoryAppendEvents,
+  memoryCreateProject,
+  memoryDeleteProject,
+  memoryGetProject,
+  memoryListProjects,
+  memorySaveProject,
+} from '@/lib/store/memory';
 
 const logger = createLogger('mongodb:projects');
+
+/** True when the process should serve projects from the in-memory store. */
+function useMemoryStore(): boolean {
+  return env().store.mode === 'memory';
+}
 
 export type ProjectPatch = Partial<Omit<ProjectDocument, '_id' | 'createdAt' | 'updatedAt'>>;
 
@@ -78,6 +91,7 @@ export function serializeProject(raw: RawProject): ProjectState {
     intakeContext: typeof raw.intakeContext === 'string' ? raw.intakeContext : null,
     expandedBrief: (raw.expandedBrief as ExpandedBrief | null) ?? null,
     research: Array.isArray(raw.research) ? (raw.research as ResearchFinding[]) : [],
+    ideaGraph: (raw.ideaGraph as ProjectState['ideaGraph']) ?? null,
   };
 }
 
@@ -85,6 +99,10 @@ export interface CreateProjectInput {
   prompt: string;
   name?: string;
   maxIterations?: number;
+  /** Replaces the default "generation queued" first event message (used by the in-memory store to state its mode). */
+  notice?: string;
+  /** Extra metadata on the first event (e.g. `{ store: 'memory' }`). */
+  eventMetadata?: Record<string, unknown>;
 }
 
 /**
@@ -92,19 +110,53 @@ export interface CreateProjectInput {
  * call inserts a fresh document with its own event log starting at seq 1.
  */
 export async function createProjectRecord(input: CreateProjectInput): Promise<ProjectState> {
-  await connectMongo();
-  const Project = getProjectModel();
-
   const firstEvent: AgentEvent = {
     seq: 1,
     id: createId('evt'),
     type: 'project_created',
     status: 'completed',
-    message: 'Project created — generation queued',
+    message: input.notice ?? 'Project created — generation queued',
     timestamp: nowIso(),
     stage: 'idle',
-    metadata: { promptLength: input.prompt.length },
+    metadata: { promptLength: input.prompt.length, ...(input.eventMetadata ?? {}) },
   };
+
+  if (useMemoryStore()) {
+    const memoryNotice =
+      input.notice
+        ?? 'Project created on the IN-MEMORY store — MONGODB_URI is not configured, so this project lives in this process only and is lost when the server restarts. Set MONGODB_URI in .env for persistent storage.';
+    const doc = memoryCreateProject({
+      prompt: input.prompt,
+      name: input.name ?? 'Untitled project',
+      status: 'pending',
+      stage: 'idle',
+      error: null,
+      requirements: null,
+      components: [],
+      hardwarePlan: null,
+      pinAssignments: [],
+      wiring: null,
+      softwarePlan: null,
+      artifacts: EMPTY_ARTIFACTS,
+      validation: null,
+      revisions: [],
+      events: [{ ...firstEvent, message: memoryNotice, metadata: { promptLength: input.prompt.length, store: 'memory' } }],
+      iteration: { current: 0, max: input.maxIterations ?? env().agent.maxFixIterations },
+      llm: { calls: [] },
+      revision: 0,
+      doubts: [],
+      humanTasks: [],
+      everflow: EMPTY_EVERFLOW,
+      intakeContext: null,
+      expandedBrief: null,
+      research: [],
+    });
+    logger.info('project created (in-memory store)', { id: doc._id });
+    return serializeProject(doc as RawProject);
+  }
+
+  await connectMongo();
+  const Project = getProjectModel();
 
   const doc = await Project.create({
     prompt: input.prompt,
@@ -138,6 +190,10 @@ export async function createProjectRecord(input: CreateProjectInput): Promise<Pr
 }
 
 export async function getProjectState(id: string): Promise<ProjectState | null> {
+  if (useMemoryStore()) {
+    const raw = memoryGetProject(id);
+    return raw ? serializeProject(raw as RawProject) : null;
+  }
   await connectMongo();
   const Project = getProjectModel();
   const raw = (await Project.findById(id).lean()) as RawProject | null;
@@ -146,6 +202,9 @@ export async function getProjectState(id: string): Promise<ProjectState | null> 
 }
 
 export async function listProjectStates(limit = 25): Promise<ProjectState[]> {
+  if (useMemoryStore()) {
+    return memoryListProjects(limit).map((raw) => serializeProject(raw as RawProject));
+  }
   await connectMongo();
   const Project = getProjectModel();
   const docs = (await Project.find({}).sort({ createdAt: -1 }).limit(limit).lean()) as RawProject[];
@@ -153,6 +212,10 @@ export async function listProjectStates(limit = 25): Promise<ProjectState[]> {
 }
 
 export async function saveProjectState(id: string, patch: ProjectPatch): Promise<ProjectState | null> {
+  if (useMemoryStore()) {
+    const raw = memorySaveProject(id, patch as Record<string, unknown>);
+    return raw ? serializeProject(raw as RawProject) : null;
+  }
   await connectMongo();
   const Project = getProjectModel();
   try {
@@ -169,6 +232,10 @@ export async function saveProjectState(id: string, patch: ProjectPatch): Promise
 /** Append events while enforcing the per-project cap. */
 export async function appendEvents(id: string, events: AgentEvent[], cap?: number): Promise<void> {
   if (events.length === 0) return;
+  if (useMemoryStore()) {
+    memoryAppendEvents(id, events, cap ?? env().agent.maxEvents);
+    return;
+  }
   await connectMongo();
   const Project = getProjectModel();
   const maxEvents = cap ?? env().agent.maxEvents;
@@ -186,6 +253,14 @@ export async function recordLlmCall(
   id: string,
   call: ProjectState['llm']['calls'][number],
 ): Promise<void> {
+  if (useMemoryStore()) {
+    const raw = memoryGetProject(id);
+    const existing = Array.isArray((raw?.llm as { calls?: unknown[] } | undefined)?.calls)
+      ? ((raw!.llm as { calls: unknown[] }).calls as unknown[])
+      : [];
+    memorySaveProject(id, { llm: { ...(raw?.llm as object | undefined), calls: [...existing, call] } });
+    return;
+  }
   await connectMongo();
   const Project = getProjectModel();
   await Project.updateOne(
@@ -203,6 +278,12 @@ export async function markProjectFailed(
 
 /** Projects that died mid-run (process restart) so the UI can explain them. */
 export async function findStalledProjects(maxAgeMs = 10 * 60_000): Promise<ProjectState[]> {
+  if (useMemoryStore()) {
+    const cutoff = Date.now() - maxAgeMs;
+    return memoryListProjects(50)
+      .filter((raw) => ['pending', 'running', 'validating', 'fixing'].includes(String(raw.status)) && raw.updatedAt.getTime() < cutoff)
+      .map((raw) => serializeProject(raw as RawProject));
+  }
   await connectMongo();
   const Project = getProjectModel();
   const cutoff = new Date(Date.now() - maxAgeMs);
@@ -232,6 +313,20 @@ export async function getProjectEvents(
   /** Last write, used to detect runs whose owning process disappeared. */
   updatedAt: string;
 } | null> {
+  if (useMemoryStore()) {
+    const raw = memoryGetProject(id);
+    if (!raw) return null;
+    const events = Array.isArray(raw.events) ? raw.events : [];
+    const latestSeq = events.reduce((max, event) => Math.max(max, event.seq), 0);
+    return {
+      events: after > 0 ? events.filter((event) => event.seq > after) : events,
+      latestSeq,
+      status: raw.status as ProjectStatus,
+      stage: raw.stage as ProjectState['stage'],
+      revision: typeof raw.revision === 'number' ? raw.revision : 1,
+      updatedAt: raw.updatedAt.toISOString(),
+    };
+  }
   await connectMongo();
   const Project = getProjectModel();
   const raw = (await Project.findById(id)
@@ -252,6 +347,9 @@ export async function getProjectEvents(
 }
 
 export async function deleteProject(id: string): Promise<boolean> {
+  if (useMemoryStore()) {
+    return memoryDeleteProject(id);
+  }
   await connectMongo();
   const Project = getProjectModel();
   const result = await Project.deleteOne({ _id: id });
