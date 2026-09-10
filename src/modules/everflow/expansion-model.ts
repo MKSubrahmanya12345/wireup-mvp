@@ -10,6 +10,7 @@
 import { env } from '@/lib/validation/env';
 import { describeBedrockConfig } from '@/lib/bedrock/client';
 import { proposeDecisionPower, proposeExpansion } from '@/lib/bedrock/operations';
+import { detectModelFamily } from '@/lib/models';
 
 import type { SubsystemClass, TestRung } from '@/types/everflow';
 import type { ExpansionModel, ProposedChild } from './decompose';
@@ -39,12 +40,26 @@ function normaliseChild(raw: unknown): ProposedChild | null {
   };
 }
 
+/**
+ * True when any transport can serve the configured expansion model id:
+ * a direct key for its family, else Bedrock credentials. (The old check
+ * demanded Bedrock even for direct-key Astra/Fable setups.)
+ */
+async function routedExpansionAvailable(): Promise<boolean> {
+  const models = env();
+  const id = models.bedrock.modelId;
+  if (!id) return false;
+  const family = detectModelFamily(id);
+  if (family === 'astra' && models.models.openaiApiKey) return true;
+  if (family === 'fable' && models.models.anthropicApiKey) return true;
+  return (await describeBedrockConfig()).configured;
+}
+
 /** Bedrock-backed expansion model (proposeChildren + the R2 decision-power call). */
 export function bedrockExpansionModel(): ExpansionModel {
   return {
     async proposeChildren(input) {
-      const bedrock = await describeBedrockConfig();
-      if (!bedrock.configured) return 'unavailable' as const;
+      if (!(await routedExpansionAvailable())) return 'unavailable' as const;
       const result = await proposeExpansion({
         nodeLabel: input.node.label,
         nodeContent: input.node.content,
@@ -64,8 +79,7 @@ export function bedrockExpansionModel(): ExpansionModel {
     },
 
     async decisionPower(input) {
-      const bedrock = await describeBedrockConfig();
-      if (!bedrock.configured) return null;
+      if (!(await routedExpansionAvailable())) return null;
       try {
         const result = await proposeDecisionPower({
           nodeLabel: input.node.label,

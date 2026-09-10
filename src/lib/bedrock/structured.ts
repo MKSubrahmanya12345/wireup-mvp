@@ -6,8 +6,9 @@
  * about hardware — modules own their own schemas.
  */
 
-import { BedrockError, converse, type BedrockOp, type TokenUsage } from '@/lib/bedrock/client';
+import { BedrockError, resolveModel, type BedrockOp, type TokenUsage } from '@/lib/bedrock/client';
 import { createLogger } from '@/lib/logging/logger';
+import { converseRouted, ModelRouteError, type EffortLevel } from '@/lib/models';
 import { env } from '@/lib/validation/env';
 import { parseJsonLoose, truncate } from '@/lib/validation/json';
 
@@ -38,6 +39,8 @@ export interface StructuredCallOptions {
   model?: string;
   maxTokens?: number;
   temperature?: number;
+  /** Astra/Fable reasoning depth (generic models ignore it; the router strips sampling params for the new families). */
+  effort?: EffortLevel;
   timeoutMs?: number;
   /** How many extra calls to make when the payload cannot be parsed. */
   parseRetries?: number;
@@ -114,12 +117,16 @@ ${truncate(lastRaw, 2500)}
 Respond again with the COMPLETE corrected JSON object only. No markdown fences, no commentary, no trailing text.`;
 
     try {
-      const call = await converse({
+      // Resolved here (not in the router) so a missing model id fails with
+      // the same `missing_model_configuration` the Bedrock path always had.
+      const modelName = options.model ?? resolveModel(options.op);
+      const call = await converseRouted({
         op: options.op,
-        model: options.model,
+        model: modelName,
         system: options.system,
         userText,
         maxTokens: budget,
+        ...(options.effort ? { effort: options.effort } : {}),
         temperature: options.temperature,
         timeoutMs: options.timeoutMs,
       });
@@ -193,12 +200,13 @@ Respond again with the COMPLETE corrected JSON object only. No markdown fences, 
     } catch (error) {
       // Transport / model level failure: not retryable here (client already retried).
       const message = error instanceof Error ? error.message : String(error);
-      // The client resolved the model even though the call failed — report it
+      // The router resolved the model even though the call failed — report it
       // instead of the pre-call 'unknown' placeholder.
-      if (error instanceof BedrockError && error.model && error.model !== 'unknown') {
-        model = error.model;
+      const routed = error instanceof BedrockError || error instanceof ModelRouteError ? error : null;
+      if (routed && routed.model && routed.model !== 'unknown') {
+        model = routed.model;
       }
-      const code = error instanceof BedrockError ? error.code : undefined;
+      const code = routed ? routed.code : undefined;
       if (error instanceof BedrockError && error.attempts > 0) {
         attempts = error.attempts;
       }

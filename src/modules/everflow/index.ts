@@ -25,6 +25,7 @@ import { continueEverflow, mongoEverflowStore, type EverflowPassResult } from '.
 
 import { createId } from '@/lib/validation/ids';
 import { nowIso } from '@/lib/validation/time';
+import { publishSteer } from '@/modules/graph';
 import { describeError } from '@/lib/logging/logger';
 import { env } from '@/lib/validation/env';
 import { getProjectState, saveProjectState } from '@/lib/mongodb/projects';
@@ -68,11 +69,14 @@ export {
   mongoEverflowStore,
   planContinuation,
   runEverflowPass,
+  runEverflowPassLegacy,
   EVERFLOW_DEFAULT_MAX_HUMAN_TASKS,
   type EverflowPassResult,
   type EverflowStore,
   type PlanResult,
 } from './continuation';
+export { runIdeaMoves, type IdeaMovesOptions, type IdeaMovesResult } from './idea-moves';
+export { buildPassGraph, runPassGraph, type PassGraphOptions, type PassGraphResult, type PassState, type PassStore } from './pass-graph';
 
 /* ------------------------------------------------------------------------- */
 /* Intake run                                                                 */
@@ -303,14 +307,30 @@ export async function respondToHumanTask(projectId: string, taskId: string, valu
 }
 
 /**
- * Whether 'steer' injections may be delivered mid-turn. The gate is the
- * product of an explicit env flag AND an interruptible-capable model — with
- * anything else the honest answer is no, and steer falls back to the same
- * persisted path as every other injection (or is refused at the route).
+ * Whether 'steer' injections are accepted at all. The gate is the product of
+ * an explicit env flag AND an Astra model id — with anything else the honest
+ * answer is no, and steer is refused at the route (the other four types never
+ * touch this gate, so the default path cannot break).
  */
 export function midTurnSteerEnabled(): boolean {
   const parsed = env();
-  return parsed.agent.enableMidTurnSteer === true && parsed.bedrock.modelId === 'gpt-6-astra';
+  return parsed.agent.enableMidTurnSteer === true && (parsed.bedrock.modelId?.toLowerCase().includes('astra') ?? false);
+}
+
+export type SteerTier = 'off' | 'tier1' | 'tier1.5';
+
+/**
+ * Which steering tier is actually in effect:
+ *   off     — the gate is closed (route refuses `steer`)
+ *   tier1   — persisted, folded at the next pass (always, once gated in)
+ *   tier1.5 — the steer bus is ALSO drained at StateGraph node boundaries
+ *             inside the running pass, so a steer can land mid-pass
+ * Tier-2 (true mid-token steering over an Astra WebSocket) is designed but
+ * not implemented — nothing reports it until it exists.
+ */
+export function steerTier(): SteerTier {
+  if (!midTurnSteerEnabled()) return 'off';
+  return env().models.enableGraphPass ? 'tier1.5' : 'tier1';
 }
 
 /** Register a human→ai addition (column two) and run a pass. */
@@ -344,6 +364,13 @@ export async function createHumanInjection(
   const humanTasks = [...state.humanTasks, task];
   await saveProjectState(projectId, { humanTasks });
 
+  // Steers ALSO ride the bus: the persisted task is the Tier-1 record, and
+  // the bus copy lets a RUNNING pass fold it at its next node boundary
+  // (Tier-1.5) instead of waiting for the next pass. Same id — deduped.
+  if (input.type === 'steer') {
+    publishSteer({ id: task.id, projectId, text: task.body, title: task.title, at });
+  }
+
   const { appendEvents } = await import('@/lib/mongodb/projects');
   await appendEvents(projectId, [
     {
@@ -353,7 +380,9 @@ export async function createHumanInjection(
       status: 'info',
       message:
         input.type === 'steer'
-          ? `Steer registered: ${task.title} — the current move finishes first; the planner folds it in at the next pass.`
+          ? steerTier() === 'tier1.5'
+            ? `Steer registered: ${task.title} — folds in at the next node boundary (mid-pass when a pass is running, else the next pass).`
+            : `Steer registered: ${task.title} — the current move finishes first; the planner folds it in at the next pass.`
           : `You added (${input.type}): ${task.title}`,
       timestamp: at,
       stage: 'completed',
