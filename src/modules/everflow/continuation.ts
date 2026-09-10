@@ -36,6 +36,7 @@ import { materializeGraph } from './materialize';
 import { planAutoResearch, researchNode } from './research';
 import { expansionMove, type ExpansionModel } from './decompose';
 import { testLadderMove } from './test-ladder';
+import { reviewerMove, type ReviewerInput } from './reviewer';
 import { getCatalog } from '@/modules/components';
 import type { ResearchFinding } from '@/types/everflow';
 
@@ -234,6 +235,8 @@ export interface EverflowPassOptions {
     enabled?: boolean;
     model?: ExpansionModel;
     maxExpansions?: number;
+    /** Injected fresh-context reviewer (tests); production wires Bedrock lazily. */
+    reviewerModel?: { review(input: ReviewerInput): Promise<{ verdict: string; findings: unknown[]; question?: string } | null | 'unavailable'> } | null;
   };
 }
 
@@ -347,6 +350,26 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
           status: 'failed',
           message: `Ladder could not run (${error instanceof Error ? error.message : 'unknown'}) — the graph stays as-is; nothing was faked.`,
           metadata: { kind: 'idea_graph.test', error: true },
+        });
+        ideaMoved = true;
+      }
+    }
+
+    /* Phase hand-over: every leaf tested and no verdict yet → the
+     * fresh-context reviewer runs ONCE (it never edits). */
+    if (ideaGraph && ideaGraph.phase === 'reviewing' && !ideaGraph.reviewer) {
+      try {
+        const review = await reviewerMove(passState, options.ideaGraph?.reviewerModel ?? null);
+        ideaGraph = review.ideaGraph;
+        ideaMoved = true;
+        rawIdeaEvents.push(...review.events);
+        ideaTasks.push(...review.newTasks.map((task) => makeIdeaTask({ ...task, shape: 'text', positiveOptions: ['Accepted as-is', 'Accepted'] })));
+      } catch (error) {
+        rawIdeaEvents.push({
+          type: 'idea_graph_review',
+          status: 'failed',
+          message: `Reviewer could not run (${error instanceof Error ? error.message : 'unknown'}) — no verdict was invented.`,
+          metadata: { kind: 'idea_graph.review', error: true },
         });
         ideaMoved = true;
       }

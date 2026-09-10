@@ -61,6 +61,7 @@ export {
   type ProjectClass,
 } from './decompose';
 export { runNodeTest, testLadderMove, repairNode, pendingTestNodes } from './test-ladder';
+export { buildReviewerInput, rulesBasedReview, reviewerMove, type ReviewerInput } from './reviewer';
 export {
   continueEverflow,
   mongoEverflowStore,
