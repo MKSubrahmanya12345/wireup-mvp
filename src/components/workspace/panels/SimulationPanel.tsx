@@ -261,7 +261,9 @@ function SimulationHalf({
     <>
       <div className="sim__head">
         <div>
-          <SectionTitle>Velxio emulator — embedded from {velxioUrl}</SectionTitle>
+          <SectionTitle>
+            Velxio emulator — {velxioUrl ? `embedded from ${velxioUrl}` : 'no emulator URL configured on this deployment'}
+          </SectionTitle>
           <p className="faint">
             {velxio
               ? `${velxio.boardKind ?? 'board'} · ${velxio.parts} part(s) · ${velxio.wires} wire(s) · ${velxio.files.length} source file(s), pushed onto the canvas automatically.`
@@ -311,14 +313,31 @@ function SimulationHalf({
             <div className="sim__overlay">
               <strong>Waiting for Velxio at {velxioUrl}</strong>
               <p className="faint">
-                Start it with <code>cd external/velxio/frontend &amp;&amp; npm install &amp;&amp; npm run dev</code>. The
-                embed bridge is already vendored in this repo — no patch to apply.
+                {payload.config.velxioRemote ? (
+                  <>
+                    That is a separate deployment, so the fix is there rather than here: the build served at that
+                    origin must include the embed bridge (it answers <code>velxio:ready</code> over
+                    <code> postMessage</code>). A stock Velxio renders the circuit but never greets this page.
+                  </>
+                ) : (
+                  <>
+                    Start it with <code>cd external/velxio/frontend &amp;&amp; npm install &amp;&amp; npm run dev</code>. The
+                    embed bridge is already vendored in this repo — no patch to apply.
+                  </>
+                )}
               </p>
             </div>
           ) : null}
+          {mixedContentBlocked(velxioUrl) ? (
+            <Notice tone="warn" title="This browser will refuse to load that frame">
+              This page is https but the emulator URL is plain http. An https page cannot embed an http origin
+              (except on localhost), so the frame stays blank no matter what Velxio is doing. Serve Velxio over
+              https, or open Wireup over http.
+            </Notice>
+          ) : null}
         </div>
       ) : (
-        <Empty>No emulator URL is configured.</Empty>
+        <Empty>{payload.config.velxioProblem ?? 'No emulator URL is configured.'}</Empty>
       )}
 
       {details && velxio ? (
@@ -360,7 +379,9 @@ function WebsiteHalf({
     <>
       <div className="sim__head">
         <div>
-          <SectionTitle>Generated dashboard — your dev server at {websiteUrl}</SectionTitle>
+          <SectionTitle>
+            Generated dashboard — {websiteUrl ? (payload.config.websiteRemote ? `embedded from ${websiteUrl}` : `your dev server at ${websiteUrl}`) : 'no dashboard URL configured'}
+          </SectionTitle>
           <p className="faint">
             {software
               ? `${software.files.length} file(s), ${Math.round(bytes / 1024)} kB of source. Generated and statically checked — never installed or built by Wireup.`
@@ -428,7 +449,10 @@ function WebsiteHalf({
           ) : null}
         </div>
       ) : (
-        <Empty>No dashboard URL is configured.</Empty>
+        <Empty>
+          {payload.config.websiteProblem ??
+            'No dashboard URL is configured. The generated dashboard ships as the zip above — running it is a step you take, not a service Wireup hosts.'}
+        </Empty>
       )}
 
       {details && software ? (
@@ -444,6 +468,26 @@ function WebsiteHalf({
 /* -------------------------------------------------------------------------- */
 /* Small bits                                                                 */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Would this browser refuse the frame?
+ *
+ * An https page embedding an http origin is mixed content and is blocked. The
+ * exception is localhost, which browsers treat as a potentially trustworthy
+ * origin — that is why the local setup works and a hosted one with a plain-http
+ * Velxio silently does not.
+ */
+function mixedContentBlocked(url: string | null): boolean {
+  if (!url || typeof window === 'undefined') return false;
+  if (window.location.protocol !== 'https:') return false;
+  try {
+    const target = new URL(url, window.location.href);
+    if (target.protocol !== 'http:') return false;
+    return !['localhost', '127.0.0.1', '[::1]', '::1'].includes(target.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
 
 function LinkPill({ label, state, tone }: { label: string; state: string; tone: 'ok' | 'warn' | 'err' | 'neutral' }) {
   return (

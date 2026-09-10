@@ -115,7 +115,17 @@ export interface SimulationPayload {
   revision: number;
   status: ProjectState['status'];
   stage: ProjectState['stage'];
-  config: { velxioUrl: string; websiteUrl: string; defaultView: 'simulation' | 'website' };
+  config: {
+    velxioUrl: string | null;
+    websiteUrl: string | null;
+    defaultView: 'simulation' | 'website';
+    /** True when the URL points at a service, not at the visitor's own machine. */
+    velxioRemote: boolean;
+    websiteRemote: boolean;
+    /** Why the half is unavailable, when it is — names the variable to set. */
+    velxioProblem: string | null;
+    websiteProblem: string | null;
+  };
   velxio: {
     /** The whole .vlx, ready to push onto the canvas. */
     vlx: string;

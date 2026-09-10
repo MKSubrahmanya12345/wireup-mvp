@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auditCatalogCadLink, listLinkedSpecs } from 'cad-helper';
+import { adminGate } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,9 @@ export const dynamic = 'force-dynamic';
  * derived from the registry entry). The `tier` field lets the UI state which
  * one it is instead of implying every model is equally accurate.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = adminGate(request);
+  if (denied) return denied;
   try {
     const linked = listLinkedSpecs();
 

@@ -27,20 +27,20 @@ UI polls, so what you watch on screen is exactly what the backend did.
 
 1. [Quickstart](#quickstart)
 2. [Configuration](#configuration)
-3. [How a project is built](#how-a-project-is-built)
-4. [Everflow — the project graph and goal loop](#everflow--the-project-graph-and-goal-loop)
-5. [Module map](#module-map)
-6. [Component catalog](#component-catalog)
-7. [Artifacts](#artifacts)
-8. [Validation and the targeted fix loop](#validation-and-the-targeted-fix-loop)
-9. [Event log and live UI](#event-log-and-live-ui)
-10. [HTTP API](#http-api)
-11. [Data model](#data-model)
-12. [Error handling and degraded operation](#error-handling-and-degraded-operation)
-13. [Repository layout](#repository-layout)
-14. [Design rules this codebase follows](#design-rules-this-codebase-follows)
-15. [Known limitations](#known-limitations)
-
+3. [Deploying](#deploying)
+4. [How a project is built](#how-a-project-is-built)
+5. [Everflow — the project graph and goal loop](#everflow--the-project-graph-and-goal-loop)
+6. [Module map](#module-map)
+7. [Component catalog](#component-catalog)
+8. [Artifacts](#artifacts)
+9. [Validation and the targeted fix loop](#validation-and-the-targeted-fix-loop)
+10. [Event log and live UI](#event-log-and-live-ui)
+11. [HTTP API](#http-api)
+12. [Data model](#data-model)
+13. [Error handling and degraded operation](#error-handling-and-degraded-operation)
+14. [Repository layout](#repository-layout)
+15. [Design rules this codebase follows](#design-rules-this-codebase-follows)
+16. [Known limitations](#known-limitations)
 ---
 
 ## Quickstart
@@ -102,8 +102,46 @@ hardcoded. `.env.example` documents each variable; the validated shape lives in
 | `WIREUP_AUTOSEED_COMPONENTS` | Seed the catalog into MongoDB when the collection is empty |
 | `WIREUP_MAX_REVISIONS`, `WIREUP_MAX_EVENTS` | Storage caps per project document |
 | `WIREUP_LOG_LEVEL` | Structured server log verbosity |
+| `WIREUP_VELXIO_URL`, `WIREUP_WEBSITE_URL`, `WIREUP_SIM_DEFAULT_VIEW` | Browser-side origins the simulation page embeds — the separately hosted Velxio emulator, and the generated dashboard's dev server (see [Deploying](#deploying)) |
+| `WIREUP_VELXIO_FRONTEND_DIR`, `WIREUP_VELXIO_ASSETS` | Where the CAD studio publishes generated models, or `off` to hand that delivery to the other deployment |
+| `WIREUP_ADMIN_EMAIL`, `WIREUP_ADMIN_PASSWORD`, `WIREUP_ADMIN_SECRET` | Credential pair and session-signing key for `/admin` and `/api/admin/*`. Unset means the admin surface is closed in production and open in development |
 
 ---
+
+## Deploying
+
+The app is a single Next.js server: it needs a MongoDB it can reach, optional
+Bedrock credentials, and nothing else. `docs/deploy-render.md` is the full guide
+for Render (Blueprint included), and its reasoning applies anywhere a Node
+service runs.
+
+| File | Role |
+| --- | --- |
+| `render.yaml` | Render Blueprint: one web service, `pnpm install --frozen-lockfile && pnpm run build`, `pnpm run start:render`, health check on `/api/health/live`, one instance |
+| `Dockerfile`, `.dockerignore` | Optional container build — adds `g++` so the host compile gate runs in production, and ships only the standalone trace |
+| `.node-version` | Node major for the build and runtime |
+
+Three things are worth knowing before the first deploy, because each one is a
+design consequence rather than a configuration mistake:
+
+* **Agent runs are in-process.** `POST /api/projects` starts the pipeline in the
+  process that accepted it and the console polls for its events. So: one
+  instance only, and a restart (deploy, reschedule, free-tier sleep) interrupts a
+  run — which `src/modules/orchestrator/recovery.ts` detects on the next poll and
+  marks interrupted, rather than leaving the UI polling forever.
+* **Health comes in two routes.** `/api/health/live` is dependency-free and is
+  what a platform probe should read; `/api/health` is the operator-facing
+  dependency report the UI banner reads, and it answers 503 while Mongo is down
+  or the catalog is empty — correct for a report, wrong for a probe.
+* **The simulator is not part of this deployment.** `/simulation` embeds Velxio
+  from `WIREUP_VELXIO_URL` in the browser; Wireup's server never fetches it. In
+  production an unset URL is reported as unconfigured instead of defaulting to
+  `localhost`, which on a hosted app would point every visitor at their own
+  machine.
+
+`/admin` fails **closed** on a host: without `WIREUP_ADMIN_EMAIL` and
+`WIREUP_ADMIN_PASSWORD` the console explains how to enable it and the admin API
+answers 503. Locally it stays open, because `pnpm dev` should not need setup.
 
 ## How a project is built
 

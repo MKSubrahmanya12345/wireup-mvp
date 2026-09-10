@@ -72,6 +72,9 @@ export interface VelxioBridge {
 
 const PULL_TIMEOUT_MS = 8_000;
 
+/** Hosts a browser considers "this machine", where plain http is still trusted. */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '::1']);
+
 export function useVelxioBridge({
   embedUrl,
   autoPushVlx,
@@ -101,6 +104,19 @@ export function useVelxioBridge({
     }
   }, [embedUrl]);
 
+  // Whether the frame points at the visitor's own machine. "Start your dev
+  // server" and "the deployment behind that URL is unpatched" are different
+  // diagnoses, and telling them apart needs to know which side of hosting this
+  // is — which only matters once Wireup is served from somewhere else.
+  const localFrame = useMemo(() => {
+    if (!origin) return false;
+    try {
+      return LOCAL_HOSTS.has(new URL(origin).hostname.toLowerCase());
+    } catch {
+      return false;
+    }
+  }, [origin]);
+
   const post = useCallback(
     (message: Record<string, unknown>) => {
       const target = frame.current?.contentWindow;
@@ -129,22 +145,24 @@ export function useVelxioBridge({
         }
         pullWaiters.current.push({ resolve, reject });
         post({ type: 'velxio:export-vlx' });
-        // A bridge that never answers means the iframe is not the vendored
-        // Velxio (or is not running at all). Say which, rather than hanging.
+        // A bridge that never answers means the frame is not a patched Velxio
+        // (or is not running at all). Say which, and say it about the right
+        // machine — the pull would otherwise hang on a promise nobody can act on.
         setTimeout(() => {
           const index = pullWaiters.current.findIndex((waiter) => waiter.resolve === resolve);
           if (index < 0) return;
           pullWaiters.current.splice(index, 1);
           reject(
             new Error(
-              `Velxio at ${embedUrl ?? 'the configured URL'} did not answer within ${
-                PULL_TIMEOUT_MS / 1000
-              } s. Make sure its dev server is running from this repository's external/velxio (the embed bridge is vendored there).`,
+              `Velxio at ${embedUrl ?? 'the configured URL'} did not answer within ${PULL_TIMEOUT_MS / 1000} s. ` +
+                (localFrame
+                  ? "Start it from this repository: `cd external/velxio/frontend && npm install && npm run dev` — the embed bridge is already vendored there."
+                  : 'That origin has to serve a Wireup-patched Velxio build. An unpatched one loads in the frame and stays mute, because nothing on the other side answers the bridge.'),
             ),
           );
         }, PULL_TIMEOUT_MS);
       }),
-    [post, embedUrl],
+    [post, embedUrl, localFrame],
   );
 
   useEffect(() => {

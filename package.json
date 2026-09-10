@@ -15,6 +15,7 @@
     "build": "next build",
     "start": "next start",
     "start:replit": "next start --hostname 0.0.0.0 --port ${PORT:-3000}",
+    "start:render": "next start -H 0.0.0.0 -p ${PORT:-10000}",
     "typecheck": "tsc --noEmit",
     "seed": "tsx scripts/seed-components.ts",
     "seed:components": "tsx scripts/seed-components.ts",

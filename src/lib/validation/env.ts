@@ -101,6 +101,22 @@ const ServerEnvSchema = z.object({
   // --- Networking ---
   WIREUP_DNS_RESULT_ORDER: optionalString,
 
+  // --- Admin surface (/admin and /api/admin/*) ---
+  // Both must be set for the admin surface to be reachable at all; leaving
+  // them unset closes it, which is the correct default for a public host.
+  WIREUP_ADMIN_EMAIL: optionalString,
+  WIREUP_ADMIN_PASSWORD: optionalString,
+  // Optional HMAC key for admin session cookies. Falls back to the password,
+  // so changing the password also invalidates every live session.
+  WIREUP_ADMIN_SECRET: optionalString,
+
+  // --- Velxio (the simulator, usually hosted apart from Wireup) ---
+  // Where the CAD studio writes generated models: <dir>/public/models3d.
+  // Defaults to this repo's vendored checkout. Point it at a mounted shared
+  // volume to hand assets to a separately hosted Velxio; leave it unset when
+  // Velxio is deployed elsewhere entirely, and the studio says so honestly.
+  WIREUP_VELXIO_FRONTEND_DIR: optionalString,
+
   NODE_ENV: z.string().optional().transform((v) => v ?? 'development'),
 });
 
@@ -142,7 +158,15 @@ export interface ServerEnv {
   net: {
     dnsResultOrder: DnsResultOrder;
   };
+  admin: {
+    email?: string;
+    password?: string;
+    secret?: string;
+  };
+  /** Absolute or relative path to a Velxio frontend checkout, or `null` when it is hosted apart. */
+  velxioFrontendDir: string | null;
   nodeEnv: string;
+  isProduction: boolean;
 }
 
 export class EnvError extends Error {
@@ -151,11 +175,27 @@ export class EnvError extends Error {
   constructor(missing: string[], detail?: string) {
     super(
       `Wireup is missing required environment configuration: ${missing.join(', ')}. ` +
-        `Copy .env.example to .env and fill it in.${detail ? ` ${detail}` : ''}`,
+        `${deploymentEnvHint()}${detail ? ` ${detail}` : ''}`,
     );
     this.name = 'EnvError';
     this.missing = missing;
   }
+}
+
+/**
+ * Where to put the missing value depends on where Wireup is running. Saying
+ * "copy .env.example to .env" to someone whose app is deployed is a dead end —
+ * a hosted container has no editable .env, its environment comes from the
+ * provider.
+ */
+function deploymentEnvHint(): string {
+  if (process.env.RENDER || process.env.RENDER_SERVICE_ID) {
+    return 'This deployment runs on Render: add the variable under the service\'s Environment tab (or in render.yaml) and redeploy — a .env file is not read there.';
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return 'This is a production deployment: set the variable in the host\'s environment (Render/Fly/Containers dashboard, CI secret) rather than in a .env file.';
+  }
+  return 'Copy .env.example to .env and fill it in.';
 }
 
 let cached: ServerEnv | null = null;
@@ -201,7 +241,14 @@ function read(): ServerEnv {
     net: {
       dnsResultOrder: parseDnsResultOrder(parsed.WIREUP_DNS_RESULT_ORDER),
     },
+    admin: {
+      email: parsed.WIREUP_ADMIN_EMAIL,
+      password: parsed.WIREUP_ADMIN_PASSWORD,
+      secret: parsed.WIREUP_ADMIN_SECRET,
+    },
+    velxioFrontendDir: parsed.WIREUP_VELXIO_FRONTEND_DIR ?? null,
     nodeEnv: parsed.NODE_ENV ?? 'development',
+    isProduction: (parsed.NODE_ENV ?? 'development') === 'production',
   };
 }
 
@@ -217,8 +264,24 @@ export function resetEnvCache(): void {
 }
 
 export function requireMongoEnv(): ServerEnv['mongodb'] {
-  const { mongodb } = env();
-  if (!mongodb.uri) throw new EnvError(['MONGODB_URI']);
+  const { mongodb, isProduction } = env();
+  if (!mongodb.uri) {
+    throw new EnvError(
+      ['MONGODB_URI'],
+      isProduction
+        ? 'Wireup cannot serve any project page without a database, so this fails on the first request rather than at boot.'
+        : undefined,
+    );
+  }
+  // A local default of mongodb://127.0.0.1 is fine; on a hosted service it is
+  // always the wrong answer (the container has no mongod of its own) and the
+  // resulting 10s socket timeout looks like a network fault, not a typo.
+  if (isProduction && /\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(mongodb.uri)) {
+    throw new EnvError(
+      ['MONGODB_URI'],
+      `MONGODB_URI points at ${mongodb.uri}, i.e. this container's own loopback. On a hosted deployment that must be a reachable server — a MongoDB Atlas (or equivalent) connection string.`,
+    );
+  }
   return mongodb;
 }
 

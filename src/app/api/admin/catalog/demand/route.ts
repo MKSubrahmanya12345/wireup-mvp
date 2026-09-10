@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDemandReport } from '@/modules/components/demand';
+import { adminGate } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,9 @@ export const dynamic = 'force-dynamic';
  * and the gaps are ranked by frequency weighted by how wrong the current answer
  * is (a silent substitution costs more than an honest provisional part).
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = adminGate(request);
+  if (denied) return denied;
   try {
     const report = await getDemandReport();
     return NextResponse.json({ ok: true, ...report });

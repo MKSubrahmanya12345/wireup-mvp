@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------------------
+# Docker build context exclusions.
+#
+# The point is `external/`: a ~105 MB vendored Velxio checkout that is part of
+# the repository for local verification and co-development, but that no part of
+# the running Wireup server reads. Sending it into the daemon (and then into a
+# `COPY . .` layer) is the single biggest cost in this image, and the simulator
+# it contains is deployed separately anyway.
+#
+# `next build` does not read anything listed here: the app's inputs are `src/`,
+# `cad-helper/`, `public/`, `scripts/` and the config files.
+# ---------------------------------------------------------------------------
+
+# version control + host metadata
+.git
+.gitignore
+.github
+.replit
+*.bundle
+
+# the vendored simulator (see above) and local docs
+external
+docs
+
+# installed/built output — reinstalled and rebuilt inside the image
+node_modules
+.next
+out
+dist
+build
+coverage
+*.tsbuildinfo
+
+# secrets: never bake an env file into a layer. Everything the container needs
+# arrives as real environment variables (Render) or --env-file (docker run).
+.env
+.env.*
+!.env.example
+
+# local state and editor/OS noise
+.wireup
+.DS_Store
+.idea
+.vscode
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*

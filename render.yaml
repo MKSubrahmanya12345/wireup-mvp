@@ -1,0 +1,147 @@
+# ---------------------------------------------------------------------------
+# Render Blueprint — Wireup
+#
+#   Render dashboard → New → Blueprint → pick this repo.
+#
+# Render reads this file and creates the service; the only things to type by
+# hand are the variables marked `sync: false`, which Render asks for once at
+# creation and afterwards never overwrites (that is what makes them safe to
+# edit in the dashboard later).
+#
+# Wireup is ONE web service. The Velxio simulator is deliberately absent: it is
+# hosted on its own, and this app only points at it via WIREUP_VELXIO_URL.
+#
+# Blueprint reference: https://render.com/docs/blueprint-spec
+# ---------------------------------------------------------------------------
+
+services:
+  - type: web
+    name: wireup
+    runtime: node
+
+    # Measured, not guessed: `next build` on this app peaks at roughly 900 MB
+    # resident. Free (512 MB / 0.1 CPU) and Starter (512 MB / 0.5 CPU) get the
+    # build process killed by the OOM killer; Standard is the smallest instance
+    # that finishes it in about a minute.
+    #
+    # Free is also the wrong shape for this app for a second reason: it spins
+    # the service down after 15 idle minutes, and a generation run executes
+    # inside the running process — sleeping mid-run loses the run.
+    plan: standard
+
+    # Pick the region nearest your MongoDB. Render and Atlas do not bill
+    # cross-region traffic, but latency is paid per model call, thousands of
+    # times over a run.
+    region: oregon
+
+    branch: main
+    autoDeployTrigger: commit
+    rootDir: .
+
+    # Render's Node runtime detects pnpm from `packageManager` in package.json
+    # and pnpm-lock.yaml, so no corepack bootstrap is needed here. `--frozen-
+    # lockfile` makes a stale lock file fail the build loudly instead of
+    # silently resolving different versions than you tested.
+    #
+    # Do NOT set NODE_ENV in this file or in the dashboard: with NODE_ENV=production
+    # the installer skips devDependencies, and `next`, `tsx` and `typescript`
+    # are all devDependencies — the build dies. Render sets NODE_ENV=production
+    # at runtime by itself, which is the half that matters.
+    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    startCommand: pnpm run start:render
+
+    # Points at a dependency-free route (src/app/api/health/live). Never point
+    # this at /api/health: that endpoint answers 503 while MongoDB is briefly
+    # unreachable or the catalog is unseeded, and a probe on it restarts an
+    # instance that is actually fine — turning a database blip into a restart
+    # loop.
+    healthCheckPath: /api/health/live
+
+    # Exactly one instance, and this is not a preference: `POST /api/projects`
+    # starts the agent in the accepting process and the console polls for the
+    # events it writes. A second instance would serve polls that know nothing
+    # about the run, and a load-balanced one would orphan runs. If throughput
+    # ever demands more than one, the run has to move to a queue + worker first.
+    numInstances: 1
+
+    envVars:
+      # --- Not in this file on purpose -------------------------------------
+      # AWS_SESSION_TOKEN (only for temporary credentials), BEDROCK_* tuning,
+      # WIREUP_MAX_* caps, the feature flags, WIREUP_WEBSITE_URL,
+      # WIREUP_VELXIO_FRONTEND_DIR. Every one of them has a default in
+      # src/lib/validation/env.ts, so leaving them out is a valid choice; add
+      # them in the dashboard when you want to change them. Details:
+      # docs/deploy-render.md
+      # -------------------------------------------------------------------------
+
+      # --- MongoDB (Atlas) --------------------------------------------------
+      # The only variable Wireup truly cannot start without. Atlas's default
+      # network allowlist blocks everything, so add 0.0.0.0/0 (Render's egress
+      # addresses are not fixed) or peer the two networks.
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: wireup
+
+      # --- Amazon Bedrock ---------------------------------------------------
+      # Region and model id have to agree; a us-east-1 key against a
+      # us-west-2 model id reads as a timeout, not as a mismatch.
+      - key: AWS_REGION
+        sync: false
+      - key: BEDROCK_MODEL_ID
+        sync: false
+      # Static keys are optional: without them the AWS SDK default credential
+      # chain is used, which on Render means nothing (no instance role), so
+      # generation falls back to deterministic and says so in /api/health.
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+
+      # --- The admin surface (/admin, /api/admin/*) ------------------------
+      # Production fails CLOSED: with no password here the console is not
+      # merely unprotected, it is unavailable, and the API answers 503 with the
+      # reason. That is deliberate — forgetting a variable must never be the
+      # same thing as an open console on a public URL, because those routes
+      # spend model tokens and touch the filesystem.
+      - key: WIREUP_ADMIN_EMAIL
+        sync: false
+      - key: WIREUP_ADMIN_PASSWORD
+        sync: false
+      # Session-signing key. Falls back to the password when unset (so rotating
+      # the password invalidates every live session); set it if you want the two
+      # decoupled.
+      - key: WIREUP_ADMIN_SECRET
+        generateValue: true
+
+      # --- Velxio, hosted separately ---------------------------------------
+      # The browser loads this origin inside an iframe; Wireup's server never
+      # fetches it. It must be https (an https page cannot embed an http
+      # origin) and it must be built with Wireup's embed patch, or it loads and
+      # never answers the bridge.
+      - key: WIREUP_VELXIO_URL
+        sync: false
+
+      # --- Runtime plumbing -------------------------------------------------
+      # Render routes to this port; `start:render` passes it on, defaulting to
+      # Render's 10000 when PORT is absent (it is present on Render).
+      - key: PORT
+        value: "10000"
+      # Already the app's default, stated explicitly: preferring IPv4 avoids the
+      # AAAA-half EAI_AGAIN failure in containerised resolvers that otherwise
+      # surfaces as "Bedrock unreachable" against a perfectly healthy endpoint.
+      - key: WIREUP_DNS_RESULT_ORDER
+        value: ipv4first
+      # Seeds the component catalog into MongoDB on first use when the
+      # collection is empty, so a fresh Atlas database is usable without a
+      # manual step. Turn it off once the collection is populated if you would
+      # rather own seeding yourself (`pnpm seed`).
+      - key: WIREUP_AUTOSEED_COMPONENTS
+        value: "true"
+      # No build-time telemetry pings from Render's container.
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      # Build-time inlined (NEXT_PUBLIC_*), so it must be present at build, not
+      # only at runtime — which is why it is a value here rather than a prompt.
+      - key: NEXT_PUBLIC_APP_NAME
+        value: Wireup

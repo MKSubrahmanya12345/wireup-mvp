@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { buildCadBundle, type CadComponentSpec } from 'cad-helper';
+import { adminGate } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
+  const denied = adminGate(request);
+  if (denied) return denied;
   try {
     const spec: CadComponentSpec = await request.json();
 
