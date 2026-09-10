@@ -244,7 +244,6 @@ export const VELXIO_RENDER_ONLY_METADATA_IDS: ReadonlySet<string> = new Set([
   'breadboard-mini',
   'capacitor',
   'capacitor-electrolytic',
-  'dc-motor',
   'inductor',
   'resistor',
 ]);

@@ -1072,6 +1072,31 @@ function mergeModelWiring(state: BuilderState, index: Map<string, InstanceIndexE
 
     const kindRaw = String(record.kind ?? '').toLowerCase();
     const kind: WiringConnection['kind'] = kindRaw === 'power' || kindRaw === 'ground' ? (kindRaw as 'power' | 'ground') : 'signal';
+
+    // A model can describe the same resistor terminal twice while trying to
+    // "route" a series circuit. Keep the first valid edge and reject a second
+    // signal net on a passive terminal; otherwise the invalid graph would make
+    // it all the way into diagram.json as a short between MCU outputs.
+    if (kind === 'signal') {
+      const passiveTerminalOverconnected = (endpoint: WiringEndpoint, opposite: WiringEndpoint): boolean => {
+        if (index.get(endpoint.instanceId)?.definition?.category !== 'passive') return false;
+        return state.connections.some((existing) => {
+          if (existing.kind !== 'signal') return false;
+          const touches =
+            existing.from.instanceId === endpoint.instanceId && existing.from.pin === endpoint.pin
+              ? existing.to
+              : existing.to.instanceId === endpoint.instanceId && existing.to.pin === endpoint.pin
+                ? existing.from
+                : null;
+          return Boolean(touches && (touches.instanceId !== opposite.instanceId || touches.pin !== opposite.pin));
+        });
+      };
+      if (passiveTerminalOverconnected(from, to) || passiveTerminalOverconnected(to, from)) {
+        state.notes.push(`Rejected a model wire to an already-used passive terminal (${from.instanceId}.${from.pin} ↔ ${to.instanceId}.${to.pin}) to avoid a duplicate/shorted net.`);
+        continue;
+      }
+    }
+
     const signalRaw = String(record.signal ?? '').toLowerCase();
     const signal: SignalType = (
       ['digital', 'analog', 'pwm', 'uart', 'i2c', 'spi', 'one_wire', 'motor_drive', 'enable', 'interrupt', 'power', 'ground'].includes(signalRaw)

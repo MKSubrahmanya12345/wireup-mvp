@@ -432,22 +432,42 @@ export function checkWokwiDiagram(value: unknown): value is WokwiDiagram {
   if (candidate.version !== 1 || candidate.editor !== 'wokwi' || !Array.isArray(candidate.parts) || !Array.isArray(candidate.connections)) {
     return false;
   }
-  return candidate.parts.every(
-    (part) =>
-      typeof part?.type === 'string' &&
-      typeof part.id === 'string' &&
-      Number.isFinite(part.top) &&
-      Number.isFinite(part.left) &&
-      !!part.attrs &&
-      typeof part.attrs === 'object',
-  ) && candidate.connections.every(
-    (connection) =>
-      Array.isArray(connection) &&
-      connection.length === 4 &&
-      typeof connection[0] === 'string' &&
-      typeof connection[1] === 'string' &&
-      typeof connection[2] === 'string' &&
-      Array.isArray(connection[3]),
+  const ids = new Set<string>();
+  const partsAreValid = candidate.parts.every(
+    (part) => {
+      if (
+        typeof part?.type !== 'string' ||
+        /^board-velxio-/i.test(part.type) ||
+        typeof part.id !== 'string' ||
+        ids.has(part.id) ||
+        !Number.isFinite(part.top) ||
+        !Number.isFinite(part.left) ||
+        !part.attrs ||
+        typeof part.attrs !== 'object'
+      ) return false;
+      ids.add(part.id);
+      return true;
+    },
+  );
+  if (!partsAreValid) return false;
+
+  return candidate.connections.every(
+    (connection) => {
+      if (
+        !Array.isArray(connection) ||
+        connection.length !== 4 ||
+        typeof connection[0] !== 'string' ||
+        typeof connection[1] !== 'string' ||
+        typeof connection[2] !== 'string' ||
+        !Array.isArray(connection[3]) ||
+        !connection[3].every((hint) => typeof hint === 'string')
+      ) return false;
+      const endpoints = [connection[0], connection[1]] as string[];
+      return endpoints.every((endpoint) => {
+        const separator = endpoint.indexOf(':');
+        return separator > 0 && ids.has(endpoint.slice(0, separator)) && endpoint.slice(separator + 1).length > 0;
+      });
+    },
   );
 }
 
@@ -467,6 +487,19 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
         id: component.id,
         ref: component.ref,
         reason: component.simulator?.notes ?? 'No simulator part mapping exists in the component catalog for this part.',
+      });
+      continue;
+    }
+    // `board-velxio-*` is Velxio's private canvas/export vocabulary, not a
+    // native Wokwi part type. Passing it through makes diagram.json look valid
+    // while Wokwi silently replaces or drops the actual controller. Never
+    // substitute a fake board here; the warning tells the caller why it was
+    // omitted and the canonical Wireup graph remains authoritative.
+    if (/^board-velxio-/i.test(simulatorPart)) {
+      skippedParts.push({
+        id: component.id,
+        ref: component.ref,
+        reason: `Custom Velxio board type "${simulatorPart}" is not valid in a standalone Wokwi diagram; use the controller's native catalog mapping.`,
       });
       continue;
     }
@@ -554,9 +587,11 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
     const reason = skippedParts.find((part) => part.id === skippedController.id)?.reason ?? 'no reason recorded';
     warnings.unshift(
       `The controller ${skippedController.id} (${skippedController.ref}) is not representable in the target simulator: ${reason} ` +
-        'The exported diagram therefore has NO board — every wire to the MCU is dropped and a simulator embedding this ' +
-        'diagram will substitute its own default board, on which this firmware will not run.',
+        'The exported diagram therefore has NO board — every wire to the MCU is dropped. Wireup does not substitute a lookalike board; this file is not runnable until a verified controller mapping exists.',
     );
+  }
+  if (!parts.some((part) => /^wokwi-(?:arduino|esp32|pi-pico|raspberry)/i.test(part.type))) {
+    warnings.unshift('No native microcontroller board is present in this projection; it is not runnable until the selected controller has a verified target mapping.');
   }
 
   if (skippedParts.some((part) => part.reason !== 'Wiring medium — not part of the electrical graph.')) {
