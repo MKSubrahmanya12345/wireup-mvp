@@ -286,6 +286,55 @@ export const MCU_PROFILES: McuProfile[] = [
       'The 5 V regulator is the same class as the Uno: ~200 mA total for peripherals before you move loads to VIN.',
     ],
   },
+  /* Raspberry Pi 5 — an SBC, not an MCU: every GPIO is pin-muxable, and the
+   * "firmware" is user-space Python. The profile exists so the pin planner
+   * stays honest about 3.3 V logic, the 16 mA per-pin limit and the default
+   * bus pins instead of blindly numbering header positions. */
+  {
+    componentId: 'raspberry-pi-5',
+    name: 'Raspberry Pi 5 (40-pin header)',
+    logicVoltage: 3.3,
+    supplyVoltageRange: [5, 5.25],
+    pins: [
+      { name: 'GPIO2', number: 2, capabilities: ['digital', 'i2c'], preference: 1, caution: 'Default I2C1 SDA' },
+      { name: 'GPIO3', number: 3, capabilities: ['digital', 'i2c'], preference: 2, caution: 'Default I2C1 SCL' },
+      { name: 'GPIO14', number: 14, capabilities: ['digital', 'uart'], preference: 3, caution: 'UART0 TX — reserved for the serial console by default' },
+      { name: 'GPIO15', number: 15, capabilities: ['digital', 'uart'], preference: 4, caution: 'UART0 RX — reserved for the serial console by default' },
+      { name: 'GPIO8', number: 8, capabilities: ['digital', 'spi'], preference: 5, caution: 'SPI0 CS0' },
+      { name: 'GPIO9', number: 9, capabilities: ['digital', 'spi'], preference: 6, caution: 'SPI0 MISO' },
+      { name: 'GPIO10', number: 10, capabilities: ['digital', 'spi'], preference: 7, caution: 'SPI0 MOSI' },
+      { name: 'GPIO11', number: 11, capabilities: ['digital', 'spi'], preference: 8, caution: 'SPI0 SCLK' },
+      { name: 'GPIO4', number: 4, capabilities: ['digital'], preference: 9 },
+      { name: 'GPIO17', number: 17, capabilities: ['digital'], preference: 10 },
+      { name: 'GPIO22', number: 22, capabilities: ['digital'], preference: 11 },
+      { name: 'GPIO23', number: 23, capabilities: ['digital'], preference: 12 },
+      { name: 'GPIO24', number: 24, capabilities: ['digital'], preference: 13 },
+      { name: 'GPIO25', number: 25, capabilities: ['digital'], preference: 14 },
+      { name: 'GPIO27', number: 27, capabilities: ['digital'], preference: 15 },
+      { name: 'GPIO5', number: 5, capabilities: ['digital'], preference: 16 },
+      { name: 'GPIO6', number: 6, capabilities: ['digital'], preference: 17 },
+    ],
+    reserved: [
+      { pin: 'CSI', reason: 'CSI-2 camera ribbon — not a GPIO, the Pi camera attaches here' },
+      { pin: 'USB3-A', reason: 'USB devices and webcams — not a GPIO' },
+    ],
+    i2c: { sda: 'GPIO2', scl: 'GPIO3' },
+    i2cRemappable: true,
+    spi: { mosi: 'GPIO10', miso: 'GPIO9', sck: 'GPIO11', cs: 'GPIO8' },
+    uarts: [
+      { id: 'UART0', tx: 'GPIO14', rx: 'GPIO15', recommended: false, note: 'Reserved for the serial console by default — free it in config.txt if needed' },
+    ],
+    maxGpioSinkMa: 16,
+    recommendedGpioSinkMa: 4,
+    adcBits: 12,
+    notes: [
+      '3.3 V logic: 5 V parts (most Arduino modules) need level shifting.',
+      '16 mA max per GPIO, 4 mA recommended — light indicators only.',
+      'ADC via the on-board I2C ADC12L021 (GPIO26/GPIO27), not direct GPIO ADC.',
+      'Cameras and USB devices attach by connector (CSI / USB), not by GPIO wiring.',
+      'Software is user-space (Python etc.) — no sketch, no flash.',
+    ],
+  },
 ];
 
 

@@ -12,10 +12,12 @@
 import {
   buildFixUserPrompt,
   buildGenerationUserPrompt,
+  buildIntakeUserPrompt,
   buildValidationUserPrompt,
   ENGINEER_PERSONA,
   type FixPromptInput,
   type GenerationPromptInput,
+  type IntakePromptInput,
   type ValidationPromptInput,
 } from '@/lib/bedrock/prompts';
 import { runStructuredCall, type StructuredCallResult } from '@/lib/bedrock/structured';
@@ -67,4 +69,20 @@ export async function proposeFixChanges(input: FixPromptInput): Promise<BedrockO
     temperature: 0.1,
   });
   return { ...result, op: 'fix' };
+}
+
+/** CALL 0 — intake: the doubt session. Names the project and finds the real forks. */
+const INTAKE_PERSONA = `You are the Wireup intake agent. Nothing is being built yet.
+You name the project, list the doubts that genuinely need the human (or a recorded
+decision), and extract the stated facts. You never design, never pick parts and
+never answer the user's own questions for them. Answer with JSON ONLY.`;
+
+export async function proposeIntake(input: IntakePromptInput): Promise<BedrockOperationResult> {
+  const result = await runStructuredCall({
+    op: 'intake',
+    system: [ENGINEER_PERSONA, INTAKE_PERSONA],
+    user: buildIntakeUserPrompt(input),
+    temperature: 0.2,
+  });
+  return { ...result, op: 'intake' };
 }

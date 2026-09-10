@@ -18,7 +18,7 @@ import { env, requireBedrockEnv } from '@/lib/validation/env';
 
 const logger = createLogger('bedrock');
 
-export type BedrockOp = 'generation' | 'validation' | 'fix' | 'codegen';
+export type BedrockOp = 'generation' | 'validation' | 'fix' | 'codegen' | 'intake';
 
 export interface TokenUsage {
   inputTokens?: number;
