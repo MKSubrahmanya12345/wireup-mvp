@@ -86,3 +86,80 @@ export async function proposeIntake(input: IntakePromptInput): Promise<BedrockOp
   });
   return { ...result, op: 'intake' };
 }
+
+/* ------------------------------------------------------------------------- */
+/* Idea graph — expansion (R2 decision power + child proposals) and review     */
+/* ------------------------------------------------------------------------- */
+
+const EXPANSION_PERSONA = `You are the Wireup decomposition agent. You receive ONE node of a hardware
+project's idea graph and propose its NEXT level of children: responsibilities, not parts.
+Rules:
+  • every child carries a goal a machine can test and a concrete test;
+  • never restate a sibling already listed under the same parent;
+  • power, actuator and radio children are stakes:"risk_gated";
+  • when the node is strategic (no child would change a part, pin, wire,
+    line of code or test), return children: [].
+Answer with JSON ONLY.`;
+
+export interface ExpansionPromptInput {
+  nodeLabel: string;
+  nodeContent: string;
+  nodeLevel: number;
+  projectClass: string;
+  prompt: string;
+  brief: string;
+  existingLabels: string[];
+}
+
+export async function proposeExpansion(input: ExpansionPromptInput): Promise<BedrockOperationResult> {
+  const user = [
+    `PROJECT CLASS: ${input.projectClass}`,
+    `ORIGINAL BRIEF: ${input.prompt}`,
+    input.brief ? `PROJECT BRIEF (state summary):\n${input.brief.slice(0, 4000)}` : '',
+    `NODE TO EXPAND (level ${input.nodeLevel}): ${input.nodeLabel}`,
+    `NODE DETAIL: ${input.nodeContent}`,
+    input.existingLabels.length > 0 ? `ALREADY IN THE GRAPH (never restate): ${input.existingLabels.join(', ')}` : '',
+    `Return JSON: {"children": [{"label": str (<=40 chars), "content": str, "goal": str (a testable completion criterion), "subsystemClass": one of POWER|DRIVE|STEERING|CONTROL_LINK|SENSING|BRAIN|STRUCTURE|SAFETY|OUTPUT|OTHER, "stakes": "normal"|"risk_gated", "test": {"rung": one of catalog|electrical|compile|behavioral|rooting|human_verify, "assertion": str}}]}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+  const result = await runStructuredCall({
+    op: 'idea_expansion',
+    system: [ENGINEER_PERSONA, EXPANSION_PERSONA],
+    user,
+    temperature: 0.2,
+  });
+  return { ...result, op: 'idea_expansion' };
+}
+
+/** R2 — one cheap call: would any child change a downstream action? */
+export async function proposeDecisionPower(input: { nodeLabel: string; nodeContent: string; realization: string }): Promise<BedrockOperationResult> {
+  const user = [
+    `NODE: ${input.nodeLabel}`,
+    `DETAIL: ${input.nodeContent}`,
+    `CURRENT REALIZATION: ${input.realization}`,
+    `Question: if you expanded this node one level deeper, would ANY child change a downstream action — a part selection, a pin, a wire, a line of firmware, or a test?`,
+    `Answer with JSON ONLY: {"changes": true|false, "reason": str (<=200 chars)}`,
+  ].join('\n');
+  const result = await runStructuredCall({
+    op: 'idea_expansion',
+    system: [ENGINEER_PERSONA, EXPANSION_PERSONA],
+    user,
+    temperature: 0,
+    maxTokens: 300,
+  });
+  return { ...result, op: 'idea_expansion' };
+}
+
+/** The fresh-context reviewer (Part of the idea graph): brief + graph + test results ONLY. */
+export async function proposeIdeaReview(input: { reviewDocument: string }): Promise<BedrockOperationResult> {
+  const result = await runStructuredCall({
+    op: 'idea_review',
+    system: [
+      'You are the Wireup fresh-context reviewer. You receive ONLY the project brief, the idea graph and its test results — never the builder\'s reasoning. Your job: would this build work? Is any goal unproven, any test self-serving, any assumption hiding? You never edit; you return findings. Answer with JSON ONLY.',
+    ],
+    user: input.reviewDocument,
+    temperature: 0,
+  });
+  return { ...result, op: 'idea_review' };
+}

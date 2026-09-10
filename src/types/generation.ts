@@ -76,6 +76,11 @@ export type AgentEventType =
   | 'injection_registered'
   | 'rebuild_started'
   | 'research_completed'
+  /** Idea graph — expansion, per-node tests, the reviewer, swarm moves. */
+  | 'idea_graph_expansion'
+  | 'idea_graph_test'
+  | 'idea_graph_review'
+  | 'idea_graph_swarm'
   | 'info';
 
 export type AgentEventStatus = 'started' | 'completed' | 'failed' | 'info';
