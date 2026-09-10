@@ -45,6 +45,23 @@ export { DOCS_CORPUS, type CorpusEntry } from './docs-corpus';
 export { evaluateEverflow, isPositiveResponse } from './evaluate';
 export { materializeGraph } from './materialize';
 export {
+  classifyProject,
+  decideStop,
+  deterministicChildren,
+  emptyIdeaGraphState,
+  expansionMove,
+  levelOneSeeds,
+  pickNodeToExpand,
+  subtreeOf,
+  leavesOf,
+  subtreeTestedVerdict,
+  nullExpansionModel,
+  type ExpansionModel,
+  type ProposedChild,
+  type ProjectClass,
+} from './decompose';
+export { runNodeTest, testLadderMove, repairNode, pendingTestNodes } from './test-ladder';
+export {
   continueEverflow,
   mongoEverflowStore,
   planContinuation,
