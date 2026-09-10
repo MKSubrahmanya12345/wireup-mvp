@@ -4333,3 +4333,462 @@ body {
   border-color: var(--ink);
   color: var(--bg);
 }
+/* ---------------------------------------------------------------------------
+   Everflow Graph Canvas - Clean styling matching the actual graph design
+   --------------------------------------------------------------------------- */
+
+/* Everflow Panel Layout */
+.evf-intake {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.evf-intake__head {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.evf-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.evf-title {
+  font-size: 28px;
+  font-weight: 680;
+  color: var(--text);
+  margin: 0 0 12px;
+  line-height: 1.2;
+}
+
+.evf-sub {
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 600px;
+  margin: 0 auto 16px;
+}
+
+.evf-intake__meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.evf-progress {
+  width: 200px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.evf-progress__bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.evf-progress__label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Intake Grid Layout */
+.evf-intake__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.evf-intake__graph {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.evf-intake__doubts {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  min-height: 400px;
+}
+
+/* Graph Canvas */
+.evf-canvas {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.evf-canvas--compact {
+  min-height: 300px;
+}
+
+.evf-canvas__legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-alt);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.evf-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.evf-canvas__scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+/* Graph SVG styling */
+.evf-canvas svg {
+  background: transparent;
+}
+
+/* Graph Nodes - Clean rectangular design */
+.evf-node {
+  cursor: pointer;
+}
+
+.evf-node__body {
+  stroke-width: 1.5;
+  transition: all 0.2s ease;
+}
+
+.evf-node:hover .evf-node__body {
+  stroke-width: 2;
+  filter: brightness(0.95);
+}
+
+.evf-node.is-selected .evf-node__body {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Node colors based on type - matching the image */
+.evf-node--intent .evf-node__body {
+  fill: #fef3c7;
+  stroke: #d97706;
+}
+
+.evf-node--claim .evf-node__body {
+  fill: #dbeafe;
+  stroke: #2563eb;
+}
+
+.evf-node--goal .evf-node__body {
+  fill: #f3e8ff;
+  stroke: #7c3aed;
+}
+
+.evf-node--decision .evf-node__body {
+  fill: #dcfce7;
+  stroke: #16a34a;
+}
+
+.evf-node--artifact .evf-node__body {
+  fill: #f1f5f9;
+  stroke: #475569;
+}
+
+.evf-node--evidence .evf-node__body {
+  fill: #ecfdf5;
+  stroke: #059669;
+}
+
+.evf-node--task .evf-node__body {
+  fill: #fff7ed;
+  stroke: #ea580c;
+}
+
+.evf-node--doubt .evf-node__body {
+  fill: #fef2f2;
+  stroke: #dc2626;
+}
+
+.evf-node--assumption .evf-node__body {
+  fill: #fdf2f8;
+  stroke: #be185d;
+}
+
+/* Node text styling */
+.evf-node__kind {
+  fill: var(--text);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.evf-node__label {
+  fill: var(--text);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.evf-node__goal {
+  fill: var(--text-muted);
+  font-family: var(--sans);
+  font-size: 9px;
+}
+
+/* Goal state dots */
+.evf-dot {
+  stroke: none;
+  transition: all 0.2s ease;
+}
+
+.evf-dot--satisfied {
+  fill: #16a34a;
+}
+
+.evf-dot--open {
+  fill: #6b7280;
+}
+
+.evf-dot--in-progress {
+  fill: #f59e0b;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.evf-dot--blocked-human {
+  fill: #dc2626;
+}
+
+/* Graph Edges */
+.evf-edge {
+  stroke: #9ca3af;
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+
+.evf-edge--supports {
+  stroke: #6b7280;
+}
+
+.evf-edge--part_of {
+  stroke: #16a34a;
+}
+
+.evf-edge--verified_by {
+  stroke: #2563eb;
+  stroke-dasharray: 3 2;
+}
+
+/* Status messages and loading */
+.evf-muted {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 13px;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .evf-intake__grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .evf-canvas__scroll {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .evf-intake {
+    padding: 16px;
+  }
+  
+  .evf-canvas__legend {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .evf-canvas__scroll {
+    padding: 12px;
+  }
+}
+/* ---------------------------------------------------------------------------
+   Everflow Doubt Session - Styling for the brief parsing and questions
+   --------------------------------------------------------------------------- */
+
+/* Column titles */
+.evf-col-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text);
+  margin: 0 0 16px;
+}
+
+/* Doubt cards and loading states */
+.evf-doubt {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.evf-doubt--loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.evf-doubt--done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ok);
+  padding: 20px;
+  border-radius: 6px;
+}
+
+.evf-doubt__question {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+/* Footer styling */
+.evf-intake__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.evf-error {
+  color: var(--err);
+  font-size: 13px;
+}
+
+/* Chips for decision types */
+.evf-chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+  font-weight: 600;
+}
+
+.evf-chip--you {
+  color: var(--accent-deep);
+  background: rgba(185, 216, 62, 0.1);
+  border-color: var(--accent-deep);
+}
+
+.evf-chip--ai {
+  color: var(--info);
+  background: var(--info-bg);
+  border-color: var(--info);
+}
+
+.evf-chip--veto {
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-color: var(--warn);
+}
+
+/* Options and inputs */
+.evf-opt {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 2px 4px 2px 0;
+  display: inline-block;
+}
+
+.evf-opt:hover:not(:disabled) {
+  border-color: var(--accent-deep);
+  background: rgba(185, 216, 62, 0.05);
+  transform: translateY(-1px);
+}
+
+.evf-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.evf-input:focus {
+  outline: none;
+  border-color: var(--accent-deep);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .evf-intake__foot {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .evf-opt {
+    display: block;
+    width: 100%;
+    margin: 4px 0;
+  }
+}
