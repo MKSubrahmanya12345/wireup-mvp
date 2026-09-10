@@ -42,7 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (parsed.type === 'steer' && !midTurnSteerEnabled()) {
       return jsonError(409, {
         code: 'steer_disabled',
-        message: 'Mid-turn steering is off (needs WIREUP_ENABLE_MID_TURN_STEER=true and model gpt-6-astra). Send it as a note instead — it lands on the graph the same way and is read on the next pass.',
+        message: 'Mid-turn steering is off (needs WIREUP_ENABLE_MID_TURN_STEER=true and an Astra model id). Send it as a note instead — it lands on the graph the same way and is read on the next pass.',
       });
     }
 
