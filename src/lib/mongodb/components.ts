@@ -7,8 +7,21 @@ import type { ComponentDefinition } from '@/types/component';
 
 import { createLogger, describeError } from '@/lib/logging/logger';
 import { connectMongo } from '@/lib/mongodb/client';
+import { env } from '@/lib/validation/env';
+import {
+  memoryCountComponents,
+  memoryDeleteComponent,
+  memoryGetComponent,
+  memoryListComponents,
+  memoryUpsertComponents,
+} from '@/lib/store/memory';
 
 const logger = createLogger('mongodb:components');
+
+/** True when the catalog should be served from the in-process store. */
+function useMemoryStore(): boolean {
+  return env().store.mode === 'memory';
+}
 
 type RawComponent = Partial<ComponentDocument> & { _id?: unknown };
 
@@ -50,12 +63,14 @@ function toDefinition(raw: RawComponent): ComponentDefinition | null {
 }
 
 export async function countComponents(): Promise<number> {
+  if (useMemoryStore()) return memoryCountComponents();
   await connectMongo();
   const Component = getComponentModel();
   return Component.countDocuments();
 }
 
 export async function listComponents(): Promise<ComponentDefinition[]> {
+  if (useMemoryStore()) return memoryListComponents();
   await connectMongo();
   const Component = getComponentModel();
   const docs = (await Component.find({}).sort({ category: 1, name: 1 }).lean()) as RawComponent[];
@@ -63,6 +78,7 @@ export async function listComponents(): Promise<ComponentDefinition[]> {
 }
 
 export async function getComponentById(id: string): Promise<ComponentDefinition | null> {
+  if (useMemoryStore()) return memoryGetComponent(id);
   await connectMongo();
   const Component = getComponentModel();
   const doc = (await Component.findOne({ id }).lean()) as RawComponent | null;
@@ -77,6 +93,11 @@ export interface UpsertResult {
 
 /** Idempotent upsert keyed on the catalog `id`. */
 export async function upsertComponents(definitions: ComponentDefinition[]): Promise<UpsertResult> {
+  if (useMemoryStore()) {
+    const result = memoryUpsertComponents(definitions);
+    logger.info('upserted catalog (in-memory store)', result);
+    return result;
+  }
   await connectMongo();
   const Component = getComponentModel();
 
@@ -98,6 +119,7 @@ export async function upsertComponents(definitions: ComponentDefinition[]): Prom
 }
 
 export async function deleteComponent(id: string): Promise<boolean> {
+  if (useMemoryStore()) return memoryDeleteComponent(id);
   await connectMongo();
   const Component = getComponentModel();
   const result = await Component.deleteOne({ id });
