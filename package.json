@@ -28,7 +28,8 @@
     "verify:everflow": "tsx scripts/verify-everflow.ts",
     "export:cad-catalog": "tsx scripts/export-cad-catalog-to-velxio.ts",
     "verify:simulator": "tsx scripts/verify-simulator-link.ts",
-    "verify:contracts": "tsx scripts/verify-contracts.ts"
+    "verify:contracts": "tsx scripts/verify-contracts.ts",
+    "verify:idea-graph": "tsx scripts/verify-idea-graph.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.699.0",

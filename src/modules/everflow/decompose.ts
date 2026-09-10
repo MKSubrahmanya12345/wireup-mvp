@@ -777,8 +777,12 @@ export async function expansionMove(state: ProjectState, options: ExpansionMoveO
   }
 
   if (proposed.length === 0) {
-    proposed = deterministicChildren(state, node, projectClass);
-    source = node.level === 0 ? 'template' : 'state';
+    if (childLevel <= MAX_LEVEL) {
+      proposed = deterministicChildren(state, node, projectClass);
+      source = node.level === 0 ? 'template' : 'state';
+    }
+    // Beyond MAX_LEVEL the graph stops honestly: depth is a consequence of
+    // testability, not a target — and neither grows without bound.
   }
 
   // De-duplicate against existing labels (a model loves to restate siblings).
@@ -815,6 +819,7 @@ export async function expansionMove(state: ProjectState, options: ExpansionMoveO
     );
     ideaGraph.edges.push({ id: `edge-${id}-part_of-${node.id}`, from: id, to: node.id, kind: 'part_of' });
   }
+  ideaGraph.nodes.push(...childNodes); // children are graph facts, not just event metadata
 
   const addedArtifactEdges = artifactEdgeKeys(state, ideaGraph).size - artifactEdgesBefore;
   const addedNewEdges = ideaGraph.edges.length - edgesBefore;
