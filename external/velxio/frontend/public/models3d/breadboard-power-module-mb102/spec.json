@@ -1,0 +1,192 @@
+{
+  "key": "breadboard-power-module-mb102",
+  "catalogId": "breadboard-power-module-mb102",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "breadboard-power-module-mb102",
+    "name": "MB102 breadboard power supply module",
+    "category": "power",
+    "description": "Breadboard rail supply: takes 6.5–12 V from a DC jack or 5 V from USB and provides independently jumper-selectable 3.3 V / 5 V rails, up to ~700 mA total.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5,
+    "currentMa": 200,
+    "dimensions": {
+      "widthMm": 53,
+      "lengthMm": 32,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e40af",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VIN_DC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "6.5–12 V DC jack input",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -13.46,
+        "direction": "up",
+        "aliases": [
+          "DC_IN",
+          "IN"
+        ],
+        "required": false
+      },
+      {
+        "name": "USB_5V",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "USB 5 V input",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -13.46,
+        "direction": "up",
+        "aliases": [
+          "USB"
+        ],
+        "required": false
+      },
+      {
+        "name": "GND_IN",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "GND_IN (ground)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -13.46,
+        "direction": "up",
+        "aliases": [
+          "IN_GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "+RAIL",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Selectable 3.3 V or 5 V positive rail",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -13.46,
+        "direction": "up",
+        "aliases": [
+          "VCC",
+          "5V",
+          "3V3"
+        ],
+        "required": true
+      },
+      {
+        "name": "-RAIL",
+        "pinNumber": 5,
+        "role": "ground",
+        "signal": "-RAIL (ground)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -13.46,
+        "direction": "up",
+        "aliases": [
+          "GND"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "usb_a_connector",
+        "type": "box",
+        "dimensions": [
+          14,
+          6.5,
+          13
+        ],
+        "position": [
+          -16,
+          5.1,
+          0
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "barrel_jack",
+        "type": "box",
+        "dimensions": [
+          9,
+          7,
+          11
+        ],
+        "position": [
+          16,
+          5.4,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "ams1117_5v",
+        "type": "box",
+        "dimensions": [
+          6.5,
+          1.8,
+          4.5
+        ],
+        "position": [
+          -3.5,
+          3.1,
+          -5.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "ams1117_3v3",
+        "type": "box",
+        "dimensions": [
+          6.5,
+          1.8,
+          4.5
+        ],
+        "position": [
+          5.5,
+          3.1,
+          -5.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "power_jumpers",
+        "type": "header_block",
+        "dimensions": [
+          12,
+          2.5,
+          5
+        ],
+        "position": [
+          0,
+          3,
+          8
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "breadboard power",
+      "mb102",
+      "power module",
+      "rail supply",
+      "3.3v",
+      "5v"
+    ],
+    "aliases": [
+      "mb102",
+      "breadboard power supply",
+      "power module"
+    ]
+  }
+}

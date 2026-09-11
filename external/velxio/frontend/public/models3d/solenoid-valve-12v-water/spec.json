@@ -1,0 +1,102 @@
+{
+  "key": "solenoid-valve-12v-water",
+  "catalogId": "solenoid-valve-12v-water",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "solenoid-valve-12v-water",
+    "name": "12 V solenoid water valve (1/2 in, normally closed)",
+    "category": "actuator",
+    "description": "Normally-closed plastic solenoid valve for low-pressure water: 12 V, ~500 mA, opens while energised. Needs a minimum working pressure (typically 0.02 MPa) to seal correctly and the same MOSFET/relay + flyback treatment as any coil.",
+    "voltage": 12,
+    "minVoltage": 9,
+    "maxVoltage": 13,
+    "currentMa": 500,
+    "dimensions": {
+      "widthMm": 24,
+      "lengthMm": 30,
+      "heightMm": 12
+    },
+    "bodyColor": "#334155",
+    "pins": [
+      {
+        "name": "COIL_A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Coil terminal A (+12 V)",
+        "xMm": -1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "A"
+        ],
+        "required": true
+      },
+      {
+        "name": "COIL_B",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Coil terminal B (switched)",
+        "xMm": 1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "B"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          5.08,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          13.2,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "actuator_body",
+        "type": "box",
+        "dimensions": [
+          19.200000000000003,
+          10,
+          21
+        ],
+        "position": [
+          0,
+          17.5,
+          0
+        ],
+        "color": "#475569"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "solenoid valve",
+      "water valve",
+      "irrigation",
+      "normally closed",
+      "flow control"
+    ],
+    "aliases": [
+      "solenoid valve",
+      "water valve",
+      "12v valve"
+    ]
+  }
+}

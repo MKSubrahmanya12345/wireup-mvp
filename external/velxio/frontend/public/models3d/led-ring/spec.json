@@ -1,0 +1,143 @@
+{
+  "key": "led-ring",
+  "catalogId": "led-ring-ws2812-8",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "led-ring-ws2812-8",
+    "name": "WS2812 8-LED ring (NeoPixel ring)",
+    "category": "actuator",
+    "description": "Circular PCB carrying 8 addressable WS2812B LEDs chained on a single data line. Same electrical rules as a NeoPixel strip: 5 V supply, 800 kHz timing, one pin drives the whole ring, DOUT exists for chaining a second ring. Full-white draw is ~0.5 A (8 × 60 mA) — budget it on the 5 V rail, and add ~470 µF across the ring supply.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 60,
+    "dimensions": {
+      "widthMm": 24,
+      "lengthMm": 30,
+      "heightMm": 12
+    },
+    "bodyColor": "#334155",
+    "pins": [
+      {
+        "name": "DIN",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "800 kHz data in",
+        "xMm": -3.81,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "DI",
+          "DATA",
+          "IN"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "+5V",
+          "+",
+          "VDD"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "VSS"
+        ],
+        "required": true
+      },
+      {
+        "name": "DOUT",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Data out to the next ring in the chain",
+        "xMm": 3.81,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "DO"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          13.2,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "actuator_body",
+        "type": "box",
+        "dimensions": [
+          19.200000000000003,
+          10,
+          21
+        ],
+        "position": [
+          0,
+          17.5,
+          0
+        ],
+        "color": "#475569"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "neopixel ring",
+      "ws2812 ring",
+      "led ring",
+      "addressable ring",
+      "status ring"
+    ],
+    "aliases": [
+      "led ring",
+      "neopixel ring",
+      "ws2812 ring",
+      "8-pixel ring",
+      "pixel ring"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Adafruit NeoPixel",
+        "import": "Adafruit_NeoPixel.h",
+        "manager": "arduino",
+        "purpose": "WS2812B timing and colour control"
+      }
+    ]
+  }
+}

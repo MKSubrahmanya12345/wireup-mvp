@@ -1,0 +1,185 @@
+{
+  "key": "ina219-current-sensor",
+  "catalogId": "ina219-current-sensor",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "ina219-current-sensor",
+    "name": "INA219 current / voltage monitor",
+    "category": "sensor",
+    "description": "High-side I2C current and bus-voltage monitor: measures up to ±3.2 A through the on-board 0.1 Ω shunt with 0.8 mA resolution, and bus voltage up to 26 V. Four address pins allow 16 devices on one bus. Use it to actually measure a power budget instead of estimating it.",
+    "voltage": 3.3,
+    "minVoltage": 3,
+    "maxVoltage": 5.5,
+    "currentMa": 1,
+    "dimensions": {
+      "widthMm": 25,
+      "lengthMm": 22,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e40af",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Logic supply 3–5.5 V",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -8.46,
+        "direction": "up",
+        "aliases": [
+          "VIN",
+          "VS",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -8.46,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C clock",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -8.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C data",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -8.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "VIN+",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "Shunt input from the supply side",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -8.46,
+        "direction": "up",
+        "aliases": [
+          "IN+",
+          "VINP"
+        ],
+        "required": true
+      },
+      {
+        "name": "VIN-",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Shunt output to the load side",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -8.46,
+        "direction": "up",
+        "aliases": [
+          "IN-",
+          "VINM"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "primary_ic",
+        "type": "box",
+        "dimensions": [
+          5.2,
+          1.1,
+          5.2
+        ],
+        "position": [
+          0,
+          2.7,
+          1.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "breakout_header",
+        "type": "header_block",
+        "dimensions": [
+          15.24,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -8.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "current_sense_shunt",
+        "type": "box",
+        "dimensions": [
+          8,
+          1.2,
+          3
+        ],
+        "position": [
+          7,
+          2.9000000000000004,
+          1.5
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "i2c"
+    ],
+    "keywords": [
+      "ina219",
+      "current sensor",
+      "power monitor",
+      "shunt",
+      "voltage",
+      "battery monitoring"
+    ],
+    "aliases": [
+      "ina219",
+      "current sensor",
+      "power monitor"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Adafruit INA219",
+        "import": "Adafruit_INA219.h",
+        "manager": "arduino",
+        "purpose": "Shunt/bus voltage and current reads"
+      },
+      {
+        "name": "Wire",
+        "import": "Wire.h",
+        "manager": "arduino",
+        "purpose": "I2C bus"
+      }
+    ]
+  }
+}

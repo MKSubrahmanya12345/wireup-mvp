@@ -1,0 +1,116 @@
+{
+  "key": "diode-1n4007",
+  "catalogId": "diode-1n4007",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "diode-1n4007",
+    "name": "1N4007 rectifier / flyback diode",
+    "category": "power",
+    "description": "1 A, 1000 V general-purpose rectifier diode. Across an inductive load (relay coil, raw DC motor) it clamps the back-EMF spike when the current is interrupted. Cathode (striped end) goes to the positive side of the load.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 1000,
+    "currentMa": 100,
+    "dimensions": {
+      "widthMm": 12,
+      "lengthMm": 2.8,
+      "heightMm": 2.8
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "Anode — to the low side of the load",
+        "xMm": -3.4,
+        "yMm": 0,
+        "zMm": 0,
+        "direction": "left",
+        "aliases": [
+          "ANODE",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "K",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Cathode (striped) — to the high side of the load",
+        "xMm": 3.4,
+        "yMm": 0,
+        "zMm": 0,
+        "direction": "right",
+        "aliases": [
+          "CATHODE",
+          "-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "do41_diode_body",
+        "type": "cylinder",
+        "dimensions": [
+          1.35,
+          5.2,
+          0
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "cathode_silver_band",
+        "type": "cylinder",
+        "dimensions": [
+          1.42,
+          0.46,
+          0
+        ],
+        "position": [
+          2,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#d1d5db"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "diode",
+      "flyback",
+      "freewheeling",
+      "1n4007",
+      "protection",
+      "back emf"
+    ],
+    "aliases": [
+      "1n4007",
+      "flyback diode",
+      "rectifier diode",
+      "freewheel diode"
+    ]
+  }
+}

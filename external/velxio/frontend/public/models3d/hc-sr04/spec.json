@@ -1,0 +1,150 @@
+{
+  "key": "hc-sr04",
+  "catalogId": "hc-sr04-ultrasonic",
+  "tier": "preset",
+  "cadOnly": false,
+  "assetKind": "print-export-of-spec",
+  "renderedModel": "hc-sr04-ultrasonic/hc-sr04-ultrasonic.glb",
+  "note": "The rendered 3D model is the reviewed GLB named in renderedModel; these STLs are exported from the CAD spec.",
+  "spec": {
+    "id": "hc-sr04-ultrasonic",
+    "name": "HC-SR04 Ultrasonic Distance Sensor",
+    "category": "sensor",
+    "description": "Ultrasonic ranging module with 2cm to 400cm non-contact measurement capability.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 15,
+    "dimensions": {
+      "widthMm": 45,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1a5b8c",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "5V Power Supply",
+        "xMm": -3.81,
+        "yMm": 8.5,
+        "zMm": 8.5,
+        "direction": "front",
+        "required": true
+      },
+      {
+        "name": "TRIG",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Trigger Pulse Input",
+        "xMm": -1.27,
+        "yMm": 8.5,
+        "zMm": 8.5,
+        "direction": "front",
+        "required": true
+      },
+      {
+        "name": "ECHO",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Echo Pulse Output",
+        "xMm": 1.27,
+        "yMm": 8.5,
+        "zMm": 8.5,
+        "direction": "front",
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 4,
+        "role": "ground",
+        "signal": "Ground Reference",
+        "xMm": 3.81,
+        "yMm": 8.5,
+        "zMm": 8.5,
+        "direction": "front",
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "transducer_tx",
+        "type": "cylinder",
+        "dimensions": [
+          8,
+          12,
+          0
+        ],
+        "position": [
+          -13,
+          7.6,
+          0
+        ],
+        "color": "#94a3b8"
+      },
+      {
+        "name": "transducer_rx",
+        "type": "cylinder",
+        "dimensions": [
+          8,
+          12,
+          0
+        ],
+        "position": [
+          13,
+          7.6,
+          0
+        ],
+        "color": "#94a3b8"
+      },
+      {
+        "name": "crystal",
+        "type": "box",
+        "dimensions": [
+          10,
+          3.5,
+          3
+        ],
+        "position": [
+          0,
+          2.5,
+          0
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "ic_controller",
+        "type": "box",
+        "dimensions": [
+          7,
+          1.2,
+          5
+        ],
+        "position": [
+          0,
+          1.5,
+          -5
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "gpio",
+      "digital"
+    ],
+    "keywords": [
+      "sonar",
+      "ultrasonic",
+      "distance",
+      "ranging",
+      "hc-sr04",
+      "sr04"
+    ],
+    "aliases": [
+      "hcsr04",
+      "hc-sr04",
+      "ultrasonic sensor"
+    ]
+  }
+}

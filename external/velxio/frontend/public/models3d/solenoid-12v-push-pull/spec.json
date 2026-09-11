@@ -1,0 +1,123 @@
+{
+  "key": "solenoid-12v-push-pull",
+  "catalogId": "solenoid-12v-push-pull",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "solenoid-12v-push-pull",
+    "name": "12 V push-pull solenoid (JF-0530B)",
+    "category": "actuator",
+    "description": "Open-frame solenoid: a steel U-frame around the coil bobbin with a sliding plunger and return spring, roughly 32 x 22 x 27 mm with a 10 mm stroke.",
+    "voltage": 12,
+    "minVoltage": 9,
+    "maxVoltage": 12,
+    "currentMa": 650,
+    "dimensions": {
+      "widthMm": 32,
+      "lengthMm": 22,
+      "heightMm": 27
+    },
+    "bodyColor": "#334155",
+    "pins": [
+      {
+        "name": "COIL_A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Coil terminal A (+12 V)",
+        "xMm": -6,
+        "yMm": 26,
+        "zMm": -9,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "COIL_B",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Coil terminal B (switched by the driver — not a ground net)",
+        "xMm": 6,
+        "yMm": 26,
+        "zMm": -9,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "BLACK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "steel_frame",
+        "type": "box",
+        "dimensions": [
+          32,
+          27,
+          22
+        ],
+        "position": [
+          0,
+          13.5,
+          0
+        ],
+        "color": "#475569"
+      },
+      {
+        "name": "coil_bobbin",
+        "type": "cylinder",
+        "dimensions": [
+          9,
+          20,
+          0
+        ],
+        "position": [
+          0,
+          13.5,
+          0
+        ],
+        "color": "#7c2d12",
+        "rotation": [
+          0,
+          0,
+          90
+        ]
+      },
+      {
+        "name": "plunger",
+        "type": "cylinder",
+        "dimensions": [
+          4,
+          26,
+          0
+        ],
+        "position": [
+          14,
+          13.5,
+          0
+        ],
+        "color": "#cbd5e1",
+        "rotation": [
+          0,
+          0,
+          90
+        ]
+      }
+    ],
+    "protocols": [],
+    "keywords": [
+      "solenoid",
+      "plunger",
+      "latch",
+      "actuator"
+    ],
+    "aliases": [
+      "solenoid",
+      "12v solenoid"
+    ]
+  }
+}

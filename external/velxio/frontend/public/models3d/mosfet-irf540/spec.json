@@ -1,0 +1,115 @@
+{
+  "key": "mosfet-irf540",
+  "catalogId": "mosfet-irf540",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "mosfet-irf540",
+    "name": "IRF540N N-channel power MOSFET (TO-220)",
+    "category": "other",
+    "description": "Classic power NMOS: 100 V, 33 A package rating, RDS(on) 44 mohm — but RDS(on) is specified at VGS = 10 V. It is NOT a logic-level FET: from a 3.3 V or 5 V GPIO it only half-enhances, sags under load and heats. Drive the gate with 10-12 V (or through a BJT/driver stage), or pick a logic-level part for direct GPIO drive. Always a low-side switch: source to GND, load between supply and drain.",
+    "voltage": 100,
+    "maxVoltage": 100,
+    "currentMa": 10000,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "G",
+        "pinNumber": 1,
+        "role": "control",
+        "signal": "Gate — needs a real 10 V drive for the rated RDS(on); a GPIO alone will cook it under load",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "GATE"
+        ],
+        "required": true
+      },
+      {
+        "name": "D",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Drain — to the load (motor +, heater, LED rail)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "DRAIN"
+        ],
+        "required": true
+      },
+      {
+        "name": "S",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Source — to GND (low-side switch)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "SOURCE"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "main_ic",
+        "type": "box",
+        "dimensions": [
+          6,
+          1.4,
+          6
+        ],
+        "position": [
+          0,
+          2.8,
+          0
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "mosfet",
+      "power mosfet",
+      "irf540",
+      "irf540n",
+      "n channel",
+      "high current switch"
+    ],
+    "aliases": [
+      "irf540",
+      "irf540n",
+      "power mosfet",
+      "high current mosfet"
+    ]
+  }
+}

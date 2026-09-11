@@ -131,3 +131,36 @@ or the passive one (`tone()`) depending on ordering — different firmware, no
 warning — and "battery pack" to either 7.4 V or 6 V. Aliases are now unique:
 "piezo buzzer" is the passive one, bare "buzzer" the active one, "battery pack"
 the AA holder.
+
+---
+
+## Print exports and the shipped model library (2026-09-11)
+
+The studio's **Build parametric bundle** action does not just report a byte
+count any more: the generated bundle is kept on screen and can be saved straight
+from the page.
+
+| Button | File | What it is |
+| --- | --- | --- |
+| Download STL | `<catalogId>.stl` | The binary STL the bundle builder produced — the printable mesh, ready for a slicer |
+| Download ASCII STL | `<catalogId>.ascii.stl` | The same geometry in ASCII, for readable diffs and issue reports |
+| Download GLB | `<catalogId>.glb` | The shaded model with named pin-anchor nodes, i.e. what the 3D bench renders |
+
+The page also states where the *whole* catalog's exports live —
+`external/velxio/frontend/public/models3d/<key>/` — because the studio is the
+per-part instrument, not the library. The library is written by
+`pnpm export:cad-models` and checked by `pnpm verify:cad-sim-link`:
+
+* every CAD key gets `<key>.glb` + `<key>.stl` + `<key>.ascii.stl` + `spec.json`;
+* a **reviewed** asset is never overwritten — not by a re-run and not by
+  `--force`; if a reviewed key has no print exports yet, only the missing files
+  are added (this is why the Uno and the SG90 carry their own STLs now);
+* a model on disk that the manifest does not own is left exactly as found — that
+  is how a hand-built asset survives a generator that has not learned its key;
+* a manifest entry whose key left the catalog is pruned and reported, so a part
+  that moved between tiers cannot keep pointing at a stale model.
+
+`spec.json` records which case it is: `assetKind: generated-model` for a
+parametric export, `print-export-of-spec` for the STLs of a reviewed asset, and
+for a reviewed asset shipped with its own spec the file is that spec verbatim
+(also allowed, and what the hand-built MPU-6050 uses).

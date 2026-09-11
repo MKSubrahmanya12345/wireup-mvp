@@ -1,0 +1,145 @@
+{
+  "key": "bldc-motor-2205-2300kv",
+  "catalogId": "bldc-motor-2205-2300kv",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "bldc-motor-2205-2300kv",
+    "name": "2205 brushless outrunner (2300 KV)",
+    "category": "actuator",
+    "description": "Outrunner brushless motor: 27.9 mm bell over a 22 mm stator, M3 16 x 16 mm mounting pattern and a 5 mm prop shaft. Three phase wires, no polarity — swapping any two reverses rotation.",
+    "voltage": 14.8,
+    "minVoltage": 7.4,
+    "maxVoltage": 16.8,
+    "currentMa": 8000,
+    "dimensions": {
+      "widthMm": 27.9,
+      "lengthMm": 27.9,
+      "heightMm": 32
+    },
+    "bodyColor": "#dc2626",
+    "pins": [
+      {
+        "name": "PHASE_A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor phase A",
+        "xMm": -4,
+        "yMm": 2,
+        "zMm": -14,
+        "direction": "back",
+        "aliases": [
+          "A",
+          "U"
+        ],
+        "required": true
+      },
+      {
+        "name": "PHASE_B",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Motor phase B",
+        "xMm": 0,
+        "yMm": 2,
+        "zMm": -14,
+        "direction": "back",
+        "aliases": [
+          "B",
+          "V"
+        ],
+        "required": true
+      },
+      {
+        "name": "PHASE_C",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Motor phase C",
+        "xMm": 4,
+        "yMm": 2,
+        "zMm": -14,
+        "direction": "back",
+        "aliases": [
+          "C",
+          "W"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "base_plate",
+        "type": "cylinder",
+        "dimensions": [
+          13.9,
+          3,
+          0
+        ],
+        "position": [
+          0,
+          1.5,
+          0
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "bell",
+        "type": "cylinder",
+        "dimensions": [
+          13.9,
+          16,
+          0
+        ],
+        "position": [
+          0,
+          12,
+          0
+        ],
+        "color": "#ef4444"
+      },
+      {
+        "name": "prop_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2.5,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          26,
+          0
+        ],
+        "color": "#e2e8f0"
+      },
+      {
+        "name": "prop_nut",
+        "type": "cylinder",
+        "dimensions": [
+          4,
+          4,
+          0
+        ],
+        "position": [
+          0,
+          22,
+          0
+        ],
+        "color": "#f59e0b"
+      }
+    ],
+    "protocols": [],
+    "keywords": [
+      "brushless",
+      "bldc",
+      "outrunner",
+      "2205",
+      "drone"
+    ],
+    "aliases": [
+      "brushless motor",
+      "2205 motor",
+      "drone motor"
+    ]
+  }
+}

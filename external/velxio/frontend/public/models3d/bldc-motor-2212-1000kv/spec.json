@@ -1,0 +1,133 @@
+{
+  "key": "bldc-motor-2212-1000kv",
+  "catalogId": "bldc-motor-2212-1000kv",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "bldc-motor-2212-1000kv",
+    "name": "2212 brushless outrunner (1000 KV)",
+    "category": "actuator",
+    "description": "Classic 2212-size brushless outrunner, 1000 KV, 2-4S, sized for 8-10 inch propellers on a quadcopter or fixed-wing model. Requires an ESC (typically 30 A) and a bullet-connector or soldered phase joint.",
+    "voltage": 11.1,
+    "minVoltage": 7.4,
+    "maxVoltage": 16.8,
+    "currentMa": 6000,
+    "dimensions": {
+      "widthMm": 25,
+      "lengthMm": 40,
+      "heightMm": 20
+    },
+    "bodyColor": "#1f2937",
+    "pins": [
+      {
+        "name": "PHASE_A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor phase A",
+        "xMm": -2.54,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "A",
+          "U"
+        ],
+        "required": true
+      },
+      {
+        "name": "PHASE_B",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Motor phase B",
+        "xMm": 0,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "B",
+          "V"
+        ],
+        "required": true
+      },
+      {
+        "name": "PHASE_C",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Motor phase C",
+        "xMm": 2.54,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "C",
+          "W"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          21.2,
+          -17.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "motor_can",
+        "type": "cylinder",
+        "dimensions": [
+          12.5,
+          28,
+          0
+        ],
+        "position": [
+          0,
+          34,
+          0
+        ],
+        "color": "#4b5563"
+      },
+      {
+        "name": "output_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          54,
+          0
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "brushless",
+      "bldc",
+      "2212",
+      "1000kv",
+      "quadcopter",
+      "outrunner"
+    ],
+    "aliases": [
+      "2212 motor",
+      "a2212",
+      "1000kv brushless"
+    ]
+  }
+}

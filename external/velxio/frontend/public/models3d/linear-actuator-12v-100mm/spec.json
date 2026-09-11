@@ -1,0 +1,105 @@
+{
+  "key": "linear-actuator-12v-100mm",
+  "catalogId": "linear-actuator-12v-100mm",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "linear-actuator-12v-100mm",
+    "name": "12 V linear actuator (100 mm stroke)",
+    "category": "actuator",
+    "description": "DC gear motor driving a lead screw with built-in limit switches at both ends of a 100 mm stroke. Extend and retract by reversing polarity, so it needs an H-bridge rated for its stall current. The internal limit switches stop travel but do not protect against continuous stall, so add a timeout in firmware.",
+    "voltage": 12,
+    "minVoltage": 10,
+    "maxVoltage": 14,
+    "currentMa": 1200,
+    "dimensions": {
+      "widthMm": 24,
+      "lengthMm": 30,
+      "heightMm": 12
+    },
+    "bodyColor": "#334155",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Actuator terminal A (extend when positive)",
+        "xMm": -1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "RED",
+          "M+"
+        ],
+        "required": true
+      },
+      {
+        "name": "B",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Actuator terminal B",
+        "xMm": 1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "BLACK",
+          "M-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          5.08,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          13.2,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "actuator_body",
+        "type": "box",
+        "dimensions": [
+          19.200000000000003,
+          10,
+          21
+        ],
+        "position": [
+          0,
+          17.5,
+          0
+        ],
+        "color": "#475569"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "linear actuator",
+      "stroke",
+      "lead screw",
+      "push pull",
+      "extend",
+      "retract"
+    ],
+    "aliases": [
+      "linear actuator",
+      "actuator",
+      "12v actuator"
+    ]
+  }
+}

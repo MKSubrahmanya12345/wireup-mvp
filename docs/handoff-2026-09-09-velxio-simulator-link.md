@@ -179,3 +179,23 @@ Still unclaimed on purpose (unchanged): relay module, 28BYJ-48, bare LDR, DHT11
 rotary-dialer, sound/flame/heart-beat sensors, logic gates / flip-flops /
 optocouplers / e-paper — breadboard-education or transmitter parts rather than
 project hardware.
+
+---
+
+## 8. Batch 3 — the full-catalog batch (CAD bench, `diagram.json`, STL library)
+
+The "48 simulatable objects" work left a bigger hole than it closed: a part the
+emulator has no element for was simply **dropped** from `diagram.json` and the
+canvas. Half the catalog (motors, pumps, solenoids, drivers, power modules) could
+therefore vanish from a build whose entire point was that part. Batch 3 closes it
+and is documented in `docs/handoff-2026-09-11-cad-bench-full-catalog.md`.
+
+Same numbers as of that batch: **108 catalog parts, 57 simulator claims, 54 part
+mappings, 10 board mappings, 53 peripherals / 100 wires projected with zero
+drops**; tiers **4 boards · 52 simulated · 46 CAD bench · 2 catalog-only · 4 not
+on the bench**; assets **97 GLB (7.6 MB) + 97 binary STL + 97 ASCII STL + 97
+`spec.json`**. `mpu6050-imu`, `ir-receiver-tsop38238` and `rgb-led-common-cathode`
+moved out of the unclaimed list (registered behaviour verified in the pinned
+build); `bme280-environmental` deliberately stayed a CAD bench part because the
+only BME-family element in this build models pressure and temperature, not
+humidity.

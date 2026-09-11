@@ -1,0 +1,228 @@
+{
+  "key": "relay-module-5v-1ch",
+  "catalogId": "relay-module-5v-1ch",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "relay-module-5v-1ch",
+    "name": "5 V single-channel relay module (opto-isolated)",
+    "category": "actuator",
+    "description": "Opto-isolated relay module switching up to 250 VAC / 30 VDC at 10 A. IN is typically active LOW and needs ~10 mA at 5 V. Provides COM / NO / NC screw terminals for the load side, electrically isolated from the MCU side.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 70,
+    "dimensions": {
+      "widthMm": 50,
+      "lengthMm": 26,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#14532d",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -10.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "DC+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -10.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "DC-"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Control input, active LOW on most modules",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -10.46,
+        "direction": "up",
+        "aliases": [
+          "SIG",
+          "S"
+        ],
+        "required": true
+      },
+      {
+        "name": "COM",
+        "pinNumber": 4,
+        "role": "bidirectional",
+        "signal": "Load common terminal",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -10.46,
+        "direction": "up",
+        "aliases": [
+          "C"
+        ],
+        "required": true
+      },
+      {
+        "name": "NO",
+        "pinNumber": 5,
+        "role": "bidirectional",
+        "signal": "Normally open load terminal",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -10.46,
+        "direction": "up",
+        "aliases": [
+          "N/O"
+        ],
+        "required": true
+      },
+      {
+        "name": "NC",
+        "pinNumber": 6,
+        "role": "bidirectional",
+        "signal": "Normally closed load terminal",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -10.46,
+        "direction": "up",
+        "aliases": [
+          "N/C"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "songle_relay_block",
+        "type": "box",
+        "dimensions": [
+          19,
+          15.5,
+          15
+        ],
+        "position": [
+          8,
+          9.4,
+          0
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "load_screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          16.5,
+          10,
+          8
+        ],
+        "position": [
+          -16,
+          6.6,
+          6
+        ],
+        "color": "#22c55e"
+      },
+      {
+        "name": "logic_header",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          -18,
+          2.8,
+          -9
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "opto_isolator",
+        "type": "box",
+        "dimensions": [
+          5.2,
+          2,
+          6.2
+        ],
+        "position": [
+          -4.5,
+          3.2,
+          -5.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "flyback_diode",
+        "type": "cylinder",
+        "dimensions": [
+          0.8,
+          4.5,
+          0
+        ],
+        "position": [
+          -4,
+          3.4000000000000004,
+          4.5
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "status_led",
+        "type": "led",
+        "dimensions": [
+          1.6,
+          1.2,
+          1.6
+        ],
+        "position": [
+          -16,
+          3.8000000000000003,
+          -1
+        ],
+        "color": "#ef4444"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "relay",
+      "switch",
+      "mains",
+      "high current",
+      "pump",
+      "lamp",
+      "contactor"
+    ],
+    "aliases": [
+      "relay",
+      "relay module",
+      "5v relay",
+      "1 channel relay"
+    ]
+  }
+}

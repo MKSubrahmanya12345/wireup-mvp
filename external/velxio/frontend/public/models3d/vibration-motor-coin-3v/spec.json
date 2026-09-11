@@ -1,0 +1,122 @@
+{
+  "key": "vibration-motor-coin-3v",
+  "catalogId": "vibration-motor-coin-3v",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "vibration-motor-coin-3v",
+    "name": "Coin vibration motor (10 mm, 3 V)",
+    "category": "actuator",
+    "description": "Shaftless eccentric-rotating-mass (ERM) pancake motor, 3 V nominal, ~80 mA. Small enough to be tempting to drive directly from a pin — do not: use a small NPN/MOSFET plus a flyback diode, because the brushed motor injects noise and inductive spikes onto the rail.",
+    "voltage": 3,
+    "minVoltage": 2.5,
+    "maxVoltage": 3.6,
+    "currentMa": 80,
+    "dimensions": {
+      "widthMm": 25,
+      "lengthMm": 40,
+      "heightMm": 20
+    },
+    "bodyColor": "#1f2937",
+    "pins": [
+      {
+        "name": "+",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor positive (red)",
+        "xMm": -1.27,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "VCC",
+          "A",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "-",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Motor negative (blue/black) — switch this side",
+        "xMm": 1.27,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "GND",
+          "B",
+          "BLUE",
+          "BLACK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          5.08,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          21.2,
+          -17.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "motor_can",
+        "type": "cylinder",
+        "dimensions": [
+          12.5,
+          28,
+          0
+        ],
+        "position": [
+          0,
+          34,
+          0
+        ],
+        "color": "#4b5563"
+      },
+      {
+        "name": "output_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          54,
+          0
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "vibration",
+      "haptic",
+      "erm",
+      "coin motor",
+      "pancake motor",
+      "buzz"
+    ],
+    "aliases": [
+      "vibration motor",
+      "haptic motor",
+      "coin motor",
+      "vibrator motor"
+    ]
+  }
+}

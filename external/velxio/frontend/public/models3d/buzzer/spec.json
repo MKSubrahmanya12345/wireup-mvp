@@ -1,0 +1,122 @@
+{
+  "key": "buzzer",
+  "catalogId": "buzzer-active-5v",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "buzzer-active-5v",
+    "name": "Active buzzer (5 V)",
+    "category": "actuator",
+    "description": "Self-oscillating piezo buzzer: drive the + terminal HIGH/LOW for on/off — no PWM tone generation required. ~30 mA at 5 V, so it can be driven directly from a 5 V logic pin but should use a transistor on 3.3 V boards.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 6,
+    "currentMa": 30,
+    "dimensions": {
+      "widthMm": 12,
+      "lengthMm": 12,
+      "heightMm": 9.5
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "+",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Positive drive input",
+        "xMm": -1.27,
+        "yMm": -4.75,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "S",
+          "SIG",
+          "I/O",
+          "POS"
+        ],
+        "required": true
+      },
+      {
+        "name": "-",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Negative to GND",
+        "xMm": 1.27,
+        "yMm": -4.75,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "GND",
+          "NEG"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "piezo_buzzer_can",
+        "type": "cylinder",
+        "dimensions": [
+          6,
+          9.5,
+          0
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sound_port",
+        "type": "cylinder",
+        "dimensions": [
+          1.55,
+          0.18,
+          0
+        ],
+        "position": [
+          0,
+          4.8,
+          0
+        ],
+        "color": "#020617"
+      },
+      {
+        "name": "active_driver_mark",
+        "type": "box",
+        "dimensions": [
+          5.5,
+          0.08,
+          1
+        ],
+        "position": [
+          0,
+          4.85,
+          -3.2
+        ],
+        "color": "#22c55e"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "buzzer",
+      "alarm",
+      "beep",
+      "sound",
+      "speaker",
+      "audio alert"
+    ],
+    "aliases": [
+      "buzzer",
+      "active buzzer",
+      "beeper"
+    ]
+  }
+}

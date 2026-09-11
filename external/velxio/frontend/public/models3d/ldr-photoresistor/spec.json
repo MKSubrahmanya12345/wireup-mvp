@@ -1,0 +1,104 @@
+{
+  "key": "ldr-photoresistor",
+  "catalogId": "ldr-photoresistor",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "ldr-photoresistor",
+    "name": "LDR photoresistor (CdS cell)",
+    "category": "sensor",
+    "description": "Light dependent resistor: ~1 MΩ in darkness down to ~1–10 kΩ in bright light. Two terminals, no polarity. Must be used in a voltage divider with a fixed resistor (10 kΩ is a good default) into an ADC pin.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 5,
+    "currentMa": 0.5,
+    "dimensions": {
+      "widthMm": 5,
+      "lengthMm": 5,
+      "heightMm": 2
+    },
+    "bodyColor": "#eab308",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "1",
+        "pinNumber": 1,
+        "role": "analog",
+        "signal": "Terminal 1 (to supply rail in a divider)",
+        "xMm": -1.27,
+        "yMm": -1,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "A"
+        ],
+        "required": true
+      },
+      {
+        "name": "2",
+        "pinNumber": 2,
+        "role": "analog",
+        "signal": "Terminal 2 (to ADC node)",
+        "xMm": 1.27,
+        "yMm": -1,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "B"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "photoresistor_disc",
+        "type": "cylinder",
+        "dimensions": [
+          2.5,
+          1.6,
+          0
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#d6a940"
+      },
+      {
+        "name": "serpentine_cds_track",
+        "type": "box",
+        "dimensions": [
+          3.2,
+          0.08,
+          0.55
+        ],
+        "position": [
+          0,
+          0.86,
+          0
+        ],
+        "color": "#78350f"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "ldr",
+      "photoresistor",
+      "light",
+      "brightness",
+      "cds",
+      "ambient light"
+    ],
+    "aliases": [
+      "ldr",
+      "photoresistor",
+      "light sensor",
+      "cds cell"
+    ]
+  }
+}

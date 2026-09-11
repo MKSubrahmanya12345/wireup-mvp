@@ -1,0 +1,271 @@
+{
+  "key": "drv8833-motor-driver",
+  "catalogId": "drv8833-motor-driver",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "drv8833-motor-driver",
+    "name": "DRV8833 dual motor driver carrier",
+    "category": "driver",
+    "description": "Small Pololu-style carrier, 20.3 x 12.7 mm, with the DRV8833 QFN in the centre and two 0.1 in header rows: control inputs on one edge, motor and power terminals on the other.",
+    "voltage": 3.3,
+    "minVoltage": 2.7,
+    "maxVoltage": 10.8,
+    "currentMa": 400,
+    "dimensions": {
+      "widthMm": 20.3,
+      "lengthMm": 12.7,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0f172a",
+    "pins": [
+      {
+        "name": "VIN",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor supply 2.7-10.8 V",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": 5,
+        "direction": "up",
+        "aliases": [
+          "VM",
+          "VMOT"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Common ground",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": 5,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "AOUT1",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Channel A output 1",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": 5,
+        "direction": "up",
+        "aliases": [
+          "AO1"
+        ],
+        "required": true
+      },
+      {
+        "name": "AOUT2",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Channel A output 2",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": 5,
+        "direction": "up",
+        "aliases": [
+          "AO2"
+        ],
+        "required": true
+      },
+      {
+        "name": "BOUT1",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "Channel B output 1",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": 5,
+        "direction": "up",
+        "aliases": [
+          "BO1"
+        ],
+        "required": true
+      },
+      {
+        "name": "BOUT2",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Channel B output 2",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": 5,
+        "direction": "up",
+        "aliases": [
+          "BO2"
+        ],
+        "required": true
+      },
+      {
+        "name": "AIN1",
+        "pinNumber": 7,
+        "role": "pwm",
+        "signal": "Channel A input 1",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -5,
+        "direction": "up",
+        "aliases": [
+          "IN1"
+        ],
+        "required": true
+      },
+      {
+        "name": "AIN2",
+        "pinNumber": 8,
+        "role": "pwm",
+        "signal": "Channel A input 2",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -5,
+        "direction": "up",
+        "aliases": [
+          "IN2"
+        ],
+        "required": true
+      },
+      {
+        "name": "BIN1",
+        "pinNumber": 9,
+        "role": "pwm",
+        "signal": "Channel B input 1",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -5,
+        "direction": "up",
+        "aliases": [
+          "IN3"
+        ],
+        "required": true
+      },
+      {
+        "name": "BIN2",
+        "pinNumber": 10,
+        "role": "pwm",
+        "signal": "Channel B input 2",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -5,
+        "direction": "up",
+        "aliases": [
+          "IN4"
+        ],
+        "required": true
+      },
+      {
+        "name": "SLP",
+        "pinNumber": 11,
+        "role": "control",
+        "signal": "nSLEEP — HIGH to enable",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -5,
+        "direction": "up",
+        "aliases": [
+          "nSLEEP"
+        ],
+        "required": false
+      },
+      {
+        "name": "FLT",
+        "pinNumber": 12,
+        "role": "digital",
+        "signal": "nFAULT open-drain output",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -5,
+        "direction": "up",
+        "aliases": [
+          "nFAULT"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "drv8833_qfn",
+        "type": "box",
+        "dimensions": [
+          4,
+          1,
+          4
+        ],
+        "position": [
+          0,
+          1.3,
+          0
+        ],
+        "color": "#18181b"
+      },
+      {
+        "name": "bulk_cap",
+        "type": "box",
+        "dimensions": [
+          3.2,
+          1.6,
+          1.6
+        ],
+        "position": [
+          -6,
+          1.6,
+          0
+        ],
+        "color": "#d97706"
+      },
+      {
+        "name": "header_top",
+        "type": "header_block",
+        "dimensions": [
+          15.24,
+          2.5,
+          2.5
+        ],
+        "position": [
+          -1.27,
+          2,
+          5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "header_bottom",
+        "type": "header_block",
+        "dimensions": [
+          15.24,
+          2.5,
+          2.5
+        ],
+        "position": [
+          -1.27,
+          2,
+          -5
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "pwm",
+      "gpio"
+    ],
+    "keywords": [
+      "drv8833",
+      "motor driver",
+      "h-bridge",
+      "dual",
+      "low voltage"
+    ],
+    "aliases": [
+      "drv8833",
+      "cjmcu-8833"
+    ]
+  }
+}

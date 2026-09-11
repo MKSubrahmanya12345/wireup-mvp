@@ -1,0 +1,1184 @@
+{
+  "key": "arduino-mega",
+  "catalogId": "arduino-mega",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "arduino-mega",
+    "name": "Arduino Mega 2560",
+    "category": "controller",
+    "description": "ATmega2560 based board: 5 V logic, 54 digital I/O (15 PWM), 16 analog inputs (10-bit ADC), four hardware UARTs and 8 KB of SRAM. The board to reach for when a Uno runs out of pins — many-sensor builds, 3D printers, large relay/multiplexed designs. Same per-pin limits as the Uno: 40 mA absolute max, 20 mA recommended, ~200 mA total through the on-board regulator.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 70,
+    "dimensions": {
+      "widthMm": 100.29,
+      "lengthMm": 55,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0b4f9c",
+    "pins": [
+      {
+        "name": "D0",
+        "pinNumber": 1,
+        "role": "uart",
+        "signal": "Serial RX — shared with the USB serial bridge",
+        "xMm": -46.99,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "RX",
+          "0"
+        ],
+        "required": false
+      },
+      {
+        "name": "D1",
+        "pinNumber": 2,
+        "role": "uart",
+        "signal": "Serial TX — shared with the USB serial bridge",
+        "xMm": -44.45,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "TX",
+          "1"
+        ],
+        "required": false
+      },
+      {
+        "name": "D2",
+        "pinNumber": 3,
+        "role": "bidirectional",
+        "signal": "External interrupt INT0 / PWM",
+        "xMm": -41.91,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "2"
+        ],
+        "required": false
+      },
+      {
+        "name": "D3",
+        "pinNumber": 4,
+        "role": "bidirectional",
+        "signal": "External interrupt INT1 / PWM",
+        "xMm": -39.37,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "3"
+        ],
+        "required": false
+      },
+      {
+        "name": "D4",
+        "pinNumber": 5,
+        "role": "bidirectional",
+        "signal": "D4 (digital)",
+        "xMm": -36.83,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "4"
+        ],
+        "required": false
+      },
+      {
+        "name": "D5",
+        "pinNumber": 6,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -34.29,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "5"
+        ],
+        "required": false
+      },
+      {
+        "name": "D6",
+        "pinNumber": 7,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -31.75,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "6"
+        ],
+        "required": false
+      },
+      {
+        "name": "D7",
+        "pinNumber": 8,
+        "role": "bidirectional",
+        "signal": "D7 (digital)",
+        "xMm": -29.21,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "7"
+        ],
+        "required": false
+      },
+      {
+        "name": "D8",
+        "pinNumber": 9,
+        "role": "bidirectional",
+        "signal": "D8 (digital)",
+        "xMm": -26.67,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "8"
+        ],
+        "required": false
+      },
+      {
+        "name": "D9",
+        "pinNumber": 10,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -24.13,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "9"
+        ],
+        "required": false
+      },
+      {
+        "name": "D10",
+        "pinNumber": 11,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -21.59,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "10"
+        ],
+        "required": false
+      },
+      {
+        "name": "D11",
+        "pinNumber": 12,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -19.05,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "11"
+        ],
+        "required": false
+      },
+      {
+        "name": "D12",
+        "pinNumber": 13,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -16.51,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "12"
+        ],
+        "required": false
+      },
+      {
+        "name": "D13",
+        "pinNumber": 14,
+        "role": "bidirectional",
+        "signal": "PWM / on-board LED",
+        "xMm": -13.97,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "13",
+          "SCK_LED"
+        ],
+        "required": false
+      },
+      {
+        "name": "D14",
+        "pinNumber": 15,
+        "role": "uart",
+        "signal": "Serial3 TX",
+        "xMm": -11.43,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "TX3",
+          "14"
+        ],
+        "required": false
+      },
+      {
+        "name": "D15",
+        "pinNumber": 16,
+        "role": "uart",
+        "signal": "Serial3 RX",
+        "xMm": -8.89,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "RX3",
+          "15"
+        ],
+        "required": false
+      },
+      {
+        "name": "D16",
+        "pinNumber": 17,
+        "role": "uart",
+        "signal": "Serial2 TX",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "TX2",
+          "16"
+        ],
+        "required": false
+      },
+      {
+        "name": "D17",
+        "pinNumber": 18,
+        "role": "uart",
+        "signal": "Serial2 RX",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "RX2",
+          "17"
+        ],
+        "required": false
+      },
+      {
+        "name": "D18",
+        "pinNumber": 19,
+        "role": "uart",
+        "signal": "Serial1 TX / external interrupt INT5",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "TX1",
+          "18"
+        ],
+        "required": false
+      },
+      {
+        "name": "D19",
+        "pinNumber": 20,
+        "role": "uart",
+        "signal": "Serial1 RX / external interrupt INT4",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "RX1",
+          "19"
+        ],
+        "required": false
+      },
+      {
+        "name": "D20",
+        "pinNumber": 21,
+        "role": "i2c",
+        "signal": "I2C SDA / external interrupt INT3",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "SDA",
+          "20"
+        ],
+        "required": false
+      },
+      {
+        "name": "D21",
+        "pinNumber": 22,
+        "role": "i2c",
+        "signal": "I2C SCL / external interrupt INT2",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "SCL",
+          "21"
+        ],
+        "required": false
+      },
+      {
+        "name": "D22",
+        "pinNumber": 23,
+        "role": "bidirectional",
+        "signal": "D22 (digital)",
+        "xMm": 8.89,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "22"
+        ],
+        "required": false
+      },
+      {
+        "name": "D23",
+        "pinNumber": 24,
+        "role": "bidirectional",
+        "signal": "D23 (digital)",
+        "xMm": 11.43,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "23"
+        ],
+        "required": false
+      },
+      {
+        "name": "D24",
+        "pinNumber": 25,
+        "role": "bidirectional",
+        "signal": "D24 (digital)",
+        "xMm": 13.97,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "24"
+        ],
+        "required": false
+      },
+      {
+        "name": "D25",
+        "pinNumber": 26,
+        "role": "bidirectional",
+        "signal": "D25 (digital)",
+        "xMm": 16.51,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "25"
+        ],
+        "required": false
+      },
+      {
+        "name": "D26",
+        "pinNumber": 27,
+        "role": "bidirectional",
+        "signal": "D26 (digital)",
+        "xMm": 19.05,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "26"
+        ],
+        "required": false
+      },
+      {
+        "name": "D27",
+        "pinNumber": 28,
+        "role": "bidirectional",
+        "signal": "D27 (digital)",
+        "xMm": 21.59,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "27"
+        ],
+        "required": false
+      },
+      {
+        "name": "D28",
+        "pinNumber": 29,
+        "role": "bidirectional",
+        "signal": "D28 (digital)",
+        "xMm": 24.13,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "28"
+        ],
+        "required": false
+      },
+      {
+        "name": "D29",
+        "pinNumber": 30,
+        "role": "bidirectional",
+        "signal": "D29 (digital)",
+        "xMm": 26.67,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "29"
+        ],
+        "required": false
+      },
+      {
+        "name": "D30",
+        "pinNumber": 31,
+        "role": "bidirectional",
+        "signal": "D30 (digital)",
+        "xMm": 29.21,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "30"
+        ],
+        "required": false
+      },
+      {
+        "name": "D31",
+        "pinNumber": 32,
+        "role": "bidirectional",
+        "signal": "D31 (digital)",
+        "xMm": 31.75,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "31"
+        ],
+        "required": false
+      },
+      {
+        "name": "D32",
+        "pinNumber": 33,
+        "role": "bidirectional",
+        "signal": "D32 (digital)",
+        "xMm": 34.29,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "32"
+        ],
+        "required": false
+      },
+      {
+        "name": "D33",
+        "pinNumber": 34,
+        "role": "bidirectional",
+        "signal": "D33 (digital)",
+        "xMm": 36.83,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "33"
+        ],
+        "required": false
+      },
+      {
+        "name": "D34",
+        "pinNumber": 35,
+        "role": "bidirectional",
+        "signal": "D34 (digital)",
+        "xMm": 39.37,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "34"
+        ],
+        "required": false
+      },
+      {
+        "name": "D35",
+        "pinNumber": 36,
+        "role": "bidirectional",
+        "signal": "D35 (digital)",
+        "xMm": 41.91,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "35"
+        ],
+        "required": false
+      },
+      {
+        "name": "D36",
+        "pinNumber": 37,
+        "role": "bidirectional",
+        "signal": "D36 (digital)",
+        "xMm": 44.45,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "36"
+        ],
+        "required": false
+      },
+      {
+        "name": "D37",
+        "pinNumber": 38,
+        "role": "bidirectional",
+        "signal": "D37 (digital)",
+        "xMm": 46.99,
+        "yMm": 6,
+        "zMm": -24.96,
+        "direction": "up",
+        "aliases": [
+          "37"
+        ],
+        "required": false
+      },
+      {
+        "name": "D38",
+        "pinNumber": 39,
+        "role": "bidirectional",
+        "signal": "D38 (digital)",
+        "xMm": -46.99,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "38"
+        ],
+        "required": false
+      },
+      {
+        "name": "D39",
+        "pinNumber": 40,
+        "role": "bidirectional",
+        "signal": "D39 (digital)",
+        "xMm": -44.45,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "39"
+        ],
+        "required": false
+      },
+      {
+        "name": "D40",
+        "pinNumber": 41,
+        "role": "bidirectional",
+        "signal": "D40 (digital)",
+        "xMm": -41.91,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "40"
+        ],
+        "required": false
+      },
+      {
+        "name": "D41",
+        "pinNumber": 42,
+        "role": "bidirectional",
+        "signal": "D41 (digital)",
+        "xMm": -39.37,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "41"
+        ],
+        "required": false
+      },
+      {
+        "name": "D42",
+        "pinNumber": 43,
+        "role": "bidirectional",
+        "signal": "D42 (digital)",
+        "xMm": -36.83,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "42"
+        ],
+        "required": false
+      },
+      {
+        "name": "D43",
+        "pinNumber": 44,
+        "role": "bidirectional",
+        "signal": "D43 (digital)",
+        "xMm": -34.29,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "43"
+        ],
+        "required": false
+      },
+      {
+        "name": "D44",
+        "pinNumber": 45,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -31.75,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "44"
+        ],
+        "required": false
+      },
+      {
+        "name": "D45",
+        "pinNumber": 46,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -29.21,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "45"
+        ],
+        "required": false
+      },
+      {
+        "name": "D46",
+        "pinNumber": 47,
+        "role": "bidirectional",
+        "signal": "PWM",
+        "xMm": -26.67,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "46"
+        ],
+        "required": false
+      },
+      {
+        "name": "D47",
+        "pinNumber": 48,
+        "role": "bidirectional",
+        "signal": "D47 (digital)",
+        "xMm": -24.13,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "47"
+        ],
+        "required": false
+      },
+      {
+        "name": "D48",
+        "pinNumber": 49,
+        "role": "bidirectional",
+        "signal": "D48 (digital)",
+        "xMm": -21.59,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "48"
+        ],
+        "required": false
+      },
+      {
+        "name": "D49",
+        "pinNumber": 50,
+        "role": "bidirectional",
+        "signal": "D49 (digital)",
+        "xMm": -19.05,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "49"
+        ],
+        "required": false
+      },
+      {
+        "name": "D50",
+        "pinNumber": 51,
+        "role": "spi",
+        "signal": "SPI MISO",
+        "xMm": -16.51,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "MISO",
+          "50"
+        ],
+        "required": false
+      },
+      {
+        "name": "D51",
+        "pinNumber": 52,
+        "role": "spi",
+        "signal": "SPI MOSI",
+        "xMm": -13.97,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "MOSI",
+          "51"
+        ],
+        "required": false
+      },
+      {
+        "name": "D52",
+        "pinNumber": 53,
+        "role": "spi",
+        "signal": "SPI SCK",
+        "xMm": -11.43,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "SCK",
+          "52"
+        ],
+        "required": false
+      },
+      {
+        "name": "D53",
+        "pinNumber": 54,
+        "role": "spi",
+        "signal": "SPI SS — leave as OUTPUT even when unused, or SPI slips into slave mode",
+        "xMm": -8.89,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "SS",
+          "53"
+        ],
+        "required": false
+      },
+      {
+        "name": "A0",
+        "pinNumber": 55,
+        "role": "analog",
+        "signal": "ADC0, usable as digital D54",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "54"
+        ],
+        "required": false
+      },
+      {
+        "name": "A1",
+        "pinNumber": 56,
+        "role": "analog",
+        "signal": "ADC1, usable as digital D55",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "55"
+        ],
+        "required": false
+      },
+      {
+        "name": "A2",
+        "pinNumber": 57,
+        "role": "analog",
+        "signal": "ADC2, usable as digital D56",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "56"
+        ],
+        "required": false
+      },
+      {
+        "name": "A3",
+        "pinNumber": 58,
+        "role": "analog",
+        "signal": "ADC3, usable as digital D57",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "57"
+        ],
+        "required": false
+      },
+      {
+        "name": "A4",
+        "pinNumber": 59,
+        "role": "analog",
+        "signal": "ADC4, usable as digital D58",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "58"
+        ],
+        "required": false
+      },
+      {
+        "name": "A5",
+        "pinNumber": 60,
+        "role": "analog",
+        "signal": "ADC5, usable as digital D59",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "59"
+        ],
+        "required": false
+      },
+      {
+        "name": "A6",
+        "pinNumber": 61,
+        "role": "analog",
+        "signal": "ADC6, usable as digital D60",
+        "xMm": 8.89,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "60"
+        ],
+        "required": false
+      },
+      {
+        "name": "A7",
+        "pinNumber": 62,
+        "role": "analog",
+        "signal": "ADC7, usable as digital D61",
+        "xMm": 11.43,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "61"
+        ],
+        "required": false
+      },
+      {
+        "name": "A8",
+        "pinNumber": 63,
+        "role": "analog",
+        "signal": "ADC16, usable as digital D62",
+        "xMm": 13.97,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "62"
+        ],
+        "required": false
+      },
+      {
+        "name": "A9",
+        "pinNumber": 64,
+        "role": "analog",
+        "signal": "ADC17, usable as digital D63",
+        "xMm": 16.51,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "63"
+        ],
+        "required": false
+      },
+      {
+        "name": "A10",
+        "pinNumber": 65,
+        "role": "analog",
+        "signal": "ADC18, usable as digital D64",
+        "xMm": 19.05,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "64"
+        ],
+        "required": false
+      },
+      {
+        "name": "A11",
+        "pinNumber": 66,
+        "role": "analog",
+        "signal": "ADC19, usable as digital D65",
+        "xMm": 21.59,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "65"
+        ],
+        "required": false
+      },
+      {
+        "name": "A12",
+        "pinNumber": 67,
+        "role": "analog",
+        "signal": "ADC20, usable as digital D66",
+        "xMm": 24.13,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "66"
+        ],
+        "required": false
+      },
+      {
+        "name": "A13",
+        "pinNumber": 68,
+        "role": "analog",
+        "signal": "ADC21, usable as digital D67",
+        "xMm": 26.67,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "67"
+        ],
+        "required": false
+      },
+      {
+        "name": "A14",
+        "pinNumber": 69,
+        "role": "analog",
+        "signal": "ADC22, usable as digital D68",
+        "xMm": 29.21,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "68"
+        ],
+        "required": false
+      },
+      {
+        "name": "A15",
+        "pinNumber": 70,
+        "role": "analog",
+        "signal": "ADC23, usable as digital D69",
+        "xMm": 31.75,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "69"
+        ],
+        "required": false
+      },
+      {
+        "name": "5V",
+        "pinNumber": 71,
+        "role": "power",
+        "signal": "5V (power)",
+        "xMm": 34.29,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "VCC",
+          "5v"
+        ],
+        "required": true
+      },
+      {
+        "name": "3V3",
+        "pinNumber": 72,
+        "role": "power",
+        "signal": "50 mA max from the on-board regulator",
+        "xMm": 36.83,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "3.3V"
+        ],
+        "required": false
+      },
+      {
+        "name": "GND",
+        "pinNumber": 73,
+        "role": "ground",
+        "signal": "Common ground — five physically separate pins, all the same net",
+        "xMm": 39.37,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "VSS",
+          "GND.1",
+          "GND.2",
+          "GND.3",
+          "GND.4",
+          "GND.5"
+        ],
+        "required": true
+      },
+      {
+        "name": "VIN",
+        "pinNumber": 74,
+        "role": "power",
+        "signal": "7–12 V unregulated input",
+        "xMm": 41.91,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "RAW"
+        ],
+        "required": false
+      },
+      {
+        "name": "RESET",
+        "pinNumber": 75,
+        "role": "control",
+        "signal": "RESET (control)",
+        "xMm": 44.45,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "aliases": [
+          "RST"
+        ],
+        "required": false
+      },
+      {
+        "name": "IOREF",
+        "pinNumber": 76,
+        "role": "power",
+        "signal": "Shield logic-level reference (5 V)",
+        "xMm": 46.99,
+        "yMm": 6,
+        "zMm": -22.42,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "AREF",
+        "pinNumber": 77,
+        "role": "analog",
+        "signal": "External analog reference for the ADC — only drive it after analogReference(EXTERNAL)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -19.88,
+        "direction": "up",
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          100.29,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -24.96
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "main_ic",
+        "type": "box",
+        "dimensions": [
+          6,
+          1.4,
+          6
+        ],
+        "position": [
+          0,
+          2.8,
+          0
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "uart",
+      "i2c",
+      "spi",
+      "adc",
+      "pwm"
+    ],
+    "keywords": [
+      "arduino",
+      "mega",
+      "2560",
+      "atmega2560",
+      "avr",
+      "5v",
+      "microcontroller",
+      "mcu",
+      "many pins"
+    ],
+    "aliases": [
+      "mega",
+      "arduino mega",
+      "mega 2560",
+      "arduinomega",
+      "atmega2560",
+      "mega2560"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Arduino AVR core",
+        "import": "Arduino.h",
+        "manager": "arduino",
+        "purpose": "Board support package"
+      }
+    ]
+  }
+}

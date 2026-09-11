@@ -1,0 +1,246 @@
+{
+  "key": "esc-30a-bldc",
+  "catalogId": "esc-30a-bldc",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "esc-30a-bldc",
+    "name": "30 A brushless ESC (with 5 V/2 A BEC)",
+    "category": "driver",
+    "description": "Shrink-wrapped 30 A ESC brick: battery leads at one end, three motor phase leads at the other and a 3-wire servo cable for throttle plus BEC output.",
+    "voltage": 11.1,
+    "minVoltage": 7.4,
+    "maxVoltage": 16.8,
+    "currentMa": 15000,
+    "dimensions": {
+      "widthMm": 25,
+      "lengthMm": 52,
+      "heightMm": 11
+    },
+    "bodyColor": "#111827",
+    "pins": [
+      {
+        "name": "SIGNAL",
+        "pinNumber": 1,
+        "role": "pwm",
+        "signal": "Throttle pulse 1000-2000 us",
+        "xMm": -12.5,
+        "yMm": 5.5,
+        "zMm": 28,
+        "direction": "front",
+        "aliases": [
+          "SIG",
+          "THROTTLE",
+          "WHITE"
+        ],
+        "required": true
+      },
+      {
+        "name": "BEC_5V",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "5 V / 2 A BEC output",
+        "xMm": -10,
+        "yMm": 5.5,
+        "zMm": 28,
+        "direction": "front",
+        "aliases": [
+          "5V",
+          "BEC",
+          "RED"
+        ],
+        "required": false
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Signal / power ground",
+        "xMm": -7.5,
+        "yMm": 5.5,
+        "zMm": 28,
+        "direction": "front",
+        "aliases": [
+          "-",
+          "BLACK"
+        ],
+        "required": true
+      },
+      {
+        "name": "BAT+",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Battery positive (2-4S)",
+        "xMm": -6,
+        "yMm": 5.5,
+        "zMm": -28,
+        "direction": "back",
+        "aliases": [
+          "VBAT",
+          "B+"
+        ],
+        "required": true
+      },
+      {
+        "name": "BAT-",
+        "pinNumber": 5,
+        "role": "ground",
+        "signal": "Battery negative",
+        "xMm": 6,
+        "yMm": 5.5,
+        "zMm": -28,
+        "direction": "back",
+        "aliases": [
+          "B-"
+        ],
+        "required": true
+      },
+      {
+        "name": "PHASE_A",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Motor phase A",
+        "xMm": -8,
+        "yMm": 5.5,
+        "zMm": 28,
+        "direction": "front",
+        "aliases": [
+          "A",
+          "M1"
+        ],
+        "required": true
+      },
+      {
+        "name": "PHASE_B",
+        "pinNumber": 7,
+        "role": "power",
+        "signal": "Motor phase B",
+        "xMm": 0,
+        "yMm": 5.5,
+        "zMm": 28,
+        "direction": "front",
+        "aliases": [
+          "B",
+          "M2"
+        ],
+        "required": true
+      },
+      {
+        "name": "PHASE_C",
+        "pinNumber": 8,
+        "role": "power",
+        "signal": "Motor phase C",
+        "xMm": 8,
+        "yMm": 5.5,
+        "zMm": 28,
+        "direction": "front",
+        "aliases": [
+          "C",
+          "M3"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "esc_pcb",
+        "type": "box",
+        "dimensions": [
+          25,
+          3,
+          52
+        ],
+        "position": [
+          0,
+          1.5,
+          0
+        ],
+        "color": "#0f172a"
+      },
+      {
+        "name": "mosfet_bank_a",
+        "type": "box",
+        "dimensions": [
+          22,
+          3,
+          8
+        ],
+        "position": [
+          0,
+          4.5,
+          10
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "mosfet_bank_b",
+        "type": "box",
+        "dimensions": [
+          22,
+          3,
+          8
+        ],
+        "position": [
+          0,
+          4.5,
+          -6
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "capacitor",
+        "type": "cylinder",
+        "dimensions": [
+          5,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          9,
+          -18
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heat_shrink",
+        "type": "box",
+        "dimensions": [
+          25.4,
+          11,
+          52.4
+        ],
+        "position": [
+          0,
+          5.5,
+          0
+        ],
+        "color": "#0b0f16"
+      }
+    ],
+    "protocols": [
+      "pwm"
+    ],
+    "keywords": [
+      "esc",
+      "speed controller",
+      "brushless",
+      "30a",
+      "drone"
+    ],
+    "aliases": [
+      "esc",
+      "30a esc",
+      "brushless esc"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Servo",
+        "import": "Servo.h",
+        "manager": "arduino",
+        "purpose": "Throttle pulse generation"
+      }
+    ]
+  }
+}

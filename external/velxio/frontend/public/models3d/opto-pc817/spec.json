@@ -1,0 +1,138 @@
+{
+  "key": "opto-pc817",
+  "catalogId": "optocoupler-pc817",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "optocoupler-pc817",
+    "name": "PC817 optocoupler (phototransistor output)",
+    "category": "other",
+    "description": "Single-channel optocoupler: an infrared LED facing a phototransistor in a 4-pin DIP, 5 kV input-to-output isolation. Drive the LED side from a GPIO through a ~330 ohm resistor (IF ~10 mA, VF 1.2 V); the collector/emitter side switches up to 80 V at ~50 mA. CTR (current transfer ratio) 50-600 % by rank — budget the output side at 2-5x the input current. The standard way to isolate a mains-side triac/relay stage or two hostile voltage domains from an MCU.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 80,
+    "currentMa": 10,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "ANODE",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "LED anode — from the GPIO THROUGH a series resistor (330 ohm at 5 V)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "AN",
+          "A",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "CATHODE",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "LED cathode — to the driving MCU's GND",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "CAT",
+          "C",
+          "K",
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "COLLECTOR",
+        "pinNumber": 3,
+        "role": "bidirectional",
+        "signal": "Phototransistor collector — to the isolated side's pull-up/load",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "COL",
+          "OUT"
+        ],
+        "required": true
+      },
+      {
+        "name": "EMITTER",
+        "pinNumber": 4,
+        "role": "ground",
+        "signal": "Phototransistor emitter — to the isolated side's ground",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "EMIT",
+          "E"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "main_ic",
+        "type": "box",
+        "dimensions": [
+          6,
+          1.4,
+          6
+        ],
+        "position": [
+          0,
+          2.8,
+          0
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "optocoupler",
+      "opto",
+      "pc817",
+      "isolator",
+      "isolation",
+      "phototransistor"
+    ],
+    "aliases": [
+      "pc817",
+      "optocoupler",
+      "opto isolator",
+      "optocoupler pc817",
+      "isolation ic"
+    ]
+  }
+}

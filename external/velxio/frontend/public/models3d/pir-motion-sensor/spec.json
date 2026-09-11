@@ -1,0 +1,122 @@
+{
+  "key": "pir-motion-sensor",
+  "catalogId": "pir-sensor-hc-sr501",
+  "tier": "preset",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "pir-sensor-hc-sr501",
+    "name": "HC-SR501 PIR Motion Sensor Module",
+    "category": "sensor",
+    "description": "Pyroelectric infrared motion detection module with adjustable sensitivity and delay time.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 20,
+    "currentMa": 0.065,
+    "dimensions": {
+      "widthMm": 32,
+      "lengthMm": 24,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#15803d",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "DC 4.5V-20V Supply",
+        "xMm": -2.54,
+        "yMm": -6,
+        "zMm": 10,
+        "direction": "down",
+        "required": true
+      },
+      {
+        "name": "OUT",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Digital High/Low Output (3.3V TTL)",
+        "xMm": 0,
+        "yMm": -6,
+        "zMm": 10,
+        "direction": "down",
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Ground Reference",
+        "xMm": 2.54,
+        "yMm": -6,
+        "zMm": 10,
+        "direction": "down",
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "fresnel_dome",
+        "type": "lens",
+        "dimensions": [
+          11,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          7.5,
+          0
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "pot_sensitivity",
+        "type": "potentiometer",
+        "dimensions": [
+          4,
+          3.5,
+          4
+        ],
+        "position": [
+          -10,
+          2.5,
+          -7
+        ],
+        "color": "#f59e0b"
+      },
+      {
+        "name": "pot_time",
+        "type": "potentiometer",
+        "dimensions": [
+          4,
+          3.5,
+          4
+        ],
+        "position": [
+          10,
+          2.5,
+          -7
+        ],
+        "color": "#f59e0b"
+      }
+    ],
+    "protocols": [
+      "gpio",
+      "digital"
+    ],
+    "keywords": [
+      "pir",
+      "motion",
+      "infrared",
+      "human detection",
+      "hc-sr501",
+      "sr501"
+    ],
+    "aliases": [
+      "hcsr501",
+      "hc-sr501",
+      "pir motion sensor"
+    ]
+  }
+}

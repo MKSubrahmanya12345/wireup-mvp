@@ -62,6 +62,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         skippedParts: projection.skippedParts,
         skippedConnections: projection.skippedConnections,
         warnings: projection.warnings,
+        cadBench: projection.cadBench,
       });
     }
 
