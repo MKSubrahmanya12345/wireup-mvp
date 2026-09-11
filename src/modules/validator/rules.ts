@@ -40,6 +40,9 @@ export const AUTO_FIXABLE_CODES: ValidationIssueCode[] = [
   'gpio_conflict',
   'reserved_pin_used',
   'input_only_pin_driven',
+  'analog_only_pin_driven',
+  'uart_pin_used_as_gpio',
+  'duplicate_pin_assignment',
   'capability_mismatch',
   'missing_ground',
   'missing_power',
@@ -69,6 +72,17 @@ export interface RuleContext {
   project: ProjectState;
   catalog: ComponentDefinition[];
   profile?: McuProfile;
+}
+
+/**
+ * True when the generated firmware starts the given hardware serial port.
+ * Using a UART pin as GPIO is only a defect while that port is in use, and the
+ * evidence is the sketch text itself (`Serial.begin(...)`), not an assumption
+ * baked into the rule.
+ */
+function opensSerialPort(project: ProjectState, portId: string): boolean {
+  const pattern = new RegExp(`\\b${portId}\\s*\\.\\s*begin\\s*\\(`);
+  return (project.artifacts.code?.files ?? []).some((file) => pattern.test(file.content));
 }
 
 interface IssueDraft {
@@ -353,6 +367,37 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
   /* 5. Pins ----------------------------------------------------------------- */
   mark = issues.length;
   const knownInstances = instanceIds;
+
+  /*
+   * Two assignments claiming the same MCU pin is exactly the shape that produced
+   * duplicate `const int` definitions in the reported safe build — the emitter
+   * (uniqueCodeAssignments) keeps only the first, so the plan and the sketch
+   * disagree silently. Shared buses are the one legal exception: every I2C/SPI
+   * peripheral sits on the same SDA/SCL (or MOSI/MISO/SCK) pins by design.
+   */
+  const byMcuPin = new Map<string, PinAssignment[]>();
+  for (const assignment of project.pinAssignments) {
+    const key = `${assignment.mcuInstanceId}\u0000${assignment.pin}`;
+    const group = byMcuPin.get(key);
+    if (group) group.push(assignment);
+    else byMcuPin.set(key, [assignment]);
+  }
+  for (const group of byMcuPin.values()) {
+    if (group.length < 2) continue;
+    if (group.every((assignment) => assignment.protocol === 'i2c' || assignment.protocol === 'spi')) continue;
+    const keeper = group[0];
+    for (const clash of group.slice(1)) {
+      add('pins', {
+        code: 'duplicate_pin_assignment',
+        severity: 'error',
+        domain: 'pins',
+        message: `${clash.mcuInstanceId}.${clash.pin} is claimed twice: ${keeper.targetInstanceId}.${keeper.targetPin} and ${clash.targetInstanceId}.${clash.targetPin}. Only the first assignment reaches the sketch; the second redefines an already-declared pin constant.`,
+        fixHint: `Drop this assignment or move ${clash.targetInstanceId}.${clash.targetPin} to a free pin.`,
+        target: { artifact: 'pinAssignments', assignmentId: clash.id, componentInstanceId: clash.targetInstanceId, pin: clash.pin },
+      });
+    }
+  }
+
   for (const assignment of project.pinAssignments) {
     if (!knownInstances.has(assignment.targetInstanceId)) {
       add('pins', {
@@ -387,13 +432,51 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
           message: `${assignment.pin} is not a pin of ${profile.name}.`,
           target: { artifact: 'pinAssignments', assignmentId: assignment.id, pin: assignment.pin },
         });
-      } else if (assignment.direction === 'output' && spec.capabilities.includes('input-only')) {
+      } else if (spec.capabilities.includes('input-only')) {
+        /*
+         * A pin with no digital buffer at all (Nano/Uno A6/A7, ESP32 GPIO34–39)
+         * cannot serve ANY digital signal, read or driven — a digital read
+         * returns garbage just as surely as a digital write does. That is a
+         * different failure from a pin that is merely input-only, so it gets
+         * its own code and its own advice.
+         */
+        const analogOnly = !spec.capabilities.includes('digital');
+        if (analogOnly && (assignment.direction === 'output' || assignment.protocol !== 'adc')) {
+          add('pins', {
+            code: 'analog_only_pin_driven',
+            severity: 'error',
+            domain: 'pins',
+            message: `${assignment.pin} is analog-only on ${profile.name} (no digital input/output buffer) but ${assignment.targetInstanceId}.${assignment.targetPin} is connected as ${assignment.direction}/${assignment.protocol}.`,
+            fixHint: `Move ${assignment.targetInstanceId}.${assignment.targetPin} to a digital-capable pin, or use it as an analog input (analogRead) only.`,
+            target: { artifact: 'pinAssignments', assignmentId: assignment.id, pin: assignment.pin },
+          });
+        } else if (!analogOnly && assignment.direction === 'output') {
+          add('pins', {
+            code: 'input_only_pin_driven',
+            severity: 'error',
+            domain: 'pins',
+            message: `${assignment.pin} is input-only on ${profile.name} but is assigned as an output for ${assignment.targetInstanceId}.${assignment.targetPin}.`,
+            fixHint: `Use an output-capable pin such as ${profile.pins.filter((entry) => !entry.capabilities.includes('input-only')).slice(0, 4).map((entry) => entry.name).join(', ')}.`,
+            target: { artifact: 'pinAssignments', assignmentId: assignment.id, pin: assignment.pin },
+          });
+        }
+      }
+      const uartPort =
+        spec && spec.capabilities.includes('uart')
+          ? profile.uarts.find((uart) => uart.tx === assignment.pin || uart.rx === assignment.pin)
+          : undefined;
+      if (uartPort && assignment.protocol !== 'uart' && opensSerialPort(project, uartPort.id)) {
+        /*
+         * Gated on the sketch actually starting the port: D0/D1 as GPIO is only
+         * a defect while the USB serial bridge is in use, and the evidence is
+         * the generated code, not an assumption.
+         */
         add('pins', {
-          code: 'input_only_pin_driven',
+          code: 'uart_pin_used_as_gpio',
           severity: 'error',
           domain: 'pins',
-          message: `${assignment.pin} is input-only on ${profile.name} but is assigned as an output for ${assignment.targetInstanceId}.${assignment.targetPin}.`,
-          fixHint: `Use an output-capable pin such as ${profile.pins.filter((entry) => !entry.capabilities.includes('input-only')).slice(0, 4).map((entry) => entry.name).join(', ')}.`,
+          message: `${assignment.pin} carries the hardware ${uartPort.id} on ${profile.name}${uartPort.note ? ` (${uartPort.note})` : ''}, the firmware starts that port, and ${assignment.targetInstanceId}.${assignment.targetPin} is wired here as ${assignment.protocol}.`,
+          fixHint: `Move ${assignment.targetInstanceId}.${assignment.targetPin} to a free digital pin; ${assignment.pin} must stay on the serial port while it is in use.`,
           target: { artifact: 'pinAssignments', assignmentId: assignment.id, pin: assignment.pin },
         });
       }
