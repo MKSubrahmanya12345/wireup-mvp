@@ -1,0 +1,69 @@
+# Render Blueprint — hosted Velxio (the emulator Wireup embeds on /simulation).
+#
+# Deploys `external/velxio` via its standalone Dockerfile (nginx + FastAPI +
+# QEMU + ESP-IDF toolchains in ONE container), INCLUDING Wireup's
+# embed-bridge patch (external/patches/velxio-embed-bridge.patch) that the
+# upstream prebuilt image does NOT have. Do not swap this for the
+# ghcr.io/davidmonterocrespo24/velxio image or the /simulation iframe sync
+# (load-vlx / serial / run control) silently stops working.
+#
+# Usage: push this repo to GitHub → Render Dashboard → New → Blueprint →
+# select this repo → Render prompts for VELXIO_LICENSE_KEY → Apply.
+# First build takes 15–30 min (ESP-IDF toolchains); later deploys reuse
+# the layer cache. First boot takes a few extra minutes (arduino cores).
+#
+# After deploy: set WIREUP_VELXIO_URL=https://<this-service>.onrender.com
+# in Wireup's environment (and see Step 1 in the deploy notes about the
+# nginx frame-ancestors header or the iframe will render blank).
+
+services:
+  - type: web
+    name: velxio
+    runtime: docker
+    dockerfilePath: ./external/velxio/Dockerfile.standalone
+    dockerContext: ./external/velxio
+    # Standard (2 GB RAM) is the floor: ESP-IDF linking + QEMU OOM on
+    # Starter's 512 MB, and Free sleeps + has no disk. ~$25/mo.
+    plan: standard
+    healthCheckPath: /health
+    # Render allows ONE disk per service. /app/data is the one that matters
+    # (SQLite DB + SECRET_KEY + sketches). ccache / ESP-IDF build caches stay
+    # ephemeral, so the first ESP32 compile after each deploy is cold
+    # (5–7 min), then fast until the next deploy. AVR/RP2040 always fast.
+    disk:
+      name: velxio-data
+      mountPath: /app/data
+      sizeGB: 10
+    envVars:
+      # The container's nginx listens on 80; Render routes to whatever PORT is.
+      - key: PORT
+        value: "80"
+      # Same values as external/velxio/docker-compose.yml:
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:////app/data/velxio.db
+      - key: DATA_DIR
+        value: /app/data
+      - key: IDF_PATH
+        value: /opt/esp-idf
+      - key: IDF_TOOLS_PATH
+        value: /root/.espressif
+      - key: ARDUINO_ESP32_PATH
+        value: /opt/arduino-esp32
+      - key: IDF_CCACHE_ENABLE
+        value: "1"
+      - key: CCACHE_DIR
+        value: /var/cache/ccache
+      - key: VELXIO_PERSISTENT_BUILD_DIR
+        value: "1"
+      # Don't phone home to velxio.dev for product news; stay self-contained.
+      - key: VELXIO_NEWS
+        value: "off"
+      - key: SECRET_KEY
+        generateValue: true
+      # Build-time key that unlocks the QEMU ESP32 runtime download.
+      # Render auto-translates env vars into Docker build args, so this feeds
+      # the Dockerfile's `ARG VELXIO_LICENSE_KEY` with no extra config.
+      # Free personal key: https://velxio.dev/license/signup
+      # Render prompts for it when you Apply the Blueprint (never commit it).
+      - key: VELXIO_LICENSE_KEY
+        sync: false
