@@ -1,0 +1,622 @@
+{
+  "key": "esp32",
+  "catalogId": "esp32-devkit-v1",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "esp32-devkit-v1",
+    "name": "ESP32 DevKit V1 (ESP-WROOM-32)",
+    "category": "controller",
+    "description": "Dual-core 32-bit MCU with integrated Wi-Fi 802.11 b/g/n and Bluetooth Classic + BLE. 3.3 V logic, 30 usable GPIO, 12-bit ADC, LEDC PWM, capacitive touch. Powered over USB or VIN (5 V) with an on-board 3.3 V regulator.",
+    "voltage": 3.3,
+    "minVoltage": 3,
+    "maxVoltage": 3.6,
+    "currentMa": 80,
+    "dimensions": {
+      "widthMm": 51.4,
+      "lengthMm": 28.5,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0b4f9c",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "3V3",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "3.3 V logic supply output",
+        "xMm": -22.86,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "3.3V",
+          "VCC",
+          "3V"
+        ],
+        "required": true
+      },
+      {
+        "name": "VIN",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "5 V unregulated input (USB pass-through)",
+        "xMm": -20.32,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "5V",
+          "VUSB"
+        ],
+        "required": false
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Common ground",
+        "xMm": -17.78,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "VSS"
+        ],
+        "required": true
+      },
+      {
+        "name": "EN",
+        "pinNumber": 4,
+        "role": "control",
+        "signal": "Chip enable / reset",
+        "xMm": -15.24,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "RESET",
+          "RST"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO0",
+        "pinNumber": 5,
+        "role": "bidirectional",
+        "signal": "Strapping pin (boot mode)",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "0",
+          "D0"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO1",
+        "pinNumber": 6,
+        "role": "uart",
+        "signal": "UART0 TX (default Serial)",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "1",
+          "TX",
+          "TX0"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO2",
+        "pinNumber": 7,
+        "role": "bidirectional",
+        "signal": "Strapping pin, on-board LED on most DevKits",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "2",
+          "D2"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO3",
+        "pinNumber": 8,
+        "role": "uart",
+        "signal": "UART0 RX (default Serial)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "3",
+          "RX",
+          "RX0"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO4",
+        "pinNumber": 9,
+        "role": "bidirectional",
+        "signal": "ADC2_CH0 / touch0",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "4",
+          "D4",
+          "A4"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO5",
+        "pinNumber": 10,
+        "role": "bidirectional",
+        "signal": "VSPI CS default",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "5",
+          "D5"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO12",
+        "pinNumber": 11,
+        "role": "bidirectional",
+        "signal": "Strapping pin (MTDI) — drives flash voltage, avoid as an output at boot",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "12",
+          "D12"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO13",
+        "pinNumber": 12,
+        "role": "bidirectional",
+        "signal": "ADC2_CH4",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "13",
+          "D13"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO14",
+        "pinNumber": 13,
+        "role": "bidirectional",
+        "signal": "VSPI SCK default / ADC2_CH6",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "14",
+          "D14"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO15",
+        "pinNumber": 14,
+        "role": "bidirectional",
+        "signal": "Strapping pin (MTDO)",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "15",
+          "D15"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO16",
+        "pinNumber": 15,
+        "role": "bidirectional",
+        "signal": "UART2 RX (PSRAM shares these on WROVER modules)",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "16",
+          "D16"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO17",
+        "pinNumber": 16,
+        "role": "bidirectional",
+        "signal": "UART2 TX",
+        "xMm": 15.24,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "17",
+          "D17"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO18",
+        "pinNumber": 17,
+        "role": "bidirectional",
+        "signal": "VSPI SCK",
+        "xMm": 17.78,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "18",
+          "D18"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO19",
+        "pinNumber": 18,
+        "role": "bidirectional",
+        "signal": "VSPI MISO",
+        "xMm": 20.32,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "19",
+          "D19"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO21",
+        "pinNumber": 19,
+        "role": "bidirectional",
+        "signal": "Default I2C SDA",
+        "xMm": 22.86,
+        "yMm": 6,
+        "zMm": -11.71,
+        "direction": "up",
+        "aliases": [
+          "21",
+          "D21",
+          "SDA"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO22",
+        "pinNumber": 20,
+        "role": "bidirectional",
+        "signal": "Default I2C SCL",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "22",
+          "D22",
+          "SCL"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO23",
+        "pinNumber": 21,
+        "role": "bidirectional",
+        "signal": "VSPI MOSI",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "23",
+          "D23"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO25",
+        "pinNumber": 22,
+        "role": "bidirectional",
+        "signal": "ADC2_CH8 / DAC1",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "25",
+          "D25",
+          "A0"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO26",
+        "pinNumber": 23,
+        "role": "bidirectional",
+        "signal": "ADC2_CH9 / DAC2",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "26",
+          "D26",
+          "A1"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO27",
+        "pinNumber": 24,
+        "role": "bidirectional",
+        "signal": "ADC2_CH7",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "27",
+          "D27",
+          "A2"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO32",
+        "pinNumber": 25,
+        "role": "bidirectional",
+        "signal": "ADC1_CH4 (Wi-Fi safe ADC)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "32",
+          "D32",
+          "A3"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO33",
+        "pinNumber": 26,
+        "role": "bidirectional",
+        "signal": "ADC1_CH5 (Wi-Fi safe ADC)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "33",
+          "D33",
+          "A4"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO34",
+        "pinNumber": 27,
+        "role": "analog",
+        "signal": "ADC1_CH6 — INPUT ONLY, no internal pull-up",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "34",
+          "A6"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO35",
+        "pinNumber": 28,
+        "role": "analog",
+        "signal": "ADC1_CH7 — INPUT ONLY, no internal pull-up",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "35",
+          "A7"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO36",
+        "pinNumber": 29,
+        "role": "analog",
+        "signal": "ADC1_CH0 / VP — INPUT ONLY",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "36",
+          "VP",
+          "A8"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO39",
+        "pinNumber": 30,
+        "role": "analog",
+        "signal": "ADC1_CH3 / VN — INPUT ONLY",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -9.17,
+        "direction": "up",
+        "aliases": [
+          "39",
+          "VN",
+          "A9"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "esp_wroom_32_module",
+        "type": "box",
+        "dimensions": [
+          25.5,
+          3.2,
+          18
+        ],
+        "position": [
+          0,
+          3.8000000000000003,
+          4
+        ],
+        "color": "#1e293b"
+      },
+      {
+        "name": "pcb_antenna_keepout",
+        "type": "box",
+        "dimensions": [
+          18,
+          0.18,
+          5
+        ],
+        "position": [
+          0,
+          5.5,
+          15.5
+        ],
+        "color": "#d6a940"
+      },
+      {
+        "name": "micro_usb_connector",
+        "type": "box",
+        "dimensions": [
+          7.8,
+          3.2,
+          6
+        ],
+        "position": [
+          0,
+          3.7,
+          -13
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "usb_uart_bridge",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.1,
+          5
+        ],
+        "position": [
+          -8.5,
+          3,
+          -5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "boot_button",
+        "type": "potentiometer",
+        "dimensions": [
+          4.2,
+          2,
+          4.2
+        ],
+        "position": [
+          -18,
+          3.8000000000000003,
+          -10.5
+        ],
+        "color": "#e5e7eb"
+      },
+      {
+        "name": "en_button",
+        "type": "potentiometer",
+        "dimensions": [
+          4.2,
+          2,
+          4.2
+        ],
+        "position": [
+          18,
+          3.8000000000000003,
+          -10.5
+        ],
+        "color": "#e5e7eb"
+      }
+    ],
+    "protocols": [
+      "wifi",
+      "bluetooth",
+      "ble",
+      "uart",
+      "i2c",
+      "spi",
+      "i2s",
+      "adc",
+      "pwm",
+      "dac",
+      "one_wire"
+    ],
+    "keywords": [
+      "esp32",
+      "wifi",
+      "wi-fi",
+      "bluetooth",
+      "ble",
+      "32-bit",
+      "microcontroller",
+      "mcu",
+      "wroom",
+      "devkit"
+    ],
+    "aliases": [
+      "esp32",
+      "esp-32",
+      "esp32 devkit",
+      "esp32 devkit v1",
+      "esp32-wroom-32",
+      "esp32 dev module",
+      "node32s"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "ESP32 Arduino core",
+        "import": "Arduino.h",
+        "manager": "arduino",
+        "purpose": "Board support package for the ESP32"
+      }
+    ]
+  }
+}

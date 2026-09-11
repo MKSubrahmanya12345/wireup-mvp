@@ -1,0 +1,170 @@
+{
+  "key": "battery-holder-4xaa",
+  "catalogId": "battery-holder-4xaa",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "battery-holder-4xaa",
+    "name": "4x AA battery holder (6 V)",
+    "category": "power",
+    "description": "Four AA cells in series: 6 V alkaline (or 4.8 V with NiMH). Comfortable 1–2 A capability, cheap and safe, and sits nicely in the 5–12 V window most motor drivers accept.",
+    "voltage": 6,
+    "minVoltage": 4.4,
+    "maxVoltage": 6.4,
+    "currentMa": 500,
+    "dimensions": {
+      "widthMm": 63,
+      "lengthMm": 58,
+      "heightMm": 17
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "+",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "+ (power)",
+        "xMm": -4,
+        "yMm": 0,
+        "zMm": 29,
+        "direction": "front",
+        "aliases": [
+          "POS",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "-",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "- (ground)",
+        "xMm": 4,
+        "yMm": 0,
+        "zMm": 29,
+        "direction": "front",
+        "aliases": [
+          "NEG",
+          "BLACK",
+          "GND"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "aa_holder_tray",
+        "type": "box",
+        "dimensions": [
+          63,
+          5,
+          58
+        ],
+        "position": [
+          0,
+          -6,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "aa_cell_slot_1",
+        "type": "cylinder",
+        "dimensions": [
+          6.8,
+          52,
+          0
+        ],
+        "position": [
+          -22.5,
+          0,
+          0
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "color": "#d1d5db"
+      },
+      {
+        "name": "aa_cell_slot_2",
+        "type": "cylinder",
+        "dimensions": [
+          6.8,
+          52,
+          0
+        ],
+        "position": [
+          -7.5,
+          0,
+          0
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "color": "#94a3b8"
+      },
+      {
+        "name": "aa_cell_slot_3",
+        "type": "cylinder",
+        "dimensions": [
+          6.8,
+          52,
+          0
+        ],
+        "position": [
+          7.5,
+          0,
+          0
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "color": "#d1d5db"
+      },
+      {
+        "name": "aa_cell_slot_4",
+        "type": "cylinder",
+        "dimensions": [
+          6.8,
+          52,
+          0
+        ],
+        "position": [
+          22.5,
+          0,
+          0
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "color": "#94a3b8"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "battery",
+      "aa",
+      "battery holder",
+      "6v",
+      "power supply"
+    ],
+    "aliases": [
+      "aa battery holder",
+      "4xaa",
+      "battery pack"
+    ]
+  }
+}

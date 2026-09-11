@@ -1,0 +1,141 @@
+{
+  "key": "bme280-environmental",
+  "catalogId": "bme280-environmental",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "bme280-environmental",
+    "name": "BME280 Temperature, Humidity & Pressure Sensor",
+    "category": "sensor",
+    "description": "Precision digital environmental sensor with combined barometric pressure, temperature, and relative humidity sensing.",
+    "voltage": 3.3,
+    "minVoltage": 1.8,
+    "maxVoltage": 3.6,
+    "currentMa": 3.6,
+    "dimensions": {
+      "widthMm": 15.2,
+      "lengthMm": 12,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#15803d",
+    "pins": [
+      {
+        "name": "VIN",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "3.3V Power",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -4.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Ground",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -4.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C/SPI Clock",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -4.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C Data / SPI MOSI",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -4.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "CSB",
+        "pinNumber": 5,
+        "role": "control",
+        "signal": "Chip Select",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -4.5,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "SDO",
+        "pinNumber": 6,
+        "role": "spi",
+        "signal": "SPI MISO / I2C Address Select",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -4.5,
+        "direction": "up",
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "bme280_metal_can",
+        "type": "box",
+        "dimensions": [
+          2.5,
+          1.2,
+          2.5
+        ],
+        "position": [
+          0,
+          1.5,
+          1.5
+        ],
+        "color": "#d1d5db"
+      },
+      {
+        "name": "header_strip",
+        "type": "header_block",
+        "dimensions": [
+          15.2,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2,
+          -4.5
+        ],
+        "color": "#1e293b"
+      }
+    ],
+    "protocols": [
+      "i2c",
+      "spi"
+    ],
+    "keywords": [
+      "bme280",
+      "bmp280",
+      "temperature",
+      "humidity",
+      "pressure",
+      "barometer",
+      "weather"
+    ],
+    "aliases": [
+      "bme280",
+      "bme-280",
+      "bosch bme280"
+    ]
+  }
+}

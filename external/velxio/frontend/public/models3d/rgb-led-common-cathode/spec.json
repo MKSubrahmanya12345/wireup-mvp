@@ -1,0 +1,162 @@
+{
+  "key": "rgb-led-common-cathode",
+  "catalogId": "rgb-led-common-cathode",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "rgb-led-common-cathode",
+    "name": "RGB LED (common cathode)",
+    "category": "actuator",
+    "description": "Four-lead RGB LED sharing a common cathode. Each colour channel needs its own series resistor (220 Ω at 5 V) and its own PWM-capable MCU pin for mixing.",
+    "voltage": 2.2,
+    "minVoltage": 1.8,
+    "maxVoltage": 3.4,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 5,
+      "lengthMm": 5,
+      "heightMm": 8.6
+    },
+    "bodyColor": "#f8fafc",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "R",
+        "pinNumber": 1,
+        "role": "pwm",
+        "signal": "Red anode (through a resistor)",
+        "xMm": -3.81,
+        "yMm": -4.3,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "G",
+        "pinNumber": 2,
+        "role": "pwm",
+        "signal": "Green anode (through a resistor)",
+        "xMm": -1.27,
+        "yMm": -4.3,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "GREEN"
+        ],
+        "required": true
+      },
+      {
+        "name": "B",
+        "pinNumber": 3,
+        "role": "pwm",
+        "signal": "Blue anode (through a resistor)",
+        "xMm": 1.27,
+        "yMm": -4.3,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "BLUE"
+        ],
+        "required": true
+      },
+      {
+        "name": "CATHODE",
+        "pinNumber": 4,
+        "role": "ground",
+        "signal": "Common cathode to GND",
+        "xMm": 3.81,
+        "yMm": -4.3,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "-",
+          "GND",
+          "COMMON"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "clear_5mm_rgb_epoxy_lens",
+        "type": "led",
+        "dimensions": [
+          5,
+          8.6,
+          5
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#e0f2fe"
+      },
+      {
+        "name": "red_die",
+        "type": "led",
+        "dimensions": [
+          0.85,
+          0.5,
+          0.85
+        ],
+        "position": [
+          -1.25,
+          -2,
+          0.25
+        ],
+        "color": "#ef4444"
+      },
+      {
+        "name": "green_die",
+        "type": "led",
+        "dimensions": [
+          0.85,
+          0.5,
+          0.85
+        ],
+        "position": [
+          0,
+          -2,
+          0.25
+        ],
+        "color": "#22c55e"
+      },
+      {
+        "name": "blue_die",
+        "type": "led",
+        "dimensions": [
+          0.85,
+          0.5,
+          0.85
+        ],
+        "position": [
+          1.25,
+          -2,
+          0.25
+        ],
+        "color": "#3b82f6"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "rgb led",
+      "color led",
+      "colour led",
+      "mood light",
+      "status light"
+    ],
+    "aliases": [
+      "rgb led",
+      "rgb light",
+      "common cathode rgb led"
+    ]
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "key": "battery-2s-lipo",
+  "catalogId": "battery-2s-lipo",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "battery-2s-lipo",
+    "name": "2S LiPo battery pack (7.4 V)",
+    "category": "power",
+    "description": "Two lithium-polymer cells in series: 7.4 V nominal, 8.4 V fully charged, 6.0 V safe cutoff. High discharge capability makes it the standard choice for motor projects. Feed motors from it directly and derive the logic rail with a regulator or the driver board regulator.",
+    "voltage": 7.4,
+    "minVoltage": 6,
+    "maxVoltage": 8.4,
+    "currentMa": 1000,
+    "dimensions": {
+      "widthMm": 65,
+      "lengthMm": 35,
+      "heightMm": 12
+    },
+    "bodyColor": "#475569",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "+",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Positive terminal",
+        "xMm": -4,
+        "yMm": 0,
+        "zMm": 17.5,
+        "direction": "front",
+        "aliases": [
+          "V+",
+          "POS",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "-",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Negative terminal / system ground reference",
+        "xMm": 4,
+        "yMm": 0,
+        "zMm": 17.5,
+        "direction": "front",
+        "aliases": [
+          "V-",
+          "NEG",
+          "BLACK",
+          "GND"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "soft_lipo_pouch",
+        "type": "box",
+        "dimensions": [
+          65,
+          12,
+          35
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#475569"
+      },
+      {
+        "name": "balance_connector",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          3,
+          3
+        ],
+        "position": [
+          -22,
+          -2.5,
+          18.5
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "xt30_lead_bundle",
+        "type": "cylinder",
+        "dimensions": [
+          1,
+          24,
+          0
+        ],
+        "position": [
+          18,
+          -1.5,
+          22
+        ],
+        "rotation": [
+          90,
+          0,
+          20
+        ],
+        "color": "#ef4444"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "battery",
+      "lipo",
+      "li-po",
+      "7.4v",
+      "2s",
+      "power supply",
+      "pack"
+    ],
+    "aliases": [
+      "lipo",
+      "lipo battery",
+      "2s lipo",
+      "7.4v battery"
+    ]
+  }
+}

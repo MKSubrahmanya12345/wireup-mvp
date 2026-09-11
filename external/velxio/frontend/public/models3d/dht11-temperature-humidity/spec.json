@@ -1,0 +1,150 @@
+{
+  "key": "dht11-temperature-humidity",
+  "catalogId": "dht11-temperature-humidity",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "dht11-temperature-humidity",
+    "name": "DHT11 temperature & humidity sensor",
+    "category": "sensor",
+    "description": "Single-wire digital temperature (0–50 °C, ±2 °C) and humidity (20–90 %RH, ±5 %) sensor. 1 Hz maximum sample rate. Needs a 4.7–10 kΩ pull-up on DATA (many 3-pin modules include one).",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 0.5,
+    "dimensions": {
+      "widthMm": 15.5,
+      "lengthMm": 12,
+      "heightMm": 5.5
+    },
+    "bodyColor": "#2563eb",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -2.54,
+        "yMm": -2.75,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "DATA",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Single-wire digital data",
+        "xMm": 0,
+        "yMm": -2.75,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "OUT",
+          "S",
+          "SIG",
+          "DQ"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 2.54,
+        "yMm": -2.75,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "blue_vented_dht11_body",
+        "type": "box",
+        "dimensions": [
+          15.5,
+          5.5,
+          12
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "vent_slots",
+        "type": "box",
+        "dimensions": [
+          11.16,
+          0.08,
+          1
+        ],
+        "position": [
+          0,
+          0.6,
+          6.05
+        ],
+        "color": "#0f172a"
+      },
+      {
+        "name": "label_panel",
+        "type": "box",
+        "dimensions": [
+          8.525,
+          0.08,
+          2.1
+        ],
+        "position": [
+          0,
+          -1.2,
+          6.06
+        ],
+        "color": "#93c5fd"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "dht11",
+      "temperature",
+      "humidity",
+      "weather",
+      "climate"
+    ],
+    "aliases": [
+      "dht11",
+      "dht 11",
+      "temp humidity sensor"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "DHT sensor library",
+        "import": "DHT.h",
+        "manager": "arduino",
+        "purpose": "Decodes the DHT single-wire protocol"
+      },
+      {
+        "name": "Adafruit Unified Sensor",
+        "import": "Adafruit_Sensor.h",
+        "manager": "arduino",
+        "purpose": "Dependency of the DHT sensor library"
+      }
+    ]
+  }
+}

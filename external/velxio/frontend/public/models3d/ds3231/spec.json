@@ -1,0 +1,176 @@
+{
+  "key": "ds3231",
+  "catalogId": "rtc-ds3231-module",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "rtc-ds3231-module",
+    "name": "DS3231 high-precision RTC module (ZS-042)",
+    "category": "sensor",
+    "description": "Temperature-compensated real-time clock: ±2 ppm between 0-40 °C (about ±1 minute per year), seconds/minutes/hours/day/date/month/year with leap-year correction, on-chip aging trim and an integrated temperature sensor readable over I2C. The ZS-042 breakout adds a CR2032 backup holder so time survives power loss, plus SQW and 32K output pins. Careful on a shared bus: the DS3231 answers at 0x68 — the SAME address as an MPU6050. Move the IMU to 0x69 (AD0 high) or use one or the other.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 0.3,
+    "dimensions": {
+      "widthMm": 20.240000000000002,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C data",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "D"
+        ],
+        "required": true
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C clock",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "C"
+        ],
+        "required": true
+      },
+      {
+        "name": "SQW",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Programmable square wave 1 Hz-8 kHz (also a configurable alarm pin)",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "SQW/OUT"
+        ],
+        "required": false
+      },
+      {
+        "name": "32K",
+        "pinNumber": 6,
+        "role": "digital",
+        "signal": "32.768 kHz clock output, enabled by register",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "32KHZ"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          15.24,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensor_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.4,
+          5
+        ],
+        "position": [
+          0,
+          2.8,
+          1.5
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "i2c"
+    ],
+    "keywords": [
+      "ds3231",
+      "rtc",
+      "real time clock",
+      "clock",
+      "timekeeping",
+      "alarm",
+      "calendar"
+    ],
+    "aliases": [
+      "ds3231",
+      "rtc module",
+      "real time clock",
+      "real-time clock",
+      "zs-042"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "RTClib",
+        "import": "RTClib.h",
+        "manager": "arduino",
+        "purpose": "DS3231 register driver and DateTime helpers"
+      },
+      {
+        "name": "Wire",
+        "import": "Wire.h",
+        "manager": "arduino",
+        "purpose": "I2C bus"
+      }
+    ]
+  }
+}

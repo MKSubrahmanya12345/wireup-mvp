@@ -197,6 +197,12 @@ function pinCandidates(pinName: string): string[] {
   }
   // Some exports drop the dot in GND.N.
   if (/^GND\.\d+$/.test(pinName)) push(pinName.replace('.', ''));
+  // GLTFLoader runs every node name through three's `sanitizeNodeName`
+  // (whitespace -> '_', then [] . : / stripped), so a GLB anchor authored for
+  // a pin literally called `1.r`, `D/C` or `GND.1` comes back as `1r`, `DC`,
+  // `GND1`. Compare the same way here so a generated model's anchors resolve
+  // without renaming the pins the netlist/wiring graph actually uses.
+  push(pinName.replace(/\s/g, '_').replace(/[\[\]\.:\/]/g, ''));
   return out;
 }
 

@@ -26,9 +26,11 @@
     "verify:llm-codegen": "tsx scripts/verify-llm-codegen.ts",
     "verify:workbench": "tsx scripts/verify-firmware-workbench.ts",
     "verify:cad-link": "tsx scripts/verify-cad-link.ts",
+    "verify:cad-sim-link": "tsx scripts/verify-cad-sim-link.ts",
     "verify:everflow": "tsx scripts/verify-everflow.ts",
     "verify:graph": "tsx scripts/verify-graph.ts",
     "export:cad-catalog": "tsx scripts/export-cad-catalog-to-velxio.ts",
+    "export:cad-models": "tsx scripts/export-cad-models-to-velxio.ts",
     "verify:simulator": "tsx scripts/verify-simulator-link.ts",
     "verify:contracts": "tsx scripts/verify-contracts.ts",
     "verify:idea-graph": "tsx scripts/verify-idea-graph.ts"

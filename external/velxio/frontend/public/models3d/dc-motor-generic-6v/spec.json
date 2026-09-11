@@ -1,0 +1,149 @@
+{
+  "key": "dc-motor-generic-6v",
+  "catalogId": "dc-motor-generic-6v",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "dc-motor-generic-6v",
+    "name": "DC gear motor (6 V)",
+    "category": "actuator",
+    "description": "Yellow TT-style plastic gearbox motor with a can motor mounted on the side and a dual output shaft. Two solder tabs, no logic interface — it must be wired to an H-bridge output pair.",
+    "voltage": 6,
+    "minVoltage": 3,
+    "maxVoltage": 12,
+    "currentMa": 250,
+    "dimensions": {
+      "widthMm": 70,
+      "lengthMm": 22.5,
+      "heightMm": 18
+    },
+    "bodyColor": "#eab308",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor terminal A",
+        "xMm": 30,
+        "yMm": 14,
+        "zMm": 4,
+        "direction": "right",
+        "aliases": [
+          "+",
+          "M+",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "B",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Motor terminal B",
+        "xMm": 30,
+        "yMm": 14,
+        "zMm": -4,
+        "direction": "right",
+        "aliases": [
+          "-",
+          "M-",
+          "BLACK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "gearbox_housing",
+        "type": "box",
+        "dimensions": [
+          42,
+          18,
+          22.5
+        ],
+        "position": [
+          -10,
+          9,
+          0
+        ],
+        "color": "#facc15"
+      },
+      {
+        "name": "motor_can",
+        "type": "cylinder",
+        "dimensions": [
+          11,
+          25,
+          0
+        ],
+        "position": [
+          22,
+          9,
+          0
+        ],
+        "color": "#94a3b8",
+        "rotation": [
+          0,
+          0,
+          90
+        ]
+      },
+      {
+        "name": "output_shaft_left",
+        "type": "cylinder",
+        "dimensions": [
+          2.7,
+          10,
+          0
+        ],
+        "position": [
+          -10,
+          9,
+          16
+        ],
+        "color": "#cbd5e1",
+        "rotation": [
+          90,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "output_shaft_right",
+        "type": "cylinder",
+        "dimensions": [
+          2.7,
+          10,
+          0
+        ],
+        "position": [
+          -10,
+          9,
+          -16
+        ],
+        "color": "#cbd5e1",
+        "rotation": [
+          90,
+          0,
+          0
+        ]
+      }
+    ],
+    "protocols": [],
+    "keywords": [
+      "dc motor",
+      "gear motor",
+      "tt motor",
+      "wheel",
+      "drive"
+    ],
+    "aliases": [
+      "dc motor",
+      "motor",
+      "tt motor",
+      "bo motor",
+      "geared dc motor"
+    ]
+  }
+}

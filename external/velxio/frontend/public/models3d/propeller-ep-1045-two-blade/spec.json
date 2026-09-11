@@ -1,0 +1,112 @@
+{
+  "key": "propeller-ep-1045-two-blade",
+  "catalogId": "propeller-ep-1045-two-blade",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "propeller-ep-1045-two-blade",
+    "name": "1045 two-blade propeller (10 in, 4.5 in pitch)",
+    "category": "other",
+    "description": "Slow-fly 10 inch two-blade propeller for 2212-class motors on 2-4S packs. Mechanical only; sizing it changes the ESC current draw and the required battery C-rating.",
+    "voltage": 5,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 254,
+      "lengthMm": 254,
+      "heightMm": 8
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "none",
+    "pins": [],
+    "features": [
+      {
+        "name": "hub",
+        "type": "cylinder",
+        "dimensions": [
+          10,
+          8,
+          0
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "bore",
+        "type": "cylinder",
+        "dimensions": [
+          3,
+          8.2,
+          0
+        ],
+        "position": [
+          0,
+          0.1,
+          0
+        ],
+        "color": "#020617"
+      },
+      {
+        "name": "blade_a",
+        "type": "box",
+        "dimensions": [
+          118,
+          2.2,
+          18
+        ],
+        "position": [
+          59,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "blade_b",
+        "type": "box",
+        "dimensions": [
+          118,
+          2.2,
+          18
+        ],
+        "position": [
+          -59,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          -5
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "propeller",
+      "1045",
+      "two blade",
+      "quadcopter",
+      "multirotor",
+      "thrust"
+    ],
+    "aliases": [
+      "1045 prop",
+      "10 inch propeller",
+      "ep1045"
+    ]
+  }
+}

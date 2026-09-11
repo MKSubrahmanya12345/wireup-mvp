@@ -1,0 +1,120 @@
+{
+  "key": "peristaltic-pump-12v",
+  "catalogId": "peristaltic-pump-12v",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "peristaltic-pump-12v",
+    "name": "Peristaltic dosing pump (12 V, 100 mL/min)",
+    "category": "actuator",
+    "description": "Geared peristaltic pump: the tube is squeezed by rollers so the fluid never touches the motor. 12 V, ~400 mA, roughly 100 mL/min, reversible if driven from an H-bridge. Ideal for dosing because delivered volume is proportional to run time.",
+    "voltage": 12,
+    "minVoltage": 6,
+    "maxVoltage": 12,
+    "currentMa": 400,
+    "dimensions": {
+      "widthMm": 25,
+      "lengthMm": 40,
+      "heightMm": 20
+    },
+    "bodyColor": "#1f2937",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor terminal A",
+        "xMm": -1.27,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "RED",
+          "M+"
+        ],
+        "required": true
+      },
+      {
+        "name": "B",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Motor terminal B",
+        "xMm": 1.27,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "BLACK",
+          "M-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          5.08,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          21.2,
+          -17.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "motor_can",
+        "type": "cylinder",
+        "dimensions": [
+          12.5,
+          28,
+          0
+        ],
+        "position": [
+          0,
+          34,
+          0
+        ],
+        "color": "#4b5563"
+      },
+      {
+        "name": "output_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          54,
+          0
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "peristaltic",
+      "dosing pump",
+      "liquid",
+      "ph dosing",
+      "hydroponics",
+      "pump"
+    ],
+    "aliases": [
+      "peristaltic pump",
+      "dosing pump",
+      "liquid pump"
+    ]
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "key": "reg-7805",
+  "catalogId": "regulator-lm7805",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "regulator-lm7805",
+    "name": "LM7805 5 V linear regulator (TO-220)",
+    "category": "power",
+    "description": "Classic positive linear regulator: 7–35 V in, 5 V out, up to 1.5 A with a heat sink. Needs ~2 V headroom and dissipates (Vin - 5) x I as heat, so it is inefficient for motor battery supplies. Add 0.33 µF on the input and 0.1 µF on the output.",
+    "voltage": 5,
+    "minVoltage": 4.8,
+    "maxVoltage": 5.2,
+    "currentMa": 500,
+    "dimensions": {
+      "widthMm": 10,
+      "lengthMm": 4.6,
+      "heightMm": 9.2
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "IN",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Unregulated input 7–35 V",
+        "xMm": -2.54,
+        "yMm": -4.6,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "VIN",
+          "INPUT"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 0,
+        "yMm": -4.6,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "COM",
+          "ADJ"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Regulated 5 V output",
+        "xMm": 2.54,
+        "yMm": -4.6,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "VOUT",
+          "OUTPUT",
+          "5V"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "to220_body",
+        "type": "box",
+        "dimensions": [
+          10,
+          9.2,
+          4.6
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "metal_tab",
+        "type": "box",
+        "dimensions": [
+          10,
+          3,
+          0.8
+        ],
+        "position": [
+          0,
+          5.7,
+          0
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "mounting_hole_mark",
+        "type": "cylinder",
+        "dimensions": [
+          1.6,
+          0.9,
+          0
+        ],
+        "position": [
+          0,
+          6,
+          0.1
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "color": "#0f172a"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "lm7805",
+      "7805",
+      "regulator",
+      "5v regulator",
+      "linear regulator",
+      "voltage regulator"
+    ],
+    "aliases": [
+      "7805",
+      "lm7805",
+      "5v regulator",
+      "voltage regulator"
+    ]
+  }
+}

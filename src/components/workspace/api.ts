@@ -34,9 +34,18 @@ export interface DiagramPayload {
   projectId: string;
   revision: number;
   diagram: unknown;
-  skippedParts?: { id: string; ref: string; reason: string }[];
+  skippedParts?: {
+    id: string;
+    ref: string;
+    reason: string;
+    /** `cad-bench` when the part is in the project but not in THIS artifact. */
+    carriedAs?: 'cad-bench';
+    cadKey?: string;
+  }[];
   skippedConnections?: { id: string; reason: string }[];
   warnings?: string[];
+  /** Parts this projection cannot hold but the project keeps as CAD bench parts. */
+  cadBench?: { id: string; ref: string; name: string }[];
 }
 
 export class ApiError extends Error {
@@ -126,6 +135,13 @@ export interface SimulationPayload {
     files: string[];
     unsupported: string[];
     warnings: string[];
+    /**
+     * Parts the emulator has no element for. They are placed on the bench as
+     * CAD-only parts (real shape and pin anchors, no electrical model) and are
+     * reported here so the page can say so instead of pretending they are not
+     * in the build.
+     */
+    cadBench: { id: string; catalogId: string; name: string }[];
   } | null;
   software: {
     slug: string;

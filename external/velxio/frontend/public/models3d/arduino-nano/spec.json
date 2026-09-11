@@ -1,0 +1,497 @@
+{
+  "key": "arduino-nano",
+  "catalogId": "arduino-nano",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "arduino-nano",
+    "name": "Arduino Nano",
+    "category": "controller",
+    "description": "ATmega328P in a DIP-30 breadboard-friendly form factor. Electrically equivalent to the Uno with 8 analog inputs (A0–A7) and a mini-B / micro-USB connector.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 40,
+    "dimensions": {
+      "widthMm": 45,
+      "lengthMm": 18,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0b4f9c",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "D0",
+        "pinNumber": 1,
+        "role": "uart",
+        "signal": "Hardware UART RX",
+        "xMm": -19.05,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "RX",
+          "0"
+        ],
+        "required": false
+      },
+      {
+        "name": "D1",
+        "pinNumber": 2,
+        "role": "uart",
+        "signal": "Hardware UART TX",
+        "xMm": -16.51,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "TX",
+          "1"
+        ],
+        "required": false
+      },
+      {
+        "name": "D2",
+        "pinNumber": 3,
+        "role": "bidirectional",
+        "signal": "INT0",
+        "xMm": -13.97,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "2"
+        ],
+        "required": false
+      },
+      {
+        "name": "D3",
+        "pinNumber": 4,
+        "role": "pwm",
+        "signal": "INT1 / PWM",
+        "xMm": -11.43,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "3"
+        ],
+        "required": false
+      },
+      {
+        "name": "D4",
+        "pinNumber": 5,
+        "role": "bidirectional",
+        "signal": "D4 (digital)",
+        "xMm": -8.89,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "4"
+        ],
+        "required": false
+      },
+      {
+        "name": "D5",
+        "pinNumber": 6,
+        "role": "pwm",
+        "signal": "D5 (pwm)",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "5"
+        ],
+        "required": false
+      },
+      {
+        "name": "D6",
+        "pinNumber": 7,
+        "role": "pwm",
+        "signal": "D6 (pwm)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "6"
+        ],
+        "required": false
+      },
+      {
+        "name": "D7",
+        "pinNumber": 8,
+        "role": "bidirectional",
+        "signal": "D7 (digital)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "7"
+        ],
+        "required": false
+      },
+      {
+        "name": "D8",
+        "pinNumber": 9,
+        "role": "bidirectional",
+        "signal": "D8 (digital)",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "8"
+        ],
+        "required": false
+      },
+      {
+        "name": "D9",
+        "pinNumber": 10,
+        "role": "pwm",
+        "signal": "D9 (pwm)",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "9"
+        ],
+        "required": false
+      },
+      {
+        "name": "D10",
+        "pinNumber": 11,
+        "role": "pwm",
+        "signal": "SPI SS",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "10"
+        ],
+        "required": false
+      },
+      {
+        "name": "D11",
+        "pinNumber": 12,
+        "role": "pwm",
+        "signal": "SPI MOSI",
+        "xMm": 8.89,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "11"
+        ],
+        "required": false
+      },
+      {
+        "name": "D12",
+        "pinNumber": 13,
+        "role": "bidirectional",
+        "signal": "SPI MISO",
+        "xMm": 11.43,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "12"
+        ],
+        "required": false
+      },
+      {
+        "name": "D13",
+        "pinNumber": 14,
+        "role": "bidirectional",
+        "signal": "SPI SCK / on-board LED",
+        "xMm": 13.97,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "13"
+        ],
+        "required": false
+      },
+      {
+        "name": "A0",
+        "pinNumber": 15,
+        "role": "analog",
+        "signal": "A0 (analog)",
+        "xMm": 16.51,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "14"
+        ],
+        "required": false
+      },
+      {
+        "name": "A1",
+        "pinNumber": 16,
+        "role": "analog",
+        "signal": "A1 (analog)",
+        "xMm": 19.05,
+        "yMm": 6,
+        "zMm": -6.46,
+        "direction": "up",
+        "aliases": [
+          "15"
+        ],
+        "required": false
+      },
+      {
+        "name": "A2",
+        "pinNumber": 17,
+        "role": "analog",
+        "signal": "A2 (analog)",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "16"
+        ],
+        "required": false
+      },
+      {
+        "name": "A3",
+        "pinNumber": 18,
+        "role": "analog",
+        "signal": "A3 (analog)",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "17"
+        ],
+        "required": false
+      },
+      {
+        "name": "A4",
+        "pinNumber": 19,
+        "role": "i2c",
+        "signal": "I2C SDA",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "SDA",
+          "18"
+        ],
+        "required": false
+      },
+      {
+        "name": "A5",
+        "pinNumber": 20,
+        "role": "i2c",
+        "signal": "I2C SCL",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "SCL",
+          "19"
+        ],
+        "required": false
+      },
+      {
+        "name": "A6",
+        "pinNumber": 21,
+        "role": "analog",
+        "signal": "Analog only — cannot be used as digital",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "20"
+        ],
+        "required": false
+      },
+      {
+        "name": "A7",
+        "pinNumber": 22,
+        "role": "analog",
+        "signal": "Analog only — cannot be used as digital",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "21"
+        ],
+        "required": false
+      },
+      {
+        "name": "5V",
+        "pinNumber": 23,
+        "role": "power",
+        "signal": "5V (power)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "VCC"
+        ],
+        "required": true
+      },
+      {
+        "name": "3V3",
+        "pinNumber": 24,
+        "role": "power",
+        "signal": "3V3 (power)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "3.3V"
+        ],
+        "required": false
+      },
+      {
+        "name": "GND",
+        "pinNumber": 25,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "VIN",
+        "pinNumber": 26,
+        "role": "power",
+        "signal": "7–12 V unregulated input",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "RAW"
+        ],
+        "required": false
+      },
+      {
+        "name": "RESET",
+        "pinNumber": 27,
+        "role": "control",
+        "signal": "RESET (control)",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -3.92,
+        "direction": "up",
+        "aliases": [
+          "RST"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "atmega328p_tqfp",
+        "type": "box",
+        "dimensions": [
+          8.5,
+          1.4,
+          8.5
+        ],
+        "position": [
+          0,
+          2.8,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "mini_usb_connector",
+        "type": "box",
+        "dimensions": [
+          7.6,
+          3.1,
+          5.6
+        ],
+        "position": [
+          0,
+          3.6,
+          -17
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "crystal_16mhz",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.8,
+          3.2
+        ],
+        "position": [
+          8,
+          2.8,
+          -3
+        ],
+        "color": "#d1d5db"
+      },
+      {
+        "name": "power_led",
+        "type": "led",
+        "dimensions": [
+          1.4,
+          1.1,
+          1.4
+        ],
+        "position": [
+          -8.5,
+          3.4000000000000004,
+          -8
+        ],
+        "color": "#22c55e"
+      }
+    ],
+    "protocols": [
+      "uart",
+      "i2c",
+      "spi",
+      "adc",
+      "pwm"
+    ],
+    "keywords": [
+      "arduino",
+      "nano",
+      "atmega328p",
+      "avr",
+      "5v",
+      "microcontroller",
+      "mcu",
+      "compact"
+    ],
+    "aliases": [
+      "nano",
+      "arduino nano",
+      "atmega328 nano"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Arduino AVR core",
+        "import": "Arduino.h",
+        "manager": "arduino",
+        "purpose": "Board support package"
+      }
+    ]
+  }
+}

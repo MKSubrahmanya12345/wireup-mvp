@@ -1,0 +1,212 @@
+{
+  "key": "n20-gear-motor-encoder",
+  "catalogId": "n20-gear-motor-encoder",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "n20-gear-motor-encoder",
+    "name": "N20 micro gear motor with magnetic encoder",
+    "category": "actuator",
+    "description": "N20 metal gearbox motor, 12 x 10 mm body with a 3 mm D-shaft, plus a rear magnetic encoder PCB bringing out a 6-wire lead: two motor terminals and a 4-wire quadrature encoder.",
+    "voltage": 6,
+    "minVoltage": 3,
+    "maxVoltage": 12,
+    "currentMa": 120,
+    "dimensions": {
+      "widthMm": 12,
+      "lengthMm": 45,
+      "heightMm": 10
+    },
+    "bodyColor": "#64748b",
+    "pins": [
+      {
+        "name": "M1",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor terminal 1",
+        "xMm": -6,
+        "yMm": 5,
+        "zMm": -20,
+        "direction": "back",
+        "aliases": [
+          "A",
+          "M+"
+        ],
+        "required": true
+      },
+      {
+        "name": "M2",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Motor terminal 2",
+        "xMm": -3.6,
+        "yMm": 5,
+        "zMm": -20,
+        "direction": "back",
+        "aliases": [
+          "B",
+          "M-"
+        ],
+        "required": true
+      },
+      {
+        "name": "ENC_VCC",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Encoder supply 3.3-5 V",
+        "xMm": -1.2,
+        "yMm": 5,
+        "zMm": -20,
+        "direction": "back",
+        "aliases": [
+          "VCC",
+          "C1_VCC"
+        ],
+        "required": true
+      },
+      {
+        "name": "ENC_GND",
+        "pinNumber": 4,
+        "role": "ground",
+        "signal": "Encoder ground",
+        "xMm": 1.2,
+        "yMm": 5,
+        "zMm": -20,
+        "direction": "back",
+        "aliases": [
+          "GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "ENC_A",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Quadrature channel A",
+        "xMm": 3.6,
+        "yMm": 5,
+        "zMm": -20,
+        "direction": "back",
+        "aliases": [
+          "C1",
+          "A"
+        ],
+        "required": true
+      },
+      {
+        "name": "ENC_B",
+        "pinNumber": 6,
+        "role": "digital",
+        "signal": "Quadrature channel B",
+        "xMm": 6,
+        "yMm": 5,
+        "zMm": -20,
+        "direction": "back",
+        "aliases": [
+          "C2",
+          "B"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "gearbox",
+        "type": "box",
+        "dimensions": [
+          12,
+          10,
+          10
+        ],
+        "position": [
+          0,
+          5,
+          15
+        ],
+        "color": "#94a3b8"
+      },
+      {
+        "name": "motor_can",
+        "type": "box",
+        "dimensions": [
+          12,
+          10,
+          15
+        ],
+        "position": [
+          0,
+          5,
+          0
+        ],
+        "color": "#475569"
+      },
+      {
+        "name": "encoder_pcb",
+        "type": "box",
+        "dimensions": [
+          12,
+          1.2,
+          12
+        ],
+        "position": [
+          0,
+          5,
+          -13
+        ],
+        "color": "#0f172a"
+      },
+      {
+        "name": "encoder_magnet",
+        "type": "cylinder",
+        "dimensions": [
+          3,
+          2,
+          0
+        ],
+        "position": [
+          0,
+          5,
+          -8
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "output_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          1.5,
+          10,
+          0
+        ],
+        "position": [
+          0,
+          5,
+          25
+        ],
+        "color": "#cbd5e1",
+        "rotation": [
+          90,
+          0,
+          0
+        ]
+      }
+    ],
+    "protocols": [
+      "gpio",
+      "quadrature"
+    ],
+    "keywords": [
+      "n20",
+      "gear motor",
+      "encoder",
+      "quadrature",
+      "odometry"
+    ],
+    "aliases": [
+      "n20 motor",
+      "micro gear motor",
+      "encoder motor"
+    ]
+  }
+}

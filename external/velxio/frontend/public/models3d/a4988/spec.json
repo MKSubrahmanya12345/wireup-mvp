@@ -1,0 +1,310 @@
+{
+  "key": "a4988",
+  "catalogId": "a4988-stepper-driver",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "a4988-stepper-driver",
+    "name": "A4988 stepper driver breakout",
+    "category": "driver",
+    "description": "Microstepping chopper driver for bipolar steppers: STEP + DIR interface, 1/1 to 1/16 microstepping, motor supply 8–35 V, logic 3–5.5 V, up to 2 A per coil with a heat sink (≈1 A without). Requires a bulk capacitor across VMOT/GND and VREF trimming for coil current.",
+    "voltage": 3.3,
+    "minVoltage": 3,
+    "maxVoltage": 5.5,
+    "currentMa": 1000,
+    "dimensions": {
+      "widthMm": 30,
+      "lengthMm": 30,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "VMOT",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor supply 8–35 V",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VM",
+          "VCC_MOTOR"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND_MOT",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND_MOT (ground)",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "GNDMOT",
+          "GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "1B",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Coil A output -",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "B1"
+        ],
+        "required": true
+      },
+      {
+        "name": "1A",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Coil A output +",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A1"
+        ],
+        "required": true
+      },
+      {
+        "name": "2A",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "Coil B output +",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A2"
+        ],
+        "required": true
+      },
+      {
+        "name": "2B",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Coil B output -",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "B2"
+        ],
+        "required": true
+      },
+      {
+        "name": "VDD",
+        "pinNumber": 7,
+        "role": "power",
+        "signal": "Logic supply 3–5.5 V",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VCC"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 8,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "GND_LOGIC"
+        ],
+        "required": true
+      },
+      {
+        "name": "STP",
+        "pinNumber": 9,
+        "role": "digital",
+        "signal": "Step pulse",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "STEP"
+        ],
+        "required": true
+      },
+      {
+        "name": "DIR",
+        "pinNumber": 10,
+        "role": "digital",
+        "signal": "Direction",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "EN",
+        "pinNumber": 11,
+        "role": "control",
+        "signal": "Enable (active low)",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "ENABLE"
+        ],
+        "required": false
+      },
+      {
+        "name": "MS1",
+        "pinNumber": 12,
+        "role": "digital",
+        "signal": "Microstepping select 1",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "MS2",
+        "pinNumber": 13,
+        "role": "digital",
+        "signal": "Microstepping select 2",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "MS3",
+        "pinNumber": 14,
+        "role": "digital",
+        "signal": "Microstepping select 3",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "RST",
+        "pinNumber": 15,
+        "role": "control",
+        "signal": "Reset (active low) — usually jumpered to SLP",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "SLP",
+        "pinNumber": 16,
+        "role": "control",
+        "signal": "Sleep (active low) — usually jumpered to RST",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          30,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bridge_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          2.5,
+          10
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          15,
+          12,
+          10
+        ],
+        "position": [
+          0,
+          7.6,
+          -4.5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          12,
+          9,
+          8
+        ],
+        "position": [
+          -8,
+          6.1,
+          9
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "a4988",
+      "stepper driver",
+      "microstepping",
+      "step dir",
+      "pololu"
+    ],
+    "aliases": [
+      "a4988",
+      "pololu a4988",
+      "stepstick"
+    ]
+  }
+}

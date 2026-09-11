@@ -1,0 +1,102 @@
+{
+  "key": "capacitor",
+  "catalogId": "capacitor-100nf-ceramic",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "capacitor-100nf-ceramic",
+    "name": "100 nF ceramic decoupling capacitor",
+    "category": "passive",
+    "description": "100 nF (0.1 µF) 50 V ceramic capacitor placed between VCC and GND of every IC to suppress high-frequency supply noise.",
+    "voltage": 5,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 5.2,
+      "lengthMm": 2.8,
+      "heightMm": 5
+    },
+    "bodyColor": "#d97706",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "1",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "1 (power)",
+        "xMm": -1.27,
+        "yMm": -2.5,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "2",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "2 (ground)",
+        "xMm": 1.27,
+        "yMm": -2.5,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "ceramic_disc_body",
+        "type": "box",
+        "dimensions": [
+          5.2,
+          5,
+          2.2
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#d97706"
+      },
+      {
+        "name": "dielectric_marking",
+        "type": "box",
+        "dimensions": [
+          3.5,
+          0.05,
+          1.8
+        ],
+        "position": [
+          0,
+          1.2,
+          1.13
+        ],
+        "color": "#78350f"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "capacitor",
+      "decoupling",
+      "bypass",
+      "100nf",
+      "0.1uf",
+      "ceramic"
+    ],
+    "aliases": [
+      "100nf capacitor",
+      "0.1uf capacitor",
+      "decoupling capacitor",
+      "bypass capacitor"
+    ]
+  }
+}

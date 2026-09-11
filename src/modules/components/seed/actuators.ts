@@ -43,7 +43,11 @@ export const ACTUATORS: ComponentDefinition[] = [
     ],
     keywords: ['rgb led', 'color led', 'colour led', 'mood light', 'status light'],
     aliases: ['rgb led', 'rgb light', 'common cathode rgb led'],
-    simulator: { supported: false, notes: 'Represent as three LED channels.' },
+    simulator: {
+      part: 'wokwi-rgb-led',
+      supported: true,
+      notes: 'Three independently PWM-driven channels on the element (common cathode, `common: cathode`).',
+    },
     metadata: { electrical: true, requiresSeriesResistor: true, seriesResistorOhmAt5v: 220, pwmRequired: true },
   }),
 

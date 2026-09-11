@@ -1,0 +1,304 @@
+{
+  "key": "bts7960-motor-driver",
+  "catalogId": "bts7960-motor-driver",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "bts7960-motor-driver",
+    "name": "BTS7960 (IBT-2) high-current half-bridge pair",
+    "category": "driver",
+    "description": "IBT-2 module: two BTS7960 half-bridge packages on a heavy copper board with a large aluminium heatsink, four screw terminals for battery and motor, and an 8-pin logic header.",
+    "voltage": 5,
+    "minVoltage": 5,
+    "maxVoltage": 27,
+    "currentMa": 10000,
+    "dimensions": {
+      "widthMm": 50,
+      "lengthMm": 50,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "RPWM",
+        "pinNumber": 1,
+        "role": "pwm",
+        "signal": "Forward PWM input",
+        "xMm": -8.89,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "R_PWM"
+        ],
+        "required": true
+      },
+      {
+        "name": "LPWM",
+        "pinNumber": 2,
+        "role": "pwm",
+        "signal": "Reverse PWM input",
+        "xMm": -6.35,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "L_PWM"
+        ],
+        "required": true
+      },
+      {
+        "name": "R_EN",
+        "pinNumber": 3,
+        "role": "control",
+        "signal": "Forward half-bridge enable",
+        "xMm": -3.81,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "REN"
+        ],
+        "required": true
+      },
+      {
+        "name": "L_EN",
+        "pinNumber": 4,
+        "role": "control",
+        "signal": "Reverse half-bridge enable",
+        "xMm": -1.27,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "LEN"
+        ],
+        "required": true
+      },
+      {
+        "name": "R_IS",
+        "pinNumber": 5,
+        "role": "analog",
+        "signal": "Forward current sense",
+        "xMm": 1.27,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "RIS"
+        ],
+        "required": false
+      },
+      {
+        "name": "L_IS",
+        "pinNumber": 6,
+        "role": "analog",
+        "signal": "Reverse current sense",
+        "xMm": 3.81,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "LIS"
+        ],
+        "required": false
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 7,
+        "role": "power",
+        "signal": "Logic supply 3.3-5 V",
+        "xMm": 6.35,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "5V"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 8,
+        "role": "ground",
+        "signal": "Logic ground",
+        "xMm": 8.89,
+        "yMm": 8,
+        "zMm": 22,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "B+",
+        "pinNumber": 9,
+        "role": "power",
+        "signal": "Battery positive 6-27 V",
+        "xMm": -18,
+        "yMm": 9,
+        "zMm": -20,
+        "direction": "up",
+        "aliases": [
+          "VM",
+          "VBAT"
+        ],
+        "required": true
+      },
+      {
+        "name": "B-",
+        "pinNumber": 10,
+        "role": "ground",
+        "signal": "Battery negative",
+        "xMm": -6,
+        "yMm": 9,
+        "zMm": -20,
+        "direction": "up",
+        "aliases": [
+          "PGND"
+        ],
+        "required": true
+      },
+      {
+        "name": "M+",
+        "pinNumber": 11,
+        "role": "power",
+        "signal": "Motor output +",
+        "xMm": 6,
+        "yMm": 9,
+        "zMm": -20,
+        "direction": "up",
+        "aliases": [
+          "MOTOR+"
+        ],
+        "required": true
+      },
+      {
+        "name": "M-",
+        "pinNumber": 12,
+        "role": "power",
+        "signal": "Motor output -",
+        "xMm": 18,
+        "yMm": 9,
+        "zMm": -20,
+        "direction": "up",
+        "aliases": [
+          "MOTOR-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          44,
+          26,
+          20
+        ],
+        "position": [
+          0,
+          12,
+          4
+        ],
+        "color": "#475569"
+      },
+      {
+        "name": "bts7960_a",
+        "type": "box",
+        "dimensions": [
+          15,
+          4.5,
+          10
+        ],
+        "position": [
+          -11,
+          3.8,
+          -4
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bts7960_b",
+        "type": "box",
+        "dimensions": [
+          15,
+          4.5,
+          10
+        ],
+        "position": [
+          11,
+          3.8,
+          -4
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "battery_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          22,
+          11,
+          9
+        ],
+        "position": [
+          -12,
+          5.5,
+          -20
+        ],
+        "color": "#166534"
+      },
+      {
+        "name": "motor_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          22,
+          11,
+          9
+        ],
+        "position": [
+          12,
+          5.5,
+          -20
+        ],
+        "color": "#166534"
+      },
+      {
+        "name": "logic_header",
+        "type": "header_block",
+        "dimensions": [
+          20.32,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.5,
+          22
+        ],
+        "color": "#0f172a"
+      }
+    ],
+    "protocols": [
+      "pwm",
+      "gpio",
+      "analog"
+    ],
+    "keywords": [
+      "bts7960",
+      "ibt-2",
+      "high current",
+      "motor driver",
+      "h-bridge"
+    ],
+    "aliases": [
+      "bts7960",
+      "ibt-2",
+      "ibt2",
+      "high current motor driver"
+    ]
+  }
+}

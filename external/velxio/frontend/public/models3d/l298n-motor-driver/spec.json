@@ -1,0 +1,257 @@
+{
+  "key": "l298n-motor-driver",
+  "catalogId": "l298n-motor-driver",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "l298n-motor-driver",
+    "name": "L298N Dual H-Bridge Motor Driver Module",
+    "category": "driver",
+    "description": "High-power dual full-bridge driver designed to drive inductive loads such as relays, solenoids, DC and stepping motors.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 35,
+    "currentMa": 2000,
+    "dimensions": {
+      "widthMm": 43,
+      "lengthMm": 43,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "ENA",
+        "pinNumber": 1,
+        "role": "pwm",
+        "signal": "Motor A Speed Enable (PWM)",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": 18,
+        "direction": "up"
+      },
+      {
+        "name": "IN1",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Motor A Direction 1",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": 18,
+        "direction": "up"
+      },
+      {
+        "name": "IN2",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Motor A Direction 2",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": 18,
+        "direction": "up"
+      },
+      {
+        "name": "IN3",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Motor B Direction 1",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": 18,
+        "direction": "up"
+      },
+      {
+        "name": "IN4",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Motor B Direction 2",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": 18,
+        "direction": "up"
+      },
+      {
+        "name": "ENB",
+        "pinNumber": 6,
+        "role": "pwm",
+        "signal": "Motor B Speed Enable (PWM)",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": 18,
+        "direction": "up"
+      },
+      {
+        "name": "+12V",
+        "pinNumber": 7,
+        "role": "power",
+        "signal": "Motor Power Input (+5V - 35V)",
+        "xMm": -16,
+        "yMm": 8,
+        "zMm": 15,
+        "direction": "up",
+        "aliases": [
+          "VCC",
+          "VMOT",
+          "VS"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 8,
+        "role": "ground",
+        "signal": "Power & Logic Ground",
+        "xMm": -16,
+        "yMm": 8,
+        "zMm": 10,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "5V",
+        "pinNumber": 9,
+        "role": "power",
+        "signal": "5V Logic Supply / 5V Output",
+        "xMm": -16,
+        "yMm": 8,
+        "zMm": 5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "OUT1",
+        "pinNumber": 10,
+        "role": "power",
+        "signal": "Motor A Output 1",
+        "xMm": -18,
+        "yMm": 8,
+        "zMm": -10,
+        "direction": "up"
+      },
+      {
+        "name": "OUT2",
+        "pinNumber": 11,
+        "role": "power",
+        "signal": "Motor A Output 2",
+        "xMm": -18,
+        "yMm": 8,
+        "zMm": -15,
+        "direction": "up"
+      },
+      {
+        "name": "OUT3",
+        "pinNumber": 12,
+        "role": "power",
+        "signal": "Motor B Output 1",
+        "xMm": 18,
+        "yMm": 8,
+        "zMm": -10,
+        "direction": "up"
+      },
+      {
+        "name": "OUT4",
+        "pinNumber": 13,
+        "role": "power",
+        "signal": "Motor B Output 2",
+        "xMm": 18,
+        "yMm": 8,
+        "zMm": -15,
+        "direction": "up"
+      }
+    ],
+    "features": [
+      {
+        "name": "aluminum_heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          25,
+          22,
+          12
+        ],
+        "position": [
+          0,
+          12,
+          -5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "power_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          15,
+          10,
+          8
+        ],
+        "position": [
+          -16,
+          5.5,
+          10
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "motor_terminal_a",
+        "type": "screw_terminal",
+        "dimensions": [
+          10,
+          10,
+          8
+        ],
+        "position": [
+          -18,
+          5.5,
+          -12.5
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "motor_terminal_b",
+        "type": "screw_terminal",
+        "dimensions": [
+          10,
+          10,
+          8
+        ],
+        "position": [
+          18,
+          5.5,
+          -12.5
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "filter_cap",
+        "type": "cylinder",
+        "dimensions": [
+          4,
+          11,
+          0
+        ],
+        "position": [
+          -8,
+          6.5,
+          3
+        ],
+        "color": "#1e293b"
+      }
+    ],
+    "protocols": [
+      "pwm",
+      "gpio"
+    ],
+    "keywords": [
+      "l298n",
+      "motor driver",
+      "h-bridge",
+      "dc motor",
+      "stepper driver",
+      "dual motor"
+    ],
+    "aliases": [
+      "l298n",
+      "l298",
+      "l298n dual h-bridge"
+    ]
+  }
+}

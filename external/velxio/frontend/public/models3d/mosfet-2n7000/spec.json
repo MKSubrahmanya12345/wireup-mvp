@@ -1,0 +1,115 @@
+{
+  "key": "mosfet-2n7000",
+  "catalogId": "mosfet-2n7000",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "mosfet-2n7000",
+    "name": "2N7000 N-channel MOSFET (TO-92)",
+    "category": "other",
+    "description": "Small logic-friendly NMOS: rated 200 mA continuous, RDS(on) roughly 2-5 ohm with a 4.5 V gate. Good for LEDs, small relays and buzzers from a 5 V GPIO through a ~100 ohm gate resistor. At 3.3 V it is already marginal — check your load current; this is NOT the part for amps.",
+    "voltage": 60,
+    "maxVoltage": 60,
+    "currentMa": 100,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "G",
+        "pinNumber": 1,
+        "role": "control",
+        "signal": "Gate — voltage driven, no DC gate current; a ~100 ohm series resistor damps ringing",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "GATE"
+        ],
+        "required": true
+      },
+      {
+        "name": "D",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Drain — to the load; the load returns to the supply",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "DRAIN"
+        ],
+        "required": true
+      },
+      {
+        "name": "S",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Source — to GND (low-side switch)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "SOURCE"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "main_ic",
+        "type": "box",
+        "dimensions": [
+          6,
+          1.4,
+          6
+        ],
+        "position": [
+          0,
+          2.8,
+          0
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "mosfet",
+      "nmos",
+      "2n7000",
+      "logic level",
+      "switch",
+      "n channel"
+    ],
+    "aliases": [
+      "2n7000",
+      "n channel mosfet",
+      "logic level mosfet",
+      "small mosfet"
+    ]
+  }
+}

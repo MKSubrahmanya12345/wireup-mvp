@@ -23,7 +23,9 @@ import type { ConnectionKind, SignalType } from '@/types/wiring';
 
 import { getMcuProfile } from '@/modules/pin-planner/mcu-profiles';
 
-import { WOKWI_TYPE_BY_METADATA } from './velxio-project';
+import { WOKWI_TYPE_BY_METADATA, cadBenchCatalogId, isCadBenchComponent } from './velxio-project';
+
+import { getSeedComponent } from '@/modules/components/catalog';
 
 /** The subset of Velxio's VlxPayload this sync needs. */
 export interface VlxCanvasPayload {
@@ -172,9 +174,18 @@ export function applyCanvasToDiagram(payload: VlxCanvasPayload, diagram: Diagram
   }
 
   const managedTypes = new Set(Object.values(WOKWI_TYPE_BY_METADATA));
+  /*
+   * Canvas-managed = the exporter placed it there, so the canvas is the
+   * authority for its position, properties and wires. That includes CAD bench
+   * parts: they are placed by the same exporter and re-emitted on every sync,
+   * so NOT counting them here would preserve the old board wires AND add the
+   * canvas's copies — every sync would double the wiring to a pump, solenoid
+   * or HC-05. The predicate is shared with the exporter on purpose.
+   */
   const isManaged = (component: DiagramComponent): boolean =>
-    Boolean(component.simulator?.part && managedTypes.has(component.simulator.part)) &&
-    component.id !== controller.id;
+    component.id !== controller.id &&
+    (isCadBenchComponent(component) ||
+      Boolean(component.simulator?.part && managedTypes.has(component.simulator.part)));
 
   const previouslyManaged = new Set(diagram.components.filter(isManaged).map((component) => component.id));
   const previousById = new Map(diagram.components.map((component) => [component.id, component]));
@@ -189,15 +200,67 @@ export function applyCanvasToDiagram(payload: VlxCanvasPayload, diagram: Diagram
   // Only replace those — keep the rest of the original diagram intact.
   const previouslyManagedOnCanvas = new Set(
     diagram.components
-      .filter((component) => {
-        const isManaged = Boolean(component.simulator?.part && managedTypes.has(component.simulator.part));
-        return isManaged && canvasComponentIds.has(component.id);
-      })
+      .filter((component) => isManaged(component) && canvasComponentIds.has(component.id))
       .map((component) => component.id)
   );
 
   for (const component of payload.components) {
     if (canvasBoardIds.has(component.id)) continue;
+
+    /*
+     * CAD bench part — a real catalog part with no emulator element. Fold the
+     * canvas's position/properties back, and if the user placed a NEW one from
+     * the picker, enter it into the diagram as the catalog part it is: the
+     * registry is bundled offline, so its pins and category are known rather
+     * than guessed from whichever wires happen to touch it.
+     */
+    const benchCatalogId = cadBenchCatalogId(component.metadataId);
+    if (benchCatalogId) {
+      const definition = getSeedComponent(benchCatalogId);
+      const previous = previousById.get(component.id);
+      const wired = new Set(pinsFromCanvasWires(component.id, payload).map((pin) => pin.name));
+      canvasComponents.push({
+        id: component.id,
+        ref: benchCatalogId,
+        type: previous?.type ?? `catalog.${benchCatalogId}`,
+        name: previous?.name ?? definition?.name ?? benchCatalogId,
+        ...(previous?.label ? { label: previous.label } : {}),
+        category: previous?.category ?? definition?.category ?? 'other',
+        width: previous?.width ?? 140,
+        height: previous?.height ?? 90,
+        x: typeof component.x === 'number' ? component.x : previous?.x ?? 0,
+        y: typeof component.y === 'number' ? component.y : previous?.y ?? 0,
+        // Keep the diagram's own pin semantics when it had them; a brand-new
+        // canvas part takes the catalog's pins, with connectivity from the
+        // wires actually drawn to it.
+        pins:
+          previous?.pins ??
+          (definition?.pins ?? []).map((pin) => ({
+            name: pin.name,
+            type: pin.type,
+            direction: pin.direction,
+            required: pin.required,
+            ...(pin.signal ? { signal: pin.signal } : {}),
+            connected: wired.has(pin.name),
+          })),
+        simulator: {
+          ...(previous?.simulator ?? {}),
+          ...(definition?.simulator?.part ? { part: definition.simulator.part } : {}),
+          supported: false,
+          notes:
+            'CAD bench part — placed with its real shape and pin anchors; this build has no electrical model for it, so it does not simulate.',
+          attrs: stringifyProperties(component.properties),
+        },
+        metadata: {
+          ...(previous?.metadata ?? {}),
+          origin: previous?.metadata?.origin ?? 'velxio-canvas',
+          catalogBacked: Boolean(definition),
+          cadBench: true,
+        },
+      });
+      continue;
+    }
+
     const wokwiType = WOKWI_TYPE_BY_METADATA[component.metadataId];
     if (!wokwiType) {
       unmapped.push(`${component.id} (${component.metadataId})`);
@@ -210,8 +273,8 @@ export function applyCanvasToDiagram(payload: VlxCanvasPayload, diagram: Diagram
       // metadataId would throw away the catalog's pin semantics.
       canvasComponents.push({
         ...previous,
-        ...(typeof component.x === 'number' ? { x: component.x } : {}),
-        ...(typeof component.y === 'number' ? { y: component.y } : {}),
+        x: typeof component.x === 'number' ? component.x : previous?.x ?? 0,
+        y: typeof component.y === 'number' ? component.y : previous?.y ?? 0,
         simulator: {
           ...(previous.simulator ?? {}),
           part: wokwiType,

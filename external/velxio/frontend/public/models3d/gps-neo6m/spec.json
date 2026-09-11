@@ -1,0 +1,158 @@
+{
+  "key": "gps-neo6m",
+  "catalogId": "gps-neo6m-module",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "gps-neo6m-module",
+    "name": "u-blox NEO-6M GPS module",
+    "category": "sensor",
+    "description": "u-blox NEO-6 receiver on a breakout with antenna, backup battery holder and status LED. Streams NMEA 0183 sentences (GGA/RMC/VTG) over UART at 9600 baud; a TinyGPS-class parser assembles position, altitude, speed, course and UTC time. 2.5 m CEP accuracy outdoors, 50 channels, ~27 s typical cold start (1 s hot). Give it clear sky view — accuracy collapses indoors.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 45,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "TX",
+        "pinNumber": 3,
+        "role": "uart",
+        "signal": "NMEA data out — wire to the MCU RX",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "TXD"
+        ],
+        "required": true
+      },
+      {
+        "name": "RX",
+        "pinNumber": 4,
+        "role": "uart",
+        "signal": "Configuration commands in — wire from the MCU TX (optional if you only read)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "RXD"
+        ],
+        "required": true
+      },
+      {
+        "name": "PPS",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Pulse-per-second, accurate to ~ns — wire only when time-syncing, not needed for position",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "PP",
+          "TIMEPULSE"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          12.7,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensor_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.4,
+          5
+        ],
+        "position": [
+          0,
+          2.8,
+          1.5
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "uart"
+    ],
+    "keywords": [
+      "gps",
+      "neo-6m",
+      "neo6m",
+      "ublox",
+      "navigation",
+      "position",
+      "tracking",
+      "nmea"
+    ],
+    "aliases": [
+      "gps",
+      "gps module",
+      "neo-6m",
+      "neo6m",
+      "ublox gps"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "TinyGPSPlus",
+        "import": "TinyGPS++.h",
+        "manager": "arduino",
+        "purpose": "NMEA sentence parsing"
+      }
+    ]
+  }
+}

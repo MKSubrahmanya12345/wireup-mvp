@@ -1,0 +1,166 @@
+{
+  "key": "fan-12v-4pin-pwm",
+  "catalogId": "fan-12v-4pin-pwm",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "fan-12v-4pin-pwm",
+    "name": "12 V 4-wire PWM fan (80 mm, tach)",
+    "category": "actuator",
+    "description": "80 x 80 x 25 mm four-wire fan built to the Intel PWM specification: permanent 12 V, a 25 kHz open-drain control input and an open-collector tachometer giving two pulses per revolution.",
+    "voltage": 12,
+    "minVoltage": 10.8,
+    "maxVoltage": 13.2,
+    "currentMa": 200,
+    "dimensions": {
+      "widthMm": 80,
+      "lengthMm": 80,
+      "heightMm": 25
+    },
+    "bodyColor": "#0f172a",
+    "pins": [
+      {
+        "name": "GND",
+        "pinNumber": 1,
+        "role": "ground",
+        "signal": "Ground (black)",
+        "xMm": 40,
+        "yMm": 12.5,
+        "zMm": 3.81,
+        "direction": "right",
+        "aliases": [
+          "-",
+          "BLACK"
+        ],
+        "required": true
+      },
+      {
+        "name": "12V",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Continuous 12 V supply (yellow)",
+        "xMm": 40,
+        "yMm": 12.5,
+        "zMm": 1.27,
+        "direction": "right",
+        "aliases": [
+          "VCC",
+          "+12V",
+          "YELLOW"
+        ],
+        "required": true
+      },
+      {
+        "name": "TACH",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Open-collector tach, 2 pulses/rev (green)",
+        "xMm": 40,
+        "yMm": 12.5,
+        "zMm": -1.27,
+        "direction": "right",
+        "aliases": [
+          "SENSE",
+          "RPM",
+          "GREEN"
+        ],
+        "required": false
+      },
+      {
+        "name": "PWM",
+        "pinNumber": 4,
+        "role": "pwm",
+        "signal": "25 kHz open-drain speed control (blue)",
+        "xMm": 40,
+        "yMm": 12.5,
+        "zMm": -3.81,
+        "direction": "right",
+        "aliases": [
+          "CONTROL",
+          "BLUE"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "frame",
+        "type": "box",
+        "dimensions": [
+          80,
+          25,
+          80
+        ],
+        "position": [
+          0,
+          12.5,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "hub",
+        "type": "cylinder",
+        "dimensions": [
+          20,
+          25,
+          0
+        ],
+        "position": [
+          0,
+          12.5,
+          0
+        ],
+        "color": "#0b0f16"
+      },
+      {
+        "name": "blade_ring",
+        "type": "cylinder",
+        "dimensions": [
+          38,
+          16,
+          0
+        ],
+        "position": [
+          0,
+          12.5,
+          0
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "control_header",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          4,
+          4
+        ],
+        "position": [
+          36,
+          12.5,
+          0
+        ],
+        "color": "#1c1917"
+      }
+    ],
+    "protocols": [
+      "pwm",
+      "gpio"
+    ],
+    "keywords": [
+      "fan",
+      "pwm fan",
+      "4-pin fan",
+      "tachometer",
+      "rpm",
+      "12v"
+    ],
+    "aliases": [
+      "pwm fan",
+      "4 wire fan",
+      "12v fan"
+    ]
+  }
+}

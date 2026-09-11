@@ -1,0 +1,211 @@
+{
+  "key": "hc-05-bluetooth",
+  "catalogId": "hc-05-bluetooth",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "hc-05-bluetooth",
+    "name": "HC-05 Bluetooth Classic module (master/slave)",
+    "category": "communication",
+    "description": "Bluetooth 2.0 + EDR SPP module that can act as master or slave. Configurable via AT commands (default AT baud 38400, data baud 9600). VCC accepts 3.6–6 V, but all I/O pins are 3.3 V — a 5 V MCU must level shift or divide the module RXD line. Cross-connect: module TXD to MCU RX, module RXD to MCU TX.",
+    "voltage": 3.3,
+    "minVoltage": 3.6,
+    "maxVoltage": 6,
+    "currentMa": 30,
+    "dimensions": {
+      "widthMm": 37.3,
+      "lengthMm": 15.5,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#14532d",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -5.21,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -5.21,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "TXD",
+        "pinNumber": 3,
+        "role": "uart",
+        "signal": "Module transmit → MCU RX (3.3 V logic)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -5.21,
+        "direction": "up",
+        "aliases": [
+          "TX",
+          "TXO"
+        ],
+        "required": true
+      },
+      {
+        "name": "RXD",
+        "pinNumber": 4,
+        "role": "uart",
+        "signal": "Module receive ← MCU TX (3.3 V max — level shift from 5 V)",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -5.21,
+        "direction": "up",
+        "aliases": [
+          "RX",
+          "RXI"
+        ],
+        "required": true
+      },
+      {
+        "name": "STATE",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "HIGH when a Bluetooth connection is established",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -5.21,
+        "direction": "up",
+        "aliases": [
+          "LED",
+          "STATUS"
+        ],
+        "required": false
+      },
+      {
+        "name": "KEY",
+        "pinNumber": 6,
+        "role": "digital",
+        "signal": "Hold HIGH at power-up to enter AT command mode",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -5.21,
+        "direction": "up",
+        "aliases": [
+          "EN",
+          "KEY_EN"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "bc417_radio_module",
+        "type": "box",
+        "dimensions": [
+          27,
+          2.1,
+          13
+        ],
+        "position": [
+          -3.5,
+          3,
+          0
+        ],
+        "color": "#14532d"
+      },
+      {
+        "name": "meander_antenna_keepout",
+        "type": "box",
+        "dimensions": [
+          8.5,
+          0.15,
+          11.5
+        ],
+        "position": [
+          13,
+          4.15,
+          0
+        ],
+        "color": "#d6a940"
+      },
+      {
+        "name": "status_led",
+        "type": "led",
+        "dimensions": [
+          1.5,
+          1.2,
+          1.5
+        ],
+        "position": [
+          -13,
+          4.300000000000001,
+          4.3
+        ],
+        "color": "#ef4444"
+      },
+      {
+        "name": "voltage_regulator",
+        "type": "box",
+        "dimensions": [
+          3.1,
+          1.1,
+          1.8
+        ],
+        "position": [
+          -13.5,
+          3.7,
+          -3.8
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "serial_header",
+        "type": "header_block",
+        "dimensions": [
+          15.24,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -5.21
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "uart",
+      "bluetooth"
+    ],
+    "keywords": [
+      "hc-05",
+      "hc05",
+      "bluetooth",
+      "spp",
+      "serial bluetooth",
+      "phone control"
+    ],
+    "aliases": [
+      "hc-05",
+      "hc05",
+      "bluetooth module",
+      "bluetooth classic module"
+    ]
+  }
+}

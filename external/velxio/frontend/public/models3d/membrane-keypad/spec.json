@@ -1,0 +1,440 @@
+{
+  "key": "membrane-keypad",
+  "catalogId": "keypad-4x4-membrane",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "keypad-4x4-membrane",
+    "name": "4x4 membrane keypad",
+    "category": "input",
+    "description": "16-key membrane matrix keypad (1-9, 0, *, #, A-D). Eight pins, not sixteen: the MCU drives the four row lines (R1-R4) low one at a time and reads the four column lines (C1-C4) through its internal pull-ups. A pressed key shorts one row to one column, so the firmware resolves the key from the (row, column) pair.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 5,
+    "currentMa": 0,
+    "dimensions": {
+      "widthMm": 70,
+      "lengthMm": 77,
+      "heightMm": 0.8
+    },
+    "bodyColor": "#e5e7eb",
+    "pinStyle": "pads",
+    "pins": [
+      {
+        "name": "R1",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Row 1 drive (top row)",
+        "xMm": -8.89,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "ROW1",
+          "1"
+        ],
+        "required": true
+      },
+      {
+        "name": "R2",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Row 2 drive",
+        "xMm": -6.35,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "ROW2",
+          "2"
+        ],
+        "required": true
+      },
+      {
+        "name": "R3",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Row 3 drive",
+        "xMm": -3.81,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "ROW3",
+          "3"
+        ],
+        "required": true
+      },
+      {
+        "name": "R4",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Row 4 drive (bottom row)",
+        "xMm": -1.27,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "ROW4",
+          "4"
+        ],
+        "required": true
+      },
+      {
+        "name": "C1",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Column 1 sense (left column)",
+        "xMm": 1.27,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "COL1",
+          "5"
+        ],
+        "required": true
+      },
+      {
+        "name": "C2",
+        "pinNumber": 6,
+        "role": "digital",
+        "signal": "Column 2 sense",
+        "xMm": 3.81,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "COL2",
+          "6"
+        ],
+        "required": true
+      },
+      {
+        "name": "C3",
+        "pinNumber": 7,
+        "role": "digital",
+        "signal": "Column 3 sense",
+        "xMm": 6.35,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "COL3",
+          "7"
+        ],
+        "required": true
+      },
+      {
+        "name": "C4",
+        "pinNumber": 8,
+        "role": "digital",
+        "signal": "Column 4 sense (right column)",
+        "xMm": 8.89,
+        "yMm": 0.88,
+        "zMm": -39.7,
+        "direction": "front",
+        "aliases": [
+          "COL4",
+          "8"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "membrane_sheet",
+        "type": "box",
+        "dimensions": [
+          70,
+          0.8,
+          77
+        ],
+        "position": [
+          0,
+          0.4,
+          0
+        ],
+        "color": "#e5e7eb"
+      },
+      {
+        "name": "key_1_1",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -24,
+          1.05,
+          -24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_1_2",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -8,
+          1.05,
+          -24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_1_3",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          8,
+          1.05,
+          -24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_1_4",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          24,
+          1.05,
+          -24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_2_1",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -24,
+          1.05,
+          -8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_2_2",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -8,
+          1.05,
+          -8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_2_3",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          8,
+          1.05,
+          -8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_2_4",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          24,
+          1.05,
+          -8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_3_1",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -24,
+          1.05,
+          8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_3_2",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -8,
+          1.05,
+          8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_3_3",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          8,
+          1.05,
+          8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_3_4",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          24,
+          1.05,
+          8
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_4_1",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -24,
+          1.05,
+          24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_4_2",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          -8,
+          1.05,
+          24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_4_3",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          8,
+          1.05,
+          24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "key_4_4",
+        "type": "box",
+        "dimensions": [
+          12,
+          0.45,
+          10
+        ],
+        "position": [
+          24,
+          1.05,
+          24
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "flex_tail_contacts",
+        "type": "box",
+        "dimensions": [
+          24,
+          0.2,
+          8
+        ],
+        "position": [
+          0,
+          0.9,
+          -43
+        ],
+        "color": "#d6a940"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "keypad",
+      "4x4 keypad",
+      "matrix keypad",
+      "membrane keypad",
+      "keyboard",
+      "pin entry",
+      "code entry",
+      "keys",
+      "hex keypad"
+    ],
+    "aliases": [
+      "4x4 keypad",
+      "4x4 matrix keypad",
+      "matrix keypad",
+      "membrane keypad",
+      "keypad",
+      "16 key keypad"
+    ]
+  }
+}
