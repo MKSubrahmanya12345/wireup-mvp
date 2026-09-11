@@ -66,6 +66,7 @@ Other scripts:
 | `pnpm dev:webpack` | Same dev server on the classic webpack pass. Slower to compile (watcher also covers `external/`) — kept as the fallback for Turbopack-specific problems |
 | `pnpm diagnose:bedrock` | Walks configuration → DNS → TLS → a real Bedrock `Converse` call and stops at the first failure with the exact thing to check. Exits 0 only when a round trip succeeds |
 | `pnpm verify:offline` | Runs the real pipeline, validator and fixer with `*.amazonaws.com` DNS forced to fail, and asserts the project is still complete and the outage is reported honestly. Needs no credentials, no MongoDB and no network |
+| `pnpm verify:atlas` | Clones a guitar profile offline, checks stable content addressing, graph IDs, numeric facts, coverage/confidence, Java mappings, a Maven project descriptor and honest unsupported-target behavior |
 | `pnpm verify:llm-codegen` | Proves the AI-first codegen rooting gate offline with canned model plans (good, hallucinated pin, aliased pin, hijacked constant, foreign include, contract breach, provider failure); the happy-path sketch is compiled against the firmware shim. `WIREUP_ENABLE_LLM_CODEGEN=false … --flag-off` also proves the flag disables the stage |
 | `pnpm verify:workbench` | Proves the firmware workbench loop offline: the compile gate, chat turns (applied with revision + diff, answer-only, rooting refusal, compile-fail repair round), manual saves (pin-drift repair, broken-save refusal), and the validator surfacing `firmware_compile_error` |
 | `pnpm verify:simulator` | Proves the registry ↔ Velxio simulator link offline: every catalog `supported: true` claim maps to a part the vendored Velxio build actually renders and simulates, every exporter board kind is a real `BoardKind`, the simulation-registry table matches the vendored source, and a synthetic board + all 53 supported peripherals project end-to-end with zero dropped parts or wires. Needs no credentials, no MongoDB and no network |
@@ -169,6 +170,12 @@ libraries, instructions) plus the changeset that produced it, so the UI can show
 exact diffs instead of "something changed".
 
 ---
+
+## Project Atlas — source state, provenance graph and target compiler
+
+Project Atlas is the domain-neutral state layer behind the hardware pipeline. It clones a user source, preserves a content hash, extracts evidence-backed nodes and edges, quantifies coverage/confidence/metrics, and prepares a human-reviewable target projection. The first adapter turns a guitar profile or structured note into a typed Java project without silently inventing unknown fields.
+
+See [`docs/project-atlas.md`](docs/project-atlas.md) for the data model, research decisions, API contract and guitar → Java example. The UI surface is on the project Overview tab as **Project Atlas**.
 
 ## Everflow — the project graph and goal loop
 
@@ -375,6 +382,12 @@ capped by `WIREUP_MAX_EVENTS`.
   * `AGENT` shows revisions v1 → vN, each changeset, a computed diff against the
     previous revision, the stage timeline and every model call with token usage.
 
+The overview and project header expose **Download build pack** once artifacts exist. It
+creates one revision-pinned zip containing the handoff a person needs at the bench:
+README, firmware, BOM, wiring/pinout, both diagram formats, libraries, instructions and
+the validation report. It remains available for partial/failed builds so the output is
+honest and inspectable rather than hidden.
+
 The client polls `GET /api/projects/:id/events?after=<seq>` on a self-scheduling
 timer (1.1 s baseline, exponential backoff to 8 s on errors) and refetches the
 full project when the revision changes or the run reaches a terminal status.
@@ -400,6 +413,7 @@ All routes are Node runtime, `force-dynamic`, and return an envelope:
 | `GET /api/projects/:id` | `{ project, running }`; `404 not_found` when unknown |
 | `GET /api/projects/:id/events?after=SEQ` | `{ events, latestSeq, status, stage, revision, running, terminal }` |
 | `GET /api/projects/:id/diagram?target=wireup\|wokwi` | wireup: `{ diagram }`; wokwi: `{ diagram, skippedParts, skippedConnections, warnings }`; `409 diagram_not_ready` before the diagram exists |
+| `GET /api/projects/:id/export` | Downloads one revision-pinned `*-build-pack.zip` with README, firmware, BOM, wiring/pinout, Wokwi + canonical diagrams, libraries, instructions and validation report |
 | `GET /api/health` | `{ ok, status: ready\|degraded, mongo, catalog, bedrock, agent, notes }`; `503` when degraded |
 
 ---

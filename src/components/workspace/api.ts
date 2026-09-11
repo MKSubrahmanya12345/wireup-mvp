@@ -7,6 +7,8 @@
 
 import type { AgentEvent } from '@/types/generation';
 import type { ChatDiff, ChatMessage, ProjectState } from '@/types/project';
+import type { AtlasTargetSpec, ProjectAtlasState } from '@/types/project-atlas';
+import type { HardwareEditPlan } from '@/modules/hardware-copilot';
 
 export interface ApiEnvelope<T> {
   ok?: boolean;
@@ -367,4 +369,63 @@ export async function researchEverflowNode(id: string, nodeId: string, useWeb = 
     body: JSON.stringify({ nodeId, useWeb }),
   });
   return unwrap<ResearchPayload>(response);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Hardware Copilot — plan, review, apply                                      */
+/* -------------------------------------------------------------------------- */
+
+export interface HardwareCopilotPayload {
+  plan: HardwareEditPlan;
+  applied?: boolean;
+  project?: ProjectState | null;
+}
+
+export async function planHardwareEdit(id: string, message: string): Promise<HardwareCopilotPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/copilot`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'plan', message }),
+  });
+  return unwrap<HardwareCopilotPayload>(response);
+}
+
+export async function applyHardwareEdit(id: string, message: string, baseRevision: number): Promise<HardwareCopilotPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/copilot`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'apply', message, baseRevision }),
+  });
+  return unwrap<HardwareCopilotPayload>(response);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Project Atlas — clone, graph, quantify, transform                         */
+/* -------------------------------------------------------------------------- */
+
+export interface ProjectAtlasPayload {
+  atlas: ProjectAtlasState;
+  applied?: boolean;
+}
+
+export async function analyzeProjectAtlas(
+  id: string,
+  source: { title?: string; kind?: 'brief' | 'profile' | 'document' | 'code' | 'data' | 'note'; content: string },
+  target: AtlasTargetSpec,
+): Promise<ProjectAtlasPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/atlas`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'analyze', source, target }),
+  });
+  return unwrap<ProjectAtlasPayload>(response);
+}
+
+export async function applyProjectAtlas(id: string, baseVersion: number, target: AtlasTargetSpec): Promise<ProjectAtlasPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/atlas`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'apply', baseVersion, target }),
+  });
+  return unwrap<ProjectAtlasPayload>(response);
 }
