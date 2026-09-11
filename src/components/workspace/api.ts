@@ -7,6 +7,7 @@
 
 import type { AgentEvent } from '@/types/generation';
 import type { ChatDiff, ChatMessage, ProjectState } from '@/types/project';
+import type { HardwareEditPlan } from '@/modules/hardware-copilot';
 
 export interface ApiEnvelope<T> {
   ok?: boolean;
@@ -367,4 +368,32 @@ export async function researchEverflowNode(id: string, nodeId: string, useWeb = 
     body: JSON.stringify({ nodeId, useWeb }),
   });
   return unwrap<ResearchPayload>(response);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Hardware Copilot — plan, review, apply                                      */
+/* -------------------------------------------------------------------------- */
+
+export interface HardwareCopilotPayload {
+  plan: HardwareEditPlan;
+  applied?: boolean;
+  project?: ProjectState | null;
+}
+
+export async function planHardwareEdit(id: string, message: string): Promise<HardwareCopilotPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/copilot`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'plan', message }),
+  });
+  return unwrap<HardwareCopilotPayload>(response);
+}
+
+export async function applyHardwareEdit(id: string, message: string, baseRevision: number): Promise<HardwareCopilotPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/copilot`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'apply', message, baseRevision }),
+  });
+  return unwrap<HardwareCopilotPayload>(response);
 }
