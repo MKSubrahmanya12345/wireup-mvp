@@ -783,15 +783,22 @@ function CadHelperView() {
 }
 
 function RepositoriesView({ openView }: { openView: (view: ViewId) => void }) {
-  const repos = [
-    { id: 'wireup-core', name: 'wireup-core', description: 'Orchestration, prompts, project memory and the human approval loop.', path: '/src/modules', status: 'active', version: '0.1.0', color: 'violet', action: 'overview' as ViewId },
-    { id: 'cad-helper', name: 'cad-helper', description: 'Datasheet parser, parametric geometry, STL/GLB bundle and catalog sync.', path: '/cad-helper', status: 'connected', version: '0.1.0', color: 'orange', action: 'cad-helper' as ViewId },
-    { id: 'agent-memory', name: 'agent-memory', description: 'Named stakes, doubt resolution and evidence-linked state history.', path: 'planned / feature repo', status: 'designing', version: '—', color: 'blue', action: 'stakes' as ViewId },
-    { id: 'eval-harness', name: 'eval-harness', description: 'Outcome tests, confidence calibration and human-gate regression checks.', path: 'planned / feature repo', status: 'designing', version: '—', color: 'green', action: 'activity' as ViewId },
-  ];
-  return <><div className="control-hero-row"><SectionHeading eyebrow="SYSTEM / FEATURE SURFACES" title="Repositories" description="Each capability stays independently testable. The control plane shows how they connect without hiding ownership." /><button type="button" className="control-primary-button"><Icon name="plus" size={15} /> Connect repo</button></div><div className="control-repo-callout"><span className="control-repo-callout__icon"><Icon name="nodes" size={17} /></span><div><strong>One main repo. Clear feature boundaries.</strong><p>Wireup is the shell; feature repos can evolve, ship and be evaluated without turning the assistant into one opaque codebase.</p></div><span className="control-repo-callout__code">main → feature surfaces</span></div><div className="control-repo-grid">{repos.map((repo) => <article className="control-repo-card" key={repo.id}><div className="control-repo-card__top"><span className={`control-repo-card__icon control-repo-card__icon--${repo.color}`}><Icon name={repo.id === 'cad-helper' ? 'cube' : 'folder'} size={18} /></span><span className={`control-repo-state control-repo-state--${repo.status}`}>{repo.status}</span></div><h2>{repo.name}</h2><p>{repo.description}</p><div className="control-repo-card__meta"><code>{repo.path}</code><span>v{repo.version}</span></div><button type="button" className="control-text-button" onClick={() => openView(repo.action)}>Open surface <Icon name="arrow" size={12} /></button></article>)}</div></>;
+  const [url, setUrl] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  async function importRepository() {
+    setBusy(true); setMessage('Cloning repository and reading its current state…');
+    try {
+      const response = await fetch('/api/repositories/import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error?.message ?? 'Import failed.');
+      setMessage(`Imported ${payload.data.repository.files} files at ${payload.data.repository.commit || 'HEAD'}. Building the project-state graph…`);
+      setUrl('');
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Import failed.'); }
+    finally { setBusy(false); }
+  }
+  return <><div className="control-hero-row"><SectionHeading eyebrow="SYSTEM / PROJECT STATE" title="Repositories" description="A repository is not a separate feature surface: it is the current state of a project. Import one and Wireup will clone it, inspect it and start the graph build." /></div><section className="control-card" style={{ marginBottom: 16 }}><div className="control-card__eyebrow">IMPORT FROM GITHUB</div><h2>Build a project-state graph</h2><p>Wireup runs a shallow, read-only clone on the server, captures the commit, tracked files and README, then sends that snapshot through the normal project builder.</p><div style={{ display: 'flex', gap: 8, marginTop: 14 }}><input aria-label="GitHub repository URL" value={url} onChange={(event) => setUrl(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && url) void importRepository(); }} placeholder="https://github.com/owner/repository" style={{ flex: 1, minHeight: 34, border: '1px solid #d9dce6', borderRadius: 5, padding: '0 10px', fontSize: 11 }} /><button type="button" className="control-primary-button" disabled={busy || !url} onClick={() => void importRepository()}>{busy ? 'Building…' : 'Clone & build graph'}</button></div>{message ? <div className="control-inline-notice" style={{ marginTop: 12 }}><StatusDot status={busy ? 'live' : 'ok'} />{message}</div> : null}</section><div className="control-repo-callout"><span className="control-repo-callout__icon"><Icon name="nodes" size={17} /></span><div><strong>The graph is the project state.</strong><p>It records what exists now, what depends on what, what is incomplete and what Wireup should do next.</p></div><span className="control-repo-callout__code">clone → inspect → build</span></div><div className="control-repo-grid"><article className="control-repo-card"><div className="control-repo-card__top"><span className="control-repo-card__icon control-repo-card__icon--violet"><Icon name="folder" size={18} /></span><span className="control-repo-state control-repo-state--active">ready</span></div><h2>GitHub importer</h2><p>Public repositories are cloned with depth one. The temporary checkout is removed after the project snapshot is created.</p><div className="control-repo-card__meta"><code>git clone --depth 1</code><span>read-only</span></div></article></div></>;
 }
-
 function ActivityView() {
   const events = [
     { time: '2 min ago', kind: 'LEARNED', title: 'Discrete package profile added', detail: '5 mm LEDs, RGB LEDs, resistors and capacitors no longer use generic module boxes.', tone: 'violet' },
