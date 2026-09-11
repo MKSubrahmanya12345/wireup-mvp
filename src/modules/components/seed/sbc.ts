@@ -92,7 +92,7 @@ export const SBC: ComponentDefinition[] = [
     ],
     aliases: ['pi camera', 'raspberry pi camera', 'camera module', 'csi camera', 'pi cam'],
     keywords: ['camera', 'csi', 'face', 'vision', 'opencv'],
-    metadata: { resolution: '12 MP', connector: 'CSI-2 ribbon', power: 'from the Pi (no separate supply)' },
+    metadata: { resolution: '12 MP', connector: 'CSI-2 ribbon', power: 'from the Pi (no separate supply)', noSupplyPins: true },
   }),
   def({
     id: 'usb-webcam-generic',
@@ -120,6 +120,6 @@ export const SBC: ComponentDefinition[] = [
     ],
     aliases: ['webcam', 'usb camera', 'usb webcam'],
     keywords: ['webcam', 'usb', 'camera', 'face', 'vision'],
-    metadata: { standard: 'UVC (USB Video Class)', power: 'from USB' },
+    metadata: { standard: 'UVC (USB Video Class)', power: 'from USB', noSupplyPins: true },
   }),
 ];

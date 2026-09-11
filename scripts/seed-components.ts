@@ -136,6 +136,16 @@ async function main(): Promise<number> {
     return 1;
   }
 
+  /*
+   * A dry run validates the bundled catalog only — it must not need a database.
+   * Return before the MongoDB requirement so CI can run the integrity + schema
+   * gate on a checkout with no MONGODB_URI configured.
+   */
+  if (flags.dryRun) {
+    console.log('\n--dry-run: nothing written. Catalog is valid and ready to seed.');
+    return 0;
+  }
+
   // --- 3. Environment ------------------------------------------------------
   const configuration = env();
   let mongoConfig: ReturnType<typeof requireMongoEnv>;
@@ -152,11 +162,6 @@ async function main(): Promise<number> {
   console.log(
     `\nmongodb: db=${mongoConfig.dbName} uri=${redactUri(mongoConfig.uri)} autoseedComponents=${configuration.agent.autoseedComponents}`,
   );
-
-  if (flags.dryRun) {
-    console.log('\n--dry-run: nothing written. Catalog is valid and ready to seed.');
-    return 0;
-  }
 
   // --- 4. Write ------------------------------------------------------------
   try {

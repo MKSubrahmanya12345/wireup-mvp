@@ -342,7 +342,10 @@ function relocateAssignments(
   ctx: Ctx,
   issue: ValidationIssue,
   pin: string,
-  options: { keepAssignmentId?: string; mode: 'conflict' | 'reserved' | 'input-only' | 'capability' } = { mode: 'conflict' },
+  options: {
+    keepAssignmentId?: string;
+    mode: 'conflict' | 'reserved' | 'input-only' | 'analog-only' | 'uart' | 'capability';
+  } = { mode: 'conflict' },
 ): boolean {
   if (!ctx.profile) {
     giveUp(ctx, issue, 'No MCU profile is available, so a replacement pin cannot be chosen safely.');
@@ -410,7 +413,11 @@ function relocateAssignments(
         ? `${pin} is reserved on ${ctx.profile.name}`
         : options.mode === 'input-only'
           ? `${pin} is input-only on ${ctx.profile.name} and cannot be driven`
-          : `${pin} lacks the capability required by ${assignment.signal}`;
+          : options.mode === 'analog-only'
+            ? `${pin} is analog-only on ${ctx.profile.name} and has no digital input/output buffer`
+            : options.mode === 'uart'
+              ? `${pin} carries the hardware serial port on ${ctx.profile.name}, which the firmware is using`
+              : `${pin} lacks the capability required by ${assignment.signal}`;
     push(ctx, issue, {
       artifact: 'pinAssignments',
       op: 'set_pin_assignment',
@@ -842,6 +849,48 @@ function planForIssue(ctx: Ctx, issue: ValidationIssue): void {
         return;
       }
       relocateAssignments(ctx, issue, pin, { mode: 'input-only' });
+      return;
+    }
+
+    case 'analog_only_pin_driven': {
+      const pin = pinOfIssue(ctx, issue);
+      if (!pin) {
+        giveUp(ctx, issue, 'The analog-only pin could not be identified.');
+        return;
+      }
+      relocateAssignments(ctx, issue, pin, { mode: 'analog-only' });
+      return;
+    }
+
+    case 'uart_pin_used_as_gpio': {
+      const pin = pinOfIssue(ctx, issue);
+      if (!pin) {
+        giveUp(ctx, issue, 'The UART pin could not be identified.');
+        return;
+      }
+      relocateAssignments(ctx, issue, pin, { mode: 'uart' });
+      return;
+    }
+
+    case 'duplicate_pin_assignment': {
+      /*
+       * Mirror the emitter: the FIRST assignment for a pin is the one
+       * uniqueCodeAssignments() keeps, so the repair drops the later claim.
+       * remove_pin_assignment also removes the wire that assignment owned;
+       * the peripheral it freed becomes a floating required pin, which the
+       * next validation pass reports and fixes on its own.
+       */
+      const assignmentId = issue.target?.assignmentId;
+      if (!assignmentId || !ctx.project.pinAssignments.some((assignment) => assignment.id === assignmentId)) {
+        giveUp(ctx, issue, 'The duplicate assignment could not be located.');
+        return;
+      }
+      push(ctx, issue, {
+        artifact: 'pinAssignments',
+        op: 'remove_pin_assignment',
+        assignmentId,
+        reason: `Removed the duplicate claim on ${issue.target?.pin ?? 'the contested pin'}; the first assignment for that pin is the one the sketch emits.`,
+      });
       return;
     }
 
