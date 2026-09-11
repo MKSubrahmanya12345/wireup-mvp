@@ -8,7 +8,7 @@ peripherals · 100 wires, zero drops); `verify:cad-link` ok (108 parts); `verify
 28/28; **new gate `verify:cad-sim-link` ok** (108 parts allocated, 97 catalog keys
 asset-complete, key spaces disjoint, 603 bench anchors inside their own meshes,
 board + 46 CAD-bench parts + 1 simulated partner → 48/48 wires); vendored suite
-210 files / 2669 tests green (+1 file, +6 tests vs. baseline).
+210 files / 2672 tests green (+1 file, +9 tests vs. baseline).
 
 ---
 
