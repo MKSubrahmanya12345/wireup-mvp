@@ -37,3 +37,9 @@ pnpm-debug.log*
 .idea/
 .vscode/
 coverage/
+
+# purged 2026-09-11: paper + IEEE template must never be recommitted
+HSL_MIP_785.pdf
+delete.pdf
+2026322249.pdf
+IEEEtranBST2.zip
