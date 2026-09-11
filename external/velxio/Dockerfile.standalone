@@ -144,12 +144,14 @@ WORKDIR /app
 COPY frontend/ frontend/
 COPY scripts/ scripts/
 WORKDIR /app/frontend
-# Lock files aren't committed in this repo (they're gitignored) — see the
-# note in .gitignore. The `rm -f` below is defense-in-depth in case
-# someone runs `docker build .` from a tree where a local lock exists.
-RUN rm -f package-lock.json \
- && npm install --include=optional \
- && npm run build:docker
+# pnpm, not npm: frontend/ ships a committed pnpm-lock.yaml (v9) and npm's
+# resolver cannot solve the React 19 peer graph from floating `^` ranges
+# (ERESOLVE, dies 3s into `npm install`). The frozen lockfile also makes
+# this build deterministic instead of rotting as the registry moves.
+RUN corepack enable \
+ && corepack prepare pnpm@9 --activate \
+ && pnpm install --frozen-lockfile \
+ && pnpm run build:docker
 
 
 # ---- Stage 2: Final Production Image ----
