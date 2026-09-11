@@ -2,30 +2,14 @@
  * Scratch reproduction harness for the "electronic safe" report.
  * Runs the deterministic pipeline offline and dumps the artifacts.
  */
-import dns from 'node:dns';
 import fs from 'node:fs';
 
-const realLookup = dns.lookup as unknown as (...args: unknown[]) => unknown;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(dns as any).lookup = (hostname: string, ...rest: unknown[]): unknown => {
-  const callback = rest[rest.length - 1];
-  if (typeof callback === 'function' && String(hostname).endsWith('amazonaws.com')) {
-    const error = new Error(`getaddrinfo EAI_AGAIN ${hostname}`) as NodeJS.ErrnoException;
-    error.code = 'EAI_AGAIN';
-    return (callback as (err: Error) => void)(error);
-  }
-  return realLookup(hostname, ...rest);
-};
+import { applyOfflineEnv, initialProject as initialOfflineProject, installOfflineDns } from './lib/offline';
 
-process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/?serverSelectionTimeoutMS=800';
-process.env.BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID ?? 'moonshotai.kimi-k2.5';
-process.env.AWS_REGION = process.env.AWS_REGION ?? 'eu-north-1';
-process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID ?? 'AKIAREPROREPROREPRO';
-process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY ?? 'not-a-real-secret';
-process.env.BEDROCK_MAX_RETRIES = '1';
+installOfflineDns();
+applyOfflineEnv({ accessKeyId: 'AKIAREPROREPROREPRO' });
 
 import { AgentEventLog } from '@/lib/logging/events';
-import { nowIso } from '@/lib/validation/time';
 import type { ProjectState } from '@/types/project';
 import { runPipeline } from '@/modules/orchestrator/pipeline';
 import { buildRefreshers, controllerInfo, refreshSoftware } from '@/modules/orchestrator/context';
@@ -59,38 +43,7 @@ Password-change mode: holding * for several seconds, require current PIN, reques
 Make the servo movement smooth. Produce a valid diagram.json and sketch.ino. Use only components supported by Wokwi.`;
 
 function initialProject(prompt: string): ProjectState {
-  const now = nowIso();
-  return {
-    id: 'repro-safe',
-    name: 'Untitled project',
-    prompt,
-    status: 'pending',
-    stage: 'idle',
-    createdAt: now,
-    updatedAt: now,
-    completedAt: null,
-    error: null,
-    requirements: null,
-    components: [],
-    hardwarePlan: null,
-    pinAssignments: [],
-    wiring: null,
-    softwarePlan: null,
-    artifacts: { code: null, diagram: null, libraries: null, instructions: null },
-    validation: null,
-    revisions: [],
-    events: [],
-    iteration: { current: 0, max: 3 },
-    llm: { calls: [] },
-    chat: [],
-    revision: 0,
-    doubts: [],
-    humanTasks: [],
-    everflow: { graph: null, evaluation: null, pass: 0 },
-    intakeContext: null,
-    expandedBrief: null,
-    research: [],
-  };
+  return initialOfflineProject('repro-safe', prompt);
 }
 
 async function main() {

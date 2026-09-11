@@ -45,7 +45,7 @@ export const FEATURE_RULES: FeatureRule[] = [
   { feature: 'distance', pattern: /\b(ultrasonic|hc[-\s]?sr04|distance\s*sensor|range\s*finder|sonar|parking)\b/i, quantityKey: 'ultrasonic_sensors', quantityNouns: ['ultrasonic sensor', 'ultrasonic'] },
   { feature: 'motion', pattern: /\b(pir|motion|hc[-\s]?sr501|intruder|presence)\b/i },
   { feature: 'obstacle_avoidance', pattern: /\b(obstacle|ir\s*sensor|infrared\s*sensor|avoidance|collision)\b/i },
-  { feature: 'line_following', pattern: /\b(line\s*follow|line\s*follower|line\s*tracking)\b/i },
+  { feature: 'line_following', pattern: /\b(line\s*follow|line\s*follower|line\s*tracking)\b/i, quantityKey: 'ir_sensors', quantityNouns: ['line sensor', 'reflectance sensor', 'ir sensor', 'obstacle sensor', 'infrared sensor'] },
   { feature: 'gas_air_quality', pattern: /\b(mq[-\s]?\d|gas|smoke|lpg|air\s*quality|flammable|co2)\b/i },
   { feature: 'soil_moisture', pattern: /\b(soil|moisture|plant|irrigation|garden)\b/i },
   { feature: 'light_sensing', pattern: /\b(ldr|photoresistor|light\s*sensor|brightness|ambient\s*light|cds)\b/i },

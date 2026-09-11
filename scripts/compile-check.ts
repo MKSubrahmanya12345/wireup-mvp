@@ -14,32 +14,17 @@
  *
  * Usage: npx tsx scripts/compile-check.ts [--case <name>] [--keep]
  */
-import dns from 'node:dns';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { inspect } from 'node:util';
 
-/* Run offline: force Bedrock lookups to fail fast so the deterministic path is used. */
-const realLookup = dns.lookup as unknown as (...args: unknown[]) => unknown;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(dns as any).lookup = (hostname: string, ...rest: unknown[]): unknown => {
-  const callback = rest[rest.length - 1];
-  if (typeof callback === 'function' && String(hostname).endsWith('amazonaws.com')) {
-    const error = new Error(`getaddrinfo EAI_AGAIN ${hostname}`) as NodeJS.ErrnoException;
-    error.code = 'EAI_AGAIN';
-    return (callback as (err: Error) => void)(error);
-  }
-  return realLookup(hostname, ...rest);
-};
+import { applyOfflineEnv, initialProject, installOfflineDns } from './lib/offline';
 
-process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/?serverSelectionTimeoutMS=800';
-process.env.BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID ?? 'moonshotai.kimi-k2.5';
-process.env.AWS_REGION = process.env.AWS_REGION ?? 'eu-north-1';
-process.env.AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID ?? 'AKIACOMPILECHECK0';
-process.env.AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY ?? 'not-a-real-secret';
-process.env.BEDROCK_MAX_RETRIES = '1';
+/* Run offline: force Bedrock lookups to fail fast so the deterministic path is used. */
+installOfflineDns();
+applyOfflineEnv({ accessKeyId: 'AKIACOMPILECHECK0' });
 
 /* The deterministic path logs one Bedrock DNS failure per case; that noise
  * buries the actual compiler output, so drop only those lines. */
@@ -62,13 +47,18 @@ for (const channel of ['log', 'warn', 'error', 'debug'] as const) {
 }
 
 import { AgentEventLog } from '@/lib/logging/events';
-import { nowIso } from '@/lib/validation/time';
 import type { ProjectState } from '@/types/project';
 import { runPipeline } from '@/modules/orchestrator/pipeline';
 
 interface Case {
   name: string;
   prompt: string;
+  /**
+   * Case-specific assertions that run after generation and need no compiler.
+   * They exist to pin the DEGRADED paths (no EEPROM, no display, remapped bus)
+   * — the generic source checks cannot tell a deliberate degradation from a bug.
+   */
+  extraChecks?: (input: { project: ProjectState; sketch: string }) => SourceCheck[];
 }
 
 const CASES: Case[] = [
@@ -124,44 +114,117 @@ a pushbutton changes the pattern, and report the active pattern over the serial 
 clockwise when a pushbutton is pressed, 500 steps counter-clockwise when the second is pressed,
 and show the position on the serial monitor.`,
   },
+  {
+    name: 'esp32-oled-i2c',
+    prompt: `ESP32 devkit room monitor: a DHT22 temperature and humidity sensor read every 2 seconds,
+values shown on a 0.96" SSD1306 I2C OLED display, and a warning line on the display above 30 degrees
+Celsius.`,
+    extraChecks: ({ sketch }) => [
+      {
+        id: 'i2c-remappable-wire-begin',
+        ok: /Wire\.begin\(\s*PIN_\w+,\s*PIN_\w+\s*\)/.test(sketch),
+        detail:
+          'ESP32 core routes I2C to any GPIO, so setup() must start the bus with the planned SDA/SCL pins (Wire.begin(sda, scl)), not the no-argument AVR form',
+      },
+    ],
+  },
+  {
+    /*
+     * No display may be mentioned, not even as "no display" — the feature
+     * matcher is keyword-based and a negation still selects the OLED. Feedback
+     * is LEDs + buzzer only, so the lock UI must degrade to the serial link.
+     */
+    name: 'relay-lock-keypad',
+    prompt: `Arduino Nano gate controller: a 4x4 matrix keypad accepts a 4 digit PIN, a relay module
+releases an electric strike when the PIN is right, a green LED and a red LED show success and
+failure, and an active buzzer sounds after three wrong tries. Feedback is by LEDs and the buzzer
+only. The PIN must survive a power cycle.`,
+    extraChecks: ({ sketch }) => [
+      {
+        id: 'access-control-without-display',
+        ok: /access-control behaviour/.test(sketch) && !/#include\s*<(Adafruit_SSD1306|LiquidCrystal_I2C)\.h>/.test(sketch),
+        detail: 'a lock state machine with no display must still be generated, with no display library pulled in',
+      },
+      {
+        id: 'persistence-planned',
+        ok: /#include\s*<EEPROM\.h>/.test(sketch),
+        detail: 'the brief asks the PIN to survive a power cycle, so EEPROM must be in the library manifest and included',
+      },
+    ],
+  },
+  {
+    /*
+     * Deliberately avoids every persistence word (store/persist/remember/survive)
+     * AND every credential word the planner matches (pin/password/code/access/
+     * safe/lock) — needsPersistentStorage() must stay false so the EEPROM library
+     * is never planned, and the firmware must degrade to a compiled-in PIN and
+     * SAY SO in its header notes (invariant 8: report, never fake).
+     */
+    name: 'safe-no-eeprom',
+    prompt: `Arduino Nano combination gate: a 4x4 matrix keypad accepts a 4 digit combination,
+an SG90 micro servo moves the bolt, a green LED and a red LED show success and failure, an active
+buzzer beeps on a wrong try, and a 0.96" I2C OLED shows the prompt. Make the servo movement smooth.`,
+    extraChecks: ({ sketch }) => [
+      {
+        id: 'access-control-detected',
+        ok: /access-control behaviour/.test(sketch),
+        detail: 'servo + keypad must dispatch to the lock state machine even without persistence',
+      },
+      {
+        id: 'no-eeprom-include',
+        ok: !/#include\s*<EEPROM\.h>/.test(sketch),
+        detail: 'the managed include block is authoritative: without EEPROM in the library manifest the include must be pruned',
+      },
+      {
+        id: 'degradation-reported',
+        ok: /compiled in/.test(sketch),
+        detail: 'the sketch header must warn that the PIN is compiled in and a reset restores the default',
+      },
+    ],
+  },
+  {
+    name: 'l298n-two-motor',
+    prompt: `Arduino Uno robot car: two DC gear motors driven by an L298N dual H-bridge board,
+powered by a 2S LiPo battery. One pushbutton drives both motors forward, a second pushbutton drives
+them in reverse, and the direction is printed on the serial monitor.`,
+    extraChecks: ({ project }) => [
+      {
+        id: 'driver-and-supply-selected',
+        ok: project.components.some((selection) => selection.componentId === 'l298n-motor-driver') &&
+          project.components.some((selection) => selection.category === 'power'),
+        detail: `BOM: ${project.components.map((selection) => selection.componentId).join(', ')}`,
+      },
+    ],
+  },
+  {
+    /*
+     * Exercises the line-follower behaviour: two reflectance sensors + a
+     * two-channel L298N must produce a real follow controller (steer toward
+     * the sensor that sees the line), with the motors stopped at boot and a
+     * reported lost-line stop — not the generic skeleton that wires the parts
+     * and then never reads the sensors.
+     */
+    name: 'line-follower-l298n',
+    prompt: `Arduino Nano line follower robot: two line sensors read the black line on the floor,
+two DC gear motors on an L298N driver drive the wheels, and a pushbutton starts and stops the run.
+Both sensors on the line drive straight; when a sensor leaves the line, steer back toward the line.
+An LED shows the robot is running. Follow at a fixed speed.`,
+    extraChecks: ({ sketch }) => [
+      {
+        id: 'follow-logic-present',
+        ok: /DriveCommand decideCommand/.test(sketch) && /STATE_LINE_LOST/.test(sketch),
+        detail: 'the sketch must contain the steer-toward-the-line controller and a reported lost-line stop',
+      },
+      {
+        id: 'motors-safe-at-boot',
+        ok: /void setup\(\)\s*\{[\s\S]*?allMotorsStop\(\);/.test(sketch),
+        detail: 'setup() must stop the motors before anything else so a reset never lurches the robot',
+      },
+    ],
+  },
 ];
 
 const SHIM_DIR = path.join(process.cwd(), 'scripts', 'firmware-shim');
-
-function initialProject(id: string, prompt: string): ProjectState {
-  const now = nowIso();
-  return {
-    id,
-    name: 'Untitled project',
-    prompt,
-    status: 'pending',
-    stage: 'idle',
-    createdAt: now,
-    updatedAt: now,
-    completedAt: null,
-    error: null,
-    requirements: null,
-    components: [],
-    hardwarePlan: null,
-    pinAssignments: [],
-    wiring: null,
-    softwarePlan: null,
-    artifacts: { code: null, diagram: null, libraries: null, instructions: null },
-    validation: null,
-    revisions: [],
-    events: [],
-    iteration: { current: 0, max: 3 },
-    llm: { calls: [] },
-    chat: [],
-    revision: 0,
-    doubts: [],
-    humanTasks: [],
-    everflow: { graph: null, evaluation: null, pass: 0 },
-    intakeContext: null,
-    expandedBrief: null,
-    research: [],
-  };
-}
 
 function findCompiler(): string | null {
   for (const candidate of ['g++', 'clang++']) {
@@ -342,14 +405,16 @@ async function main() {
 
       const behaviour = /access-control behaviour/.test(sketch)
         ? 'access-control'
-        : /counting|counter/i.test(sketch)
-          ? 'button-counter'
-          : 'generic';
+        : /line-follower behaviour/.test(sketch)
+          ? 'line-follower'
+          : /counting|counter/i.test(sketch)
+            ? 'button-counter'
+            : 'generic';
 
       result = {
         name: entry.name,
         files: (code?.files ?? []).map((candidate) => `${candidate.path}(${candidate.content.length}b)`).join(' '),
-        checks: sourceChecks(sketch, entry.prompt),
+        checks: [...sourceChecks(sketch, entry.prompt), ...(entry.extraChecks?.({ project, sketch }) ?? [])],
         compiled,
         errors,
         controller: project.hardwarePlan?.controller?.componentId ?? '?',
