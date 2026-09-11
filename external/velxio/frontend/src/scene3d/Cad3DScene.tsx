@@ -8,19 +8,30 @@ import { usePartRenderStore } from '../store/usePartRenderStore';
 import { useCadModels, resolvePinWorld, type LoadedModel } from './models3d';
 import { useParametricModels } from './cadCatalog';
 import { OrientationGizmo } from './OrientationGizmo';
+import { layoutInstances, type BenchInstance, type InstancePlace } from './placement';
 
 /**
  * Cad3DScene — the CAD-driven 3D view.
  *
  * Every part in the catalog gets a real shaded body: a reviewed GLB when one
- * is registered in /models3d/manifest.json (currently Arduino Uno, servo,
- * DHT22, HC-SR04), and otherwise the SAME parametric assembly the admin CAD
- * studio previews, built live from `/cad-catalog.json` (see cadCatalog.ts /
- * cadParametric.ts, sourced from `scripts/export-cad-catalog-to-velxio.ts`).
- * Nothing renders as a degraded placeholder box — a part with no reviewed
- * asset still gets full-quality shaded geometry, just not manufacturer-exact
- * geometry. Wires are drawn only between two resolvable parts, resolved by
- * pin NAME (getObjectByName), never from the 2D store's pixel x/y.
+ * is registered in /models3d/manifest.json (Arduino Uno, servo, DHT22,
+ * HC-SR04, plus the generated per-catalog-part models — see Wireup's
+ * `pnpm export:cad-models`), and otherwise the SAME parametric assembly the
+ * admin CAD studio previews, built live from `/cad-catalog.json` (see
+ * cadCatalog.ts / cadParametric.ts, sourced from
+ * `scripts/export-cad-catalog-to-velxio.ts`). Nothing renders as a degraded
+ * placeholder box — a part with no reviewed asset still gets full-quality
+ * shaded geometry, just not manufacturer-exact geometry. Wires are drawn only
+ * between two resolvable parts, resolved by pin NAME (getObjectByName), never
+ * from the 2D store's pixel x/y.
+ *
+ * That includes CAD-bench parts (a pump, an L298N, an HC-05 …): catalog parts
+ * the simulator has no element for are still placed in 3D, because they are
+ * physically on the bench whether or not the emulator can solve them. Their
+ * wires to the board are drawn from the same pin anchors as everything else.
+ *
+ * Placement (bench anchor, rows, parts resting on the grid) lives in
+ * `./placement` and is unit-tested independently of this scene.
  *
  * Animated values (servo horn angle, LED emissive) are read imperatively from
  * usePartRenderStore inside useFrame — never reactively, so a 60 Hz write
@@ -36,64 +47,37 @@ import { OrientationGizmo } from './OrientationGizmo';
  * `component.properties` into `simulator.attrs` for every managed part.
  */
 
-export interface InstancePlace {
-  id: string;
-  key: string;
-  pos: Vector3;
-  rotY: number;
-  scale: number;
-  /** True when the user (or a saved project) pinned this instance's spot —
-   *  it then does not participate in the auto-grid layout cursor. */
-  pinned: boolean;
-}
+/**
+ * Bench placement lives in `./placement` (pure, three-only, unit-tested).
+ * Re-exported here because this module was its original home and the
+ * existing scene test imports it from this path.
+ */
+export { layoutInstances, numberProp, BENCH_GAP_MM, BENCH_ROW_SPAN_MM } from './placement';
+export type { BenchInstance, InstancePlace } from './placement';
 
-/** Read a numeric override out of a properties bag. Values may arrive as
- *  strings — they round-trip through Wireup's diagram.json as
- *  `simulator.attrs`, which is string-only (see stringifyProperties in
- *  vlx-sync.ts) — so a plain `Number()` coercion is required on read. */
-export function numberProp(properties: Record<string, unknown> | undefined, key: string): number | null {
-  const raw = properties?.[key];
-  if (raw === undefined || raw === null || raw === '') return null;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
-}
+/**
+ * CAD-bench parts — catalog parts the simulator has NO element for (a pump,
+ * a solenoid, an HC-05, an L298N …).
+ *
+ * Wireup still carries them onto the canvas, because omitting them from the
+ * emitted project was the reason a design with a pump looked like a design
+ * with nothing attached. They arrive with a `cad-bench-<key>` metadataId
+ * (see the exporter in Wireup's `src/modules/simulation/velxio-project.ts`)
+ * and the generic `<velxio-cad-bench-part>` element renders them from
+ * `/cad-catalog.json`; the real key for the 3D asset is the part after the
+ * prefix.
+ *
+ * Honest by construction: they are inert (no PartSimulationRegistry entry, no
+ * netlist mapper) — a mechanical stand-in that holds the right place on the
+ * bench and draws its wires, never a lookalike pretending to be a sensor.
+ */
+const CAD_BENCH_PREFIX = 'cad-bench-';
 
-export function layoutInstances(
-  instances: { id: string; key: string; properties?: Record<string, unknown> }[],
-  models: Map<string, LoadedModel>,
-): { places: Map<string, InstancePlace>; order: string[] } {
-  const places = new Map<string, InstancePlace>();
-  const order: string[] = [];
-  let cursor = 0;
-  for (const inst of instances) {
-    const model = models.get(inst.key);
-    if (!model) continue; // no GLB and no CAD-catalog entry -> omit
-    const size = model.size;
-    const spacing = Math.max(size.x, size.z, 120) + 60; // mm between parts
-    const off = model.def.bench?.position ?? [0, 0, 0];
-
-    const x3d = numberProp(inst.properties, 'x3d');
-    const y3d = numberProp(inst.properties, 'y3d');
-    const z3d = numberProp(inst.properties, 'z3d');
-    const pinned = x3d !== null && z3d !== null;
-
-    const pos = pinned
-      ? new Vector3(x3d as number, y3d ?? off[1], z3d as number)
-      : new Vector3(cursor + spacing / 2 + off[0], off[1], off[2]);
-
-    const place: InstancePlace = {
-      id: inst.id,
-      key: inst.key,
-      pos,
-      rotY: model.def.bench?.rotation?.[1] ?? 0,
-      scale: model.def.bench?.scale ?? 1,
-      pinned,
-    };
-    places.set(inst.id, place);
-    order.push(inst.id);
-    if (!pinned) cursor += spacing;
-  }
-  return { places, order };
+/** The `/cad-catalog.json` key behind a `cad-bench-<key>` metadataId. */
+export function cadBenchKey(metadataId: string): string | null {
+  return metadataId.startsWith(CAD_BENCH_PREFIX)
+    ? metadataId.slice(CAD_BENCH_PREFIX.length)
+    : null;
 }
 
 /** Find the rotating servo horn node in a model (name is not in the pin
@@ -186,10 +170,26 @@ function Scene({
   const wires = useSimulatorStore((s) => s.wires);
   const pushCommand = useSimulatorStore((s) => s.pushCommand);
 
-  const instances = useMemo(
+  const instances = useMemo<BenchInstance[]>(
     () => [
-      ...boards.map((b) => ({ id: b.id, key: b.boardKind, properties: undefined as Record<string, unknown> | undefined })),
-      ...components.map((c) => ({ id: c.id, key: c.metadataId, properties: c.properties })),
+      ...boards.map((b) => ({
+        id: b.id,
+        key: b.boardKind,
+        kind: 'board' as const,
+        properties: undefined as Record<string, unknown> | undefined,
+      })),
+      ...components.map((c) => {
+        // A CAD-bench part keys its 3D asset by the metadataId WITHOUT the
+        // prefix (`cad-bench-l298n-motor-driver` -> `l298n-motor-driver`),
+        // which is the same key `/cad-catalog.json` is indexed by.
+        const cadKey = cadBenchKey(c.metadataId);
+        return {
+          id: c.id,
+          key: cadKey ?? c.metadataId,
+          kind: 'part' as const,
+          properties: c.properties,
+        };
+      }),
     ],
     [boards, components],
   );
@@ -343,7 +343,8 @@ function Scene({
           anchorX="center"
           anchorY="middle"
         >
-          No 3D models registered yet — add GLBs under /models3d/
+          No 3D bodies available — register GLBs under /models3d/ or export the
+          CAD catalog (pnpm export:cad-catalog in Wireup)
         </Text>
       ) : null}
 

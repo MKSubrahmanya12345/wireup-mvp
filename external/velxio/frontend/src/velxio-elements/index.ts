@@ -20,9 +20,14 @@ import './inductor-element';
 import './custom-chip-element';
 import './breadboard-element';
 import './breadboard-mini-element';
+// Generic renderer for catalog parts the simulator has no element for
+// (CAD bench parts: a pump, an L298N, an HC-05 …). Drawn from
+// /cad-catalog.json, wireable, explicitly inert.
+import './cad-bench-element';
 
 export { CapacitorElement } from './capacitor-element';
 export { CapacitorElectrolyticElement } from './capacitor-electrolytic-element';
 export { InductorElement } from './inductor-element';
 export { BreadboardElement } from './breadboard-element';
 export { BreadboardMiniElement } from './breadboard-mini-element';
+export { CadBenchPartElement } from './cad-bench-element';
