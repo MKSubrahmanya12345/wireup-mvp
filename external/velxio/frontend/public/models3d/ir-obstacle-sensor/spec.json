@@ -1,0 +1,166 @@
+{
+  "key": "ir-obstacle-sensor",
+  "catalogId": "ir-obstacle-sensor",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "ir-obstacle-sensor",
+    "name": "IR obstacle avoidance sensor module",
+    "category": "sensor",
+    "description": "Infrared LED + photodiode module with an on-board comparator and sensitivity trimmer. Digital OUT goes LOW when an obstacle is detected within roughly 2–30 cm. 3.3–5 V supply.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 15,
+    "dimensions": {
+      "widthMm": 32,
+      "lengthMm": 14,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -4.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -4.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "LOW = obstacle detected",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -4.46,
+        "direction": "up",
+        "aliases": [
+          "DO",
+          "SIG",
+          "S"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "ir_led_emitter",
+        "type": "led",
+        "dimensions": [
+          5,
+          7,
+          5
+        ],
+        "position": [
+          -7,
+          5.6,
+          2.5
+        ],
+        "color": "#581c87"
+      },
+      {
+        "name": "photodiode_receiver",
+        "type": "led",
+        "dimensions": [
+          5,
+          7,
+          5
+        ],
+        "position": [
+          7,
+          5.6,
+          2.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "comparator_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.2,
+          5
+        ],
+        "position": [
+          0,
+          2.8,
+          -3.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensitivity_trimmer",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          3.5,
+          6
+        ],
+        "position": [
+          10,
+          4.6,
+          -3.5
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "three_pin_header",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          -10,
+          2.8,
+          -4.46
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "ir",
+      "infrared",
+      "obstacle",
+      "avoidance",
+      "line follower",
+      "proximity"
+    ],
+    "aliases": [
+      "ir obstacle sensor",
+      "ir sensor",
+      "obstacle sensor",
+      "infrared obstacle module"
+    ]
+  }
+}

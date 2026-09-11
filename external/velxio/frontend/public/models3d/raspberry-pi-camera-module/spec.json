@@ -1,0 +1,88 @@
+{
+  "key": "raspberry-pi-camera-module",
+  "catalogId": "raspberry-pi-camera-module",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "raspberry-pi-camera-module",
+    "name": "Raspberry Pi Camera Module (CSI)",
+    "category": "sensor",
+    "description": "Raspberry Pi official camera (IMX477 12 MP, or the IMX708 12 MP global-shutter variant). Attaches to the Pi by CSI ribbon — no power or signal wiring. Appears to OpenCV as /dev/video0 via the V4L2/libcamera stack. Powered by the Pi.",
+    "voltage": 5,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "CSI",
+        "pinNumber": 1,
+        "role": "control",
+        "signal": "CSI-2 ribbon connector to the Pi camera port",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "CAM",
+          "CAMERA"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          2.54,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensor_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.4,
+          5
+        ],
+        "position": [
+          0,
+          2.8,
+          1.5
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "csi"
+    ],
+    "keywords": [
+      "camera",
+      "csi",
+      "face",
+      "vision",
+      "opencv"
+    ],
+    "aliases": [
+      "pi camera",
+      "raspberry pi camera",
+      "camera module",
+      "csi camera",
+      "pi cam"
+    ],
+    "libraryRequirements": []
+  }
+}

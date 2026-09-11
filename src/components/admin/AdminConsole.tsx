@@ -434,6 +434,55 @@ const CAD_TIER_DETAIL: Record<string, string> = {
 
 const CAD_CATEGORY_ORDER = ['controller', 'driver', 'actuator', 'sensor', 'communication', 'display', 'power', 'input', 'passive', 'prototyping', 'other'];
 
+/** The `/api/admin/cad/generate` payload, kept so the STL/GLB can be saved. */
+type CadBundleDownload = {
+  specId: string;
+  stlAscii: string;
+  stlBinaryBase64: string;
+  glbBinaryBase64: string;
+  stlByteLength: number;
+  glbByteLength: number;
+};
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/** Decode a base64 payload into bytes without assuming a browser-only PATH. */
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+/**
+ * Save one of the three exports the studio builds. The STL is the format the
+ * user asked to get out of the admin page: a binary STL downloads as-is, the
+ * ASCII variant is offered for readable diffs, and the GLB is the shaded
+ * model the CAD bench renders.
+ */
+function saveBundleFile(bundle: CadBundleDownload, kind: 'stl-binary' | 'stl-ascii' | 'glb'): void {
+  const file =
+    kind === 'glb'
+      ? { name: `${bundle.specId}.glb`, part: base64ToBytes(bundle.glbBinaryBase64), type: 'model/gltf-binary' }
+      : kind === 'stl-ascii'
+        ? { name: `${bundle.specId}.ascii.stl`, part: bundle.stlAscii, type: 'model/stl' }
+        : { name: `${bundle.specId}.stl`, part: base64ToBytes(bundle.stlBinaryBase64), type: 'model/stl' };
+  const blob = new Blob([file.part as BlobPart], { type: file.type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = file.name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function estimateCadBounds(spec: CadComponentSpec): { widthMm: number; lengthMm: number; heightMm: number } {
   let minX = Infinity; let maxX = -Infinity;
   let minY = Infinity; let maxY = -Infinity;
@@ -506,6 +555,8 @@ function CadHelperView() {
   const [parseProvenance, setParseProvenance] = useState<CadParseProvenance | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  /** The last bundle built for this spec, kept so its STL/GLB can be saved. */
+  const [bundle, setBundle] = useState<CadBundleDownload | null>(null);
   const referenceAsset = getCadReferenceAsset(spec);
   const visualBounds = useMemo(() => estimateCadBounds(spec), [spec]);
 
@@ -561,9 +612,19 @@ function CadHelperView() {
         body: JSON.stringify(spec),
       });
       const data = await response.json();
-      setNotice(data.ok
-        ? `Parametric bundle ready · ${data.stlByteLength ?? 0} byte STL · seed definition generated.`
-        : data.error ?? 'Bundle generation failed.');
+      if (data.ok) {
+        setBundle({
+          specId: spec.id,
+          stlAscii: typeof data.stlAscii === 'string' ? data.stlAscii : '',
+          stlBinaryBase64: typeof data.stlBinaryBase64 === 'string' ? data.stlBinaryBase64 : '',
+          glbBinaryBase64: typeof data.glbBinaryBase64 === 'string' ? data.glbBinaryBase64 : '',
+          stlByteLength: Number(data.stlByteLength ?? 0),
+          glbByteLength: Number(data.glbByteLength ?? 0),
+        });
+        setNotice(`Parametric bundle ready · ${data.stlByteLength ?? 0} byte STL · seed definition generated. Download it below.`);
+      } else {
+        setNotice(data.error ?? 'Bundle generation failed.');
+      }
     } catch {
       setNotice('Bundle service unavailable.');
     } finally {
@@ -687,6 +748,33 @@ function CadHelperView() {
             <button type="button" className="control-secondary-button" onClick={deployBundle} disabled={busy}>Deploy fallback to catalog</button>
           </div>
           {referenceAsset ? <p className="control-cad-provenance" title={referenceAsset.attribution}>Studio source: {referenceAsset.label}. The export buttons intentionally produce the separate parametric fallback, not a claimed copy of this reviewed assembly.</p> : null}
+          {bundle ? (
+            <div className="control-cad-downloads">
+              <div className="control-cad-downloads__head">
+                <strong>Printable exports for <code>{bundle.specId}</code></strong>
+                <span>{formatBytes(bundle.stlByteLength)} STL · {formatBytes(bundle.glbByteLength)} GLB · generated from the spec above</span>
+              </div>
+              <div className="control-cad-actions">
+                <button type="button" className="control-secondary-button" onClick={() => saveBundleFile(bundle, 'stl-binary')}>
+                  Download STL <span className="control-cad-downloads__size">{formatBytes(bundle.stlByteLength)}</span>
+                </button>
+                {bundle.stlAscii ? (
+                  <button type="button" className="control-secondary-button" onClick={() => saveBundleFile(bundle, 'stl-ascii')}>
+                    Download ASCII STL
+                  </button>
+                ) : null}
+                {bundle.glbBinaryBase64 ? (
+                  <button type="button" className="control-secondary-button" onClick={() => saveBundleFile(bundle, 'glb')}>
+                    Download GLB <span className="control-cad-downloads__size">{formatBytes(bundle.glbByteLength)}</span>
+                  </button>
+                ) : null}
+              </div>
+              <p className="control-cad-provenance">
+                The same files ship for every catalog part in <code>external/velxio/frontend/public/models3d/&lt;key&gt;/</code> —
+                regenerated with <code>pnpm export:cad-models</code> and verified by <code>pnpm verify:cad-sim-link</code>.
+              </p>
+            </div>
+          ) : null}
           {notice ? <div className="control-inline-notice"><StatusDot status="ok" />{notice}</div> : null}
         </section>
       </div>

@@ -1,0 +1,181 @@
+{
+  "key": "buck-converter-lm2596",
+  "catalogId": "buck-converter-lm2596",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "buck-converter-lm2596",
+    "name": "LM2596 adjustable buck converter",
+    "category": "power",
+    "description": "Switching step-down converter: 4–40 V in, 1.23–37 V out (adjustable with the multi-turn trimmer), up to 3 A with a heat sink (2 A recommended continuous). Far more efficient than a linear regulator when stepping a motor battery down to a logic rail.",
+    "voltage": 5,
+    "minVoltage": 1.23,
+    "maxVoltage": 37,
+    "currentMa": 1000,
+    "dimensions": {
+      "widthMm": 43,
+      "lengthMm": 21,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e40af",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "IN+",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Input positive 4–40 V",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "VIN+",
+          "IN"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN-",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "IN- (ground)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "GND_IN",
+          "IN-"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT+",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Regulated output positive",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "VOUT+",
+          "OUT"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT-",
+        "pinNumber": 4,
+        "role": "ground",
+        "signal": "OUT- (ground)",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "GND_OUT",
+          "OUT-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "lm2596_regulator_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          3,
+          8
+        ],
+        "position": [
+          -5,
+          3.6,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "inductor",
+        "type": "cylinder",
+        "dimensions": [
+          5.5,
+          6,
+          0
+        ],
+        "position": [
+          8.5,
+          5.800000000000001,
+          0
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "trim_pot",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          4,
+          6
+        ],
+        "position": [
+          14,
+          4.6,
+          -6
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "input_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          10,
+          9,
+          8
+        ],
+        "position": [
+          -17,
+          6.1,
+          7
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "output_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          10,
+          9,
+          8
+        ],
+        "position": [
+          17,
+          6.1,
+          7
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "buck",
+      "step down",
+      "lm2596",
+      "dc-dc",
+      "converter",
+      "switching regulator",
+      "adjustable"
+    ],
+    "aliases": [
+      "lm2596",
+      "buck converter",
+      "step-down converter",
+      "dc-dc buck"
+    ]
+  }
+}

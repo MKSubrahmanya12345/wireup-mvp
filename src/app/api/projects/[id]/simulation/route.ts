@@ -58,6 +58,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             files: bundle.velxio.project.fileGroups['group-1']?.map((file) => file.name) ?? [],
             unsupported: bundle.velxio.unsupported,
             warnings: bundle.velxio.warnings,
+            cadBench: bundle.velxio.cadBench,
           }
         : null,
       software: bundle.software

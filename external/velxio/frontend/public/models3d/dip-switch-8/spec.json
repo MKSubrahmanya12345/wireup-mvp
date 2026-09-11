@@ -1,0 +1,299 @@
+{
+  "key": "dip-switch-8",
+  "catalogId": "dip-switch-8",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "dip-switch-8",
+    "name": "8-way DIP switch (SPST)",
+    "category": "input",
+    "description": "Row of eight independent slide switches in a standard 0.1\" DIP package — the classic way to give a device a hard-wired address, mode or configuration word that survives power cycles. Each pole is a separate pair of pins (nA/nB); wire one side to the MCU pin and the other to GND, and enable the internal pull-up so OFF reads HIGH and ON reads LOW.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 5,
+    "currentMa": 0,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 16,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e293b",
+    "pins": [
+      {
+        "name": "1A",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "Switch 1 pole, side A",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "1a"
+        ],
+        "required": true
+      },
+      {
+        "name": "1B",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Switch 1 pole, side B (wire to GND)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "1b"
+        ],
+        "required": true
+      },
+      {
+        "name": "2A",
+        "pinNumber": 3,
+        "role": "bidirectional",
+        "signal": "Switch 2 pole, side A",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "2a"
+        ],
+        "required": true
+      },
+      {
+        "name": "2B",
+        "pinNumber": 4,
+        "role": "bidirectional",
+        "signal": "Switch 2 pole, side B (wire to GND)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "2b"
+        ],
+        "required": true
+      },
+      {
+        "name": "3A",
+        "pinNumber": 5,
+        "role": "bidirectional",
+        "signal": "Switch 3 pole, side A",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "3a"
+        ],
+        "required": true
+      },
+      {
+        "name": "3B",
+        "pinNumber": 6,
+        "role": "bidirectional",
+        "signal": "Switch 3 pole, side B (wire to GND)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "3b"
+        ],
+        "required": true
+      },
+      {
+        "name": "4A",
+        "pinNumber": 7,
+        "role": "bidirectional",
+        "signal": "Switch 4 pole, side A",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "4a"
+        ],
+        "required": true
+      },
+      {
+        "name": "4B",
+        "pinNumber": 8,
+        "role": "bidirectional",
+        "signal": "Switch 4 pole, side B (wire to GND)",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -2.92,
+        "direction": "up",
+        "aliases": [
+          "4b"
+        ],
+        "required": true
+      },
+      {
+        "name": "5A",
+        "pinNumber": 9,
+        "role": "bidirectional",
+        "signal": "Switch 5 pole, side A",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -2.92,
+        "direction": "up",
+        "aliases": [
+          "5a"
+        ],
+        "required": true
+      },
+      {
+        "name": "5B",
+        "pinNumber": 10,
+        "role": "bidirectional",
+        "signal": "Switch 5 pole, side B (wire to GND)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -2.92,
+        "direction": "up",
+        "aliases": [
+          "5b"
+        ],
+        "required": true
+      },
+      {
+        "name": "6A",
+        "pinNumber": 11,
+        "role": "bidirectional",
+        "signal": "Switch 6 pole, side A",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -2.92,
+        "direction": "up",
+        "aliases": [
+          "6a"
+        ],
+        "required": true
+      },
+      {
+        "name": "6B",
+        "pinNumber": 12,
+        "role": "bidirectional",
+        "signal": "Switch 6 pole, side B (wire to GND)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -2.92,
+        "direction": "up",
+        "aliases": [
+          "6b"
+        ],
+        "required": true
+      },
+      {
+        "name": "7A",
+        "pinNumber": 13,
+        "role": "bidirectional",
+        "signal": "Switch 7 pole, side A",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -2.92,
+        "direction": "up",
+        "aliases": [
+          "7a"
+        ],
+        "required": true
+      },
+      {
+        "name": "7B",
+        "pinNumber": 14,
+        "role": "bidirectional",
+        "signal": "Switch 7 pole, side B (wire to GND)",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -2.92,
+        "direction": "up",
+        "aliases": [
+          "7b"
+        ],
+        "required": true
+      },
+      {
+        "name": "8A",
+        "pinNumber": 15,
+        "role": "bidirectional",
+        "signal": "Switch 8 pole, side A",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -0.38,
+        "direction": "up",
+        "aliases": [
+          "8a"
+        ],
+        "required": true
+      },
+      {
+        "name": "8B",
+        "pinNumber": 16,
+        "role": "bidirectional",
+        "signal": "Switch 8 pole, side B (wire to GND)",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -0.38,
+        "direction": "up",
+        "aliases": [
+          "8b"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          20,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -5.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "actuator_cap",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          4,
+          6
+        ],
+        "position": [
+          0,
+          4.6,
+          1.5
+        ],
+        "color": "#e2e8f0"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "dip switch",
+      "configuration",
+      "address select",
+      "mode select",
+      "dipswitch",
+      "8 way switch"
+    ],
+    "aliases": [
+      "dip switch",
+      "dipswitch",
+      "dip-8",
+      "8-way dip",
+      "configuration switch"
+    ]
+  }
+}

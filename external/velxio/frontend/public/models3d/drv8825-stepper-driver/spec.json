@@ -1,0 +1,331 @@
+{
+  "key": "drv8825-stepper-driver",
+  "catalogId": "drv8825-stepper-driver",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "drv8825-stepper-driver",
+    "name": "DRV8825 stepper driver breakout",
+    "category": "driver",
+    "description": "Higher-voltage alternative to the A4988: 8.2-45 V motor supply, up to 2.2 A per coil with cooling, 1/32 microstepping. Pin-compatible with the A4988 footprint but the microstep table and the VREF formula differ (Imax = VREF x 2).",
+    "voltage": 3.3,
+    "minVoltage": 2.5,
+    "maxVoltage": 5.25,
+    "currentMa": 1000,
+    "dimensions": {
+      "widthMm": 30,
+      "lengthMm": 30,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "VMOT",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor supply 8.2-45 V",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VM",
+          "VCC_MOTOR"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND_MOT",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND_MOT (ground)",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "GNDMOT",
+          "PGND"
+        ],
+        "required": true
+      },
+      {
+        "name": "A1",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Coil A output +",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "A2",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Coil A output -",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "B1",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "Coil B output +",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "B2",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Coil B output -",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "VDD",
+        "pinNumber": 7,
+        "role": "power",
+        "signal": "Logic supply 2.5-5.25 V",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VCC"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 8,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "GND_LOGIC"
+        ],
+        "required": true
+      },
+      {
+        "name": "STEP",
+        "pinNumber": 9,
+        "role": "digital",
+        "signal": "Step pulse (rising edge)",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "STP"
+        ],
+        "required": true
+      },
+      {
+        "name": "DIR",
+        "pinNumber": 10,
+        "role": "digital",
+        "signal": "Direction",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "EN",
+        "pinNumber": 11,
+        "role": "control",
+        "signal": "Enable (active low)",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "ENABLE",
+          "nEN"
+        ],
+        "required": false
+      },
+      {
+        "name": "M0",
+        "pinNumber": 12,
+        "role": "digital",
+        "signal": "Microstep select 0",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "MS1"
+        ],
+        "required": false
+      },
+      {
+        "name": "M1",
+        "pinNumber": 13,
+        "role": "digital",
+        "signal": "Microstep select 1",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "MS2"
+        ],
+        "required": false
+      },
+      {
+        "name": "M2",
+        "pinNumber": 14,
+        "role": "digital",
+        "signal": "Microstep select 2",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "MS3"
+        ],
+        "required": false
+      },
+      {
+        "name": "RST",
+        "pinNumber": 15,
+        "role": "control",
+        "signal": "Reset (active low) — usually jumpered to SLP",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "SLP",
+        "pinNumber": 16,
+        "role": "control",
+        "signal": "Sleep (active low) — usually jumpered to RST",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "FAULT",
+        "pinNumber": 17,
+        "role": "digital",
+        "signal": "Open-drain fault output (over-current / over-temperature)",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "nFAULT"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          30,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bridge_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          2.5,
+          10
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          15,
+          12,
+          10
+        ],
+        "position": [
+          0,
+          7.6,
+          -4.5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          12,
+          9,
+          8
+        ],
+        "position": [
+          -8,
+          6.1,
+          9
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "drv8825",
+      "stepper driver",
+      "microstepping",
+      "1/32",
+      "pololu",
+      "step dir"
+    ],
+    "aliases": [
+      "drv8825",
+      "drv 8825",
+      "stepstick drv8825"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "AccelStepper",
+        "import": "AccelStepper.h",
+        "manager": "arduino",
+        "purpose": "Step/dir control with acceleration ramps"
+      }
+    ]
+  }
+}

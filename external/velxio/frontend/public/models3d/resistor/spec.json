@@ -1,0 +1,169 @@
+{
+  "key": "resistor",
+  "catalogId": "resistor-220ohm",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "resistor-220ohm",
+    "name": "220 Ω resistor (1/4 W)",
+    "category": "passive",
+    "description": "220 Ω, ±5 %, 1/4 W through-hole resistor. The standard LED current limiter from a 5 V logic pin (≈13 mA at a 2.1 V LED).",
+    "voltage": 5,
+    "currentMa": 13,
+    "dimensions": {
+      "widthMm": 17,
+      "lengthMm": 2.5,
+      "heightMm": 2.5
+    },
+    "bodyColor": "#d6b47a",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "1",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "1 (other)",
+        "xMm": -3.4,
+        "yMm": 0,
+        "zMm": 0,
+        "direction": "left",
+        "aliases": [
+          "A"
+        ],
+        "required": true
+      },
+      {
+        "name": "2",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "2 (other)",
+        "xMm": 3.4,
+        "yMm": 0,
+        "zMm": 0,
+        "direction": "right",
+        "aliases": [
+          "B"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "axial_resistor_body",
+        "type": "cylinder",
+        "dimensions": [
+          1.25,
+          6.4,
+          0
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#d6b47a"
+      },
+      {
+        "name": "colour_band_1",
+        "type": "cylinder",
+        "dimensions": [
+          1.31,
+          0.34,
+          0
+        ],
+        "position": [
+          -2.05,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#ef4444"
+      },
+      {
+        "name": "colour_band_2",
+        "type": "cylinder",
+        "dimensions": [
+          1.31,
+          0.34,
+          0
+        ],
+        "position": [
+          -1.2699999999999998,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#ef4444"
+      },
+      {
+        "name": "colour_band_3",
+        "type": "cylinder",
+        "dimensions": [
+          1.31,
+          0.34,
+          0
+        ],
+        "position": [
+          -0.48999999999999977,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#7c2d12"
+      },
+      {
+        "name": "colour_band_4",
+        "type": "cylinder",
+        "dimensions": [
+          1.31,
+          0.34,
+          0
+        ],
+        "position": [
+          0.29000000000000004,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "color": "#d4af37"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "resistor",
+      "220 ohm",
+      "led resistor",
+      "current limiting"
+    ],
+    "aliases": [
+      "220r",
+      "220 ohm resistor",
+      "resistor 220"
+    ]
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "key": "servo",
+  "catalogId": "servo-motor-sg90",
+  "tier": "preset",
+  "cadOnly": false,
+  "assetKind": "print-export-of-spec",
+  "renderedModel": "sg90/sg90.glb",
+  "note": "The rendered 3D model is the reviewed GLB named in renderedModel; these STLs are exported from the CAD spec.",
+  "spec": {
+    "id": "servo-motor-sg90",
+    "name": "SG90 micro servo",
+    "category": "actuator",
+    "description": "9 g hobby servo: 23 x 12.2 x 29 mm body with mounting tabs, output spline on top and a 3-wire lead. Position is commanded by a 50 Hz pulse between 0.5 and 2.5 ms.",
+    "voltage": 5,
+    "minVoltage": 4.8,
+    "maxVoltage": 6,
+    "currentMa": 100,
+    "dimensions": {
+      "widthMm": 22.8,
+      "lengthMm": 12.2,
+      "heightMm": 22.5
+    },
+    "bodyColor": "#1e6fd9",
+    "pins": [
+      {
+        "name": "SIGNAL",
+        "pinNumber": 1,
+        "role": "pwm",
+        "signal": "50 Hz position PWM (0.5-2.5 ms)",
+        "xMm": -13.5,
+        "yMm": 6,
+        "zMm": 2.54,
+        "direction": "left",
+        "aliases": [
+          "S",
+          "SIG",
+          "PWM",
+          "ORANGE"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "4.8-6 V servo supply",
+        "xMm": -13.5,
+        "yMm": 6,
+        "zMm": 0,
+        "direction": "left",
+        "aliases": [
+          "+",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Ground",
+        "xMm": -13.5,
+        "yMm": 6,
+        "zMm": -2.54,
+        "direction": "left",
+        "aliases": [
+          "-",
+          "BROWN",
+          "BLACK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "gear_case",
+        "type": "box",
+        "dimensions": [
+          22.8,
+          6,
+          12.2
+        ],
+        "position": [
+          0,
+          19.5,
+          0
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "mounting_tabs",
+        "type": "box",
+        "dimensions": [
+          32.2,
+          2.5,
+          12.2
+        ],
+        "position": [
+          0,
+          16,
+          0
+        ],
+        "color": "#1e6fd9"
+      },
+      {
+        "name": "output_spline",
+        "type": "cylinder",
+        "dimensions": [
+          2.4,
+          4,
+          0
+        ],
+        "position": [
+          -5.9,
+          24.5,
+          0
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "servo_horn",
+        "type": "box",
+        "dimensions": [
+          20,
+          1.6,
+          4
+        ],
+        "position": [
+          0,
+          26.5,
+          0
+        ],
+        "color": "#e2e8f0"
+      },
+      {
+        "name": "rear_bearing_boss",
+        "type": "cylinder",
+        "dimensions": [
+          2.5,
+          2,
+          0
+        ],
+        "position": [
+          5.9,
+          23.5,
+          0
+        ],
+        "color": "#1d4ed8"
+      }
+    ],
+    "protocols": [
+      "pwm"
+    ],
+    "keywords": [
+      "servo",
+      "sg90",
+      "micro servo",
+      "position",
+      "steering"
+    ],
+    "aliases": [
+      "servo",
+      "sg90",
+      "micro servo",
+      "hobby servo",
+      "9g servo"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Servo",
+        "import": "Servo.h",
+        "manager": "arduino",
+        "purpose": "Hardware timer servo PWM"
+      }
+    ]
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "key": "lcd2004",
+  "catalogId": "lcd-2004-i2c",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "lcd-2004-i2c",
+    "name": "2004 LCD with I2C backpack (PCF8574)",
+    "category": "display",
+    "description": "20x4 character LCD on a PCF8574 I2C backpack — the 16x2 layout with two more lines for menus and telemetry. Four wires only (VCC, GND, SDA, SCL). Default address 0x27 (some backpacks use 0x3F), 5 V supply with contrast trimmer and backlight jumper.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 25,
+    "dimensions": {
+      "widthMm": 27,
+      "lengthMm": 27,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0f172a",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C data",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "D",
+          "SDI"
+        ],
+        "required": true
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C clock",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "C",
+          "SCK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -10.96
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "glass_panel",
+        "type": "screen",
+        "dimensions": [
+          22.95,
+          2,
+          13.5
+        ],
+        "position": [
+          0,
+          2.8,
+          2.5
+        ],
+        "color": "#090d16"
+      }
+    ],
+    "protocols": [
+      "i2c"
+    ],
+    "keywords": [
+      "lcd",
+      "2004",
+      "20x4",
+      "display",
+      "i2c lcd",
+      "character lcd",
+      "screen",
+      "text display"
+    ],
+    "aliases": [
+      "lcd2004",
+      "20x4 lcd",
+      "lcd 2004",
+      "4 line lcd",
+      "2004 lcd"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "LiquidCrystal I2C",
+        "import": "LiquidCrystal_I2C.h",
+        "manager": "arduino",
+        "purpose": "PCF8574 backpack driver for HD44780 LCDs"
+      },
+      {
+        "name": "Wire",
+        "import": "Wire.h",
+        "manager": "arduino",
+        "purpose": "I2C bus"
+      }
+    ]
+  }
+}

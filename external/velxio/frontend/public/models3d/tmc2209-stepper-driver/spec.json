@@ -1,0 +1,339 @@
+{
+  "key": "tmc2209-stepper-driver",
+  "catalogId": "tmc2209-stepper-driver",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "tmc2209-stepper-driver",
+    "name": "TMC2209 silent stepper driver",
+    "category": "driver",
+    "description": "StealthChop2 stepper driver for near-silent motion: 4.75-29 V motor supply, 1.4 A RMS (2 A peak) per coil, up to 1/256 interpolated microstepping and an optional single-wire UART for runtime current, microstep and StallGuard configuration. Also supports sensorless homing through the DIAG pin.",
+    "voltage": 3.3,
+    "minVoltage": 3,
+    "maxVoltage": 5.5,
+    "currentMa": 1200,
+    "dimensions": {
+      "widthMm": 30,
+      "lengthMm": 30,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "VM",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor supply 4.75-29 V",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VMOT",
+          "VS"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND_MOT",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND_MOT (ground)",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "PGND",
+          "GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "OA1",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Coil A output 1",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A1",
+          "M1A"
+        ],
+        "required": true
+      },
+      {
+        "name": "OA2",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Coil A output 2",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A2",
+          "M1B"
+        ],
+        "required": true
+      },
+      {
+        "name": "OB1",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "Coil B output 1",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "B1",
+          "M2A"
+        ],
+        "required": true
+      },
+      {
+        "name": "OB2",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Coil B output 2",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "B2",
+          "M2B"
+        ],
+        "required": true
+      },
+      {
+        "name": "VIO",
+        "pinNumber": 7,
+        "role": "power",
+        "signal": "Logic supply 3-5 V",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VDD",
+          "VCC_IO"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 8,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "GND_LOGIC"
+        ],
+        "required": true
+      },
+      {
+        "name": "STEP",
+        "pinNumber": 9,
+        "role": "digital",
+        "signal": "Step pulse",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "DIR",
+        "pinNumber": 10,
+        "role": "digital",
+        "signal": "Direction",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "EN",
+        "pinNumber": 11,
+        "role": "control",
+        "signal": "Enable (active low)",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "ENN",
+          "nEN"
+        ],
+        "required": false
+      },
+      {
+        "name": "PDN_UART",
+        "pinNumber": 12,
+        "role": "uart",
+        "signal": "Single-wire UART for runtime configuration (1 kOhm series resistor when bridging TX/RX)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "UART",
+          "PDN",
+          "TX/RX"
+        ],
+        "required": false
+      },
+      {
+        "name": "MS1",
+        "pinNumber": 13,
+        "role": "digital",
+        "signal": "Microstep / UART address select 1",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "AD0"
+        ],
+        "required": false
+      },
+      {
+        "name": "MS2",
+        "pinNumber": 14,
+        "role": "digital",
+        "signal": "Microstep / UART address select 2",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "AD1"
+        ],
+        "required": false
+      },
+      {
+        "name": "DIAG",
+        "pinNumber": 15,
+        "role": "digital",
+        "signal": "StallGuard / diagnostic output used for sensorless homing",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "INDEX",
+        "pinNumber": 16,
+        "role": "digital",
+        "signal": "Pulses once per electrical full step cycle",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          30,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bridge_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          2.5,
+          10
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          15,
+          12,
+          10
+        ],
+        "position": [
+          0,
+          7.6,
+          -4.5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          12,
+          9,
+          8
+        ],
+        "position": [
+          -8,
+          6.1,
+          9
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "tmc2209",
+      "silent",
+      "stealthchop",
+      "stallguard",
+      "stepper driver",
+      "trinamic"
+    ],
+    "aliases": [
+      "tmc2209",
+      "tmc 2209",
+      "silent stepper driver"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "TMCStepper",
+        "import": "TMCStepper.h",
+        "manager": "arduino",
+        "purpose": "UART configuration of current, microsteps and StallGuard"
+      },
+      {
+        "name": "AccelStepper",
+        "import": "AccelStepper.h",
+        "manager": "arduino",
+        "purpose": "Motion profiles on the STEP/DIR interface"
+      }
+    ]
+  }
+}

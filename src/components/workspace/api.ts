@@ -126,6 +126,13 @@ export interface SimulationPayload {
     files: string[];
     unsupported: string[];
     warnings: string[];
+    /**
+     * Parts the emulator has no element for. They are placed on the bench as
+     * CAD-only parts (real shape and pin anchors, no electrical model) and are
+     * reported here so the page can say so instead of pretending they are not
+     * in the build.
+     */
+    cadBench: { id: string; catalogId: string; name: string }[];
   } | null;
   software: {
     slug: string;

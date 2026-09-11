@@ -1,0 +1,129 @@
+{
+  "key": "slide-switch",
+  "catalogId": "toggle-switch-spdt",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "toggle-switch-spdt",
+    "name": "SPDT slide / toggle switch",
+    "category": "input",
+    "description": "Single-pole double-throw mechanical switch: the common terminal is connected to exactly one of the two throws at all times. Use it as a hard power switch or as a latching logic input (common to the GPIO, one throw to GND, internal pull-up enabled).",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 30,
+    "currentMa": 0,
+    "dimensions": {
+      "widthMm": 12.7,
+      "lengthMm": 6.6,
+      "heightMm": 8
+    },
+    "bodyColor": "#1f2937",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "COM",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "Common pole",
+        "xMm": -2.54,
+        "yMm": -4,
+        "zMm": 2.0999999999999996,
+        "direction": "down",
+        "aliases": [
+          "C",
+          "2",
+          "POLE"
+        ],
+        "required": true
+      },
+      {
+        "name": "NO",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Throw 1 (position A)",
+        "xMm": 0,
+        "yMm": -4,
+        "zMm": 2.0999999999999996,
+        "direction": "down",
+        "aliases": [
+          "1",
+          "A",
+          "ON1"
+        ],
+        "required": true
+      },
+      {
+        "name": "NC",
+        "pinNumber": 3,
+        "role": "bidirectional",
+        "signal": "Throw 2 (position B)",
+        "xMm": 2.54,
+        "yMm": -4,
+        "zMm": 2.0999999999999996,
+        "direction": "down",
+        "aliases": [
+          "3",
+          "B",
+          "ON2"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "switch_body",
+        "type": "box",
+        "dimensions": [
+          12.7,
+          4.8,
+          6.6
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "metal_toggle_lever",
+        "type": "cylinder",
+        "dimensions": [
+          0.7,
+          8,
+          0
+        ],
+        "position": [
+          0,
+          5,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          -18
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "switch",
+      "toggle",
+      "slide switch",
+      "spdt",
+      "power switch",
+      "latching"
+    ],
+    "aliases": [
+      "toggle switch",
+      "slide switch",
+      "spdt switch",
+      "switch"
+    ]
+  }
+}

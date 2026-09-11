@@ -1,0 +1,123 @@
+{
+  "key": "slide-potentiometer",
+  "catalogId": "slide-potentiometer-10k",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "slide-potentiometer-10k",
+    "name": "10 kΩ slide potentiometer (fader)",
+    "category": "input",
+    "description": "Linear-taper 10 kΩ slide potentiometer (45 mm travel fader). Electrically identical to a rotary pot: the two ends go to VCC/GND and the wiper to an ADC pin, with position proportional to travel. Choose it over a rotary pot when the panel layout wants a visible, directly-labelled position — mixers, light dimmers, setpoint sliders.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 5,
+    "currentMa": 0.5,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 16,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e293b",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "One end of the track to VCC",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "1",
+          "CCW"
+        ],
+        "required": true
+      },
+      {
+        "name": "WIPER",
+        "pinNumber": 2,
+        "role": "analog",
+        "signal": "Wiper to an ADC pin",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "2",
+          "W",
+          "S",
+          "SIG"
+        ],
+        "required": true
+      },
+      {
+        "name": "B",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Other end of the track to GND",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "3",
+          "CW"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -5.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "actuator_cap",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          4,
+          6
+        ],
+        "position": [
+          0,
+          4.6,
+          1.5
+        ],
+        "color": "#e2e8f0"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "slide potentiometer",
+      "fader",
+      "slider",
+      "analog input",
+      "volume slider",
+      "mixer",
+      "linear pot"
+    ],
+    "aliases": [
+      "slide pot",
+      "slider potentiometer",
+      "fader",
+      "slide potentiometer",
+      "linear potentiometer"
+    ]
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "key": "propeller-5045-tri-blade",
+  "catalogId": "propeller-5045-tri-blade",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "propeller-5045-tri-blade",
+    "name": "5045 tri-blade propeller (5 in, 4.5 in pitch)",
+    "category": "other",
+    "description": "Purely mechanical part: 127 mm diameter three-blade propeller with a 5 mm bore hub. Included in CAD so a drone assembly can be laid out and clearance-checked; it has no pin anchors.",
+    "voltage": 0,
+    "currentMa": 0,
+    "dimensions": {
+      "widthMm": 127,
+      "lengthMm": 127,
+      "heightMm": 8
+    },
+    "bodyColor": "#0f172a",
+    "pins": [],
+    "features": [
+      {
+        "name": "hub",
+        "type": "cylinder",
+        "dimensions": [
+          7,
+          8,
+          0
+        ],
+        "position": [
+          0,
+          4,
+          0
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "bore",
+        "type": "cylinder",
+        "dimensions": [
+          2.5,
+          8,
+          0
+        ],
+        "position": [
+          0,
+          4,
+          0
+        ],
+        "color": "#020617"
+      },
+      {
+        "name": "blade_a",
+        "type": "box",
+        "dimensions": [
+          58,
+          2,
+          11
+        ],
+        "position": [
+          29,
+          4,
+          0
+        ],
+        "color": "#111827",
+        "rotation": [
+          0,
+          0,
+          8
+        ]
+      },
+      {
+        "name": "blade_b",
+        "type": "box",
+        "dimensions": [
+          58,
+          2,
+          11
+        ],
+        "position": [
+          -14.5,
+          4,
+          25.1
+        ],
+        "color": "#111827",
+        "rotation": [
+          0,
+          120,
+          8
+        ]
+      },
+      {
+        "name": "blade_c",
+        "type": "box",
+        "dimensions": [
+          58,
+          2,
+          11
+        ],
+        "position": [
+          -14.5,
+          4,
+          -25.1
+        ],
+        "color": "#111827",
+        "rotation": [
+          0,
+          240,
+          8
+        ]
+      }
+    ],
+    "protocols": [],
+    "keywords": [
+      "propeller",
+      "prop",
+      "5045",
+      "tri-blade",
+      "drone",
+      "thrust"
+    ],
+    "aliases": [
+      "propeller",
+      "prop",
+      "5045 prop",
+      "drone propeller"
+    ]
+  }
+}

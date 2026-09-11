@@ -1,0 +1,119 @@
+{
+  "key": "blower-fan-5v-radial",
+  "catalogId": "blower-fan-5v-radial",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "blower-fan-5v-radial",
+    "name": "5 V radial blower fan (50 x 50 x 15 mm)",
+    "category": "actuator",
+    "description": "Two-wire centrifugal (squirrel-cage) blower producing higher static pressure than an axial fan at the same size. Same drive rules as any 2-wire fan: low-side MOSFET plus flyback diode.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 200,
+    "dimensions": {
+      "widthMm": 50,
+      "lengthMm": 50,
+      "heightMm": 15
+    },
+    "bodyColor": "#1f2937",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Blower supply +5 V",
+        "xMm": -1.27,
+        "yMm": 19.4,
+        "zMm": -22.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Return — switch this side",
+        "xMm": 1.27,
+        "yMm": 19.4,
+        "zMm": -22.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "BLACK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          5.08,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          16.2,
+          -22.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "motor_can",
+        "type": "cylinder",
+        "dimensions": [
+          25,
+          35,
+          0
+        ],
+        "position": [
+          0,
+          32.5,
+          0
+        ],
+        "color": "#4b5563"
+      },
+      {
+        "name": "output_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          56,
+          0
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "blower",
+      "radial fan",
+      "centrifugal",
+      "squirrel cage",
+      "static pressure",
+      "hotend fan"
+    ],
+    "aliases": [
+      "blower",
+      "blower fan",
+      "radial fan",
+      "5015 blower"
+    ]
+  }
+}

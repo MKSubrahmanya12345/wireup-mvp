@@ -1,0 +1,331 @@
+{
+  "key": "uln2003-darlington-array",
+  "catalogId": "uln2003-darlington-array",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "uln2003-darlington-array",
+    "name": "ULN2003A Darlington transistor array",
+    "category": "driver",
+    "description": "Seven open-collector Darlington sinks (500 mA each, 50 V max) with integrated free-wheeling diodes on the COM pin. The workhorse for switching relays, unipolar steppers, small solenoids and lamps from logic pins — it only sinks current, so the load sits between the supply and the output.",
+    "voltage": 5,
+    "minVoltage": 3,
+    "maxVoltage": 50,
+    "currentMa": 300,
+    "dimensions": {
+      "widthMm": 30,
+      "lengthMm": 30,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "IN1",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Channel 1 input (pin 1)",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "1B"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN2",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Channel 2 input (pin 2)",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "2B"
+        ],
+        "required": false
+      },
+      {
+        "name": "IN3",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Channel 3 input (pin 3)",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "3B"
+        ],
+        "required": false
+      },
+      {
+        "name": "IN4",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Channel 4 input (pin 4)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "4B"
+        ],
+        "required": false
+      },
+      {
+        "name": "IN5",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Channel 5 input (pin 5)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "5B"
+        ],
+        "required": false
+      },
+      {
+        "name": "IN6",
+        "pinNumber": 6,
+        "role": "digital",
+        "signal": "Channel 6 input (pin 6)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "6B"
+        ],
+        "required": false
+      },
+      {
+        "name": "IN7",
+        "pinNumber": 7,
+        "role": "digital",
+        "signal": "Channel 7 input (pin 7)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "7B"
+        ],
+        "required": false
+      },
+      {
+        "name": "GND",
+        "pinNumber": 8,
+        "role": "ground",
+        "signal": "Ground / emitter common (pin 8)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "E",
+          "VSS"
+        ],
+        "required": true
+      },
+      {
+        "name": "COM",
+        "pinNumber": 9,
+        "role": "power",
+        "signal": "Free-wheeling diode common — tie to the load supply (pin 9)",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "COMMON",
+          "VCC",
+          "CD"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT7",
+        "pinNumber": 10,
+        "role": "digital",
+        "signal": "Channel 7 open-collector output (pin 10)",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "7C"
+        ],
+        "required": false
+      },
+      {
+        "name": "OUT6",
+        "pinNumber": 11,
+        "role": "digital",
+        "signal": "Channel 6 open-collector output (pin 11)",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "6C"
+        ],
+        "required": false
+      },
+      {
+        "name": "OUT5",
+        "pinNumber": 12,
+        "role": "digital",
+        "signal": "Channel 5 open-collector output (pin 12)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "5C"
+        ],
+        "required": false
+      },
+      {
+        "name": "OUT4",
+        "pinNumber": 13,
+        "role": "digital",
+        "signal": "Channel 4 open-collector output (pin 13)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "4C"
+        ],
+        "required": false
+      },
+      {
+        "name": "OUT3",
+        "pinNumber": 14,
+        "role": "digital",
+        "signal": "Channel 3 open-collector output (pin 14)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "3C"
+        ],
+        "required": false
+      },
+      {
+        "name": "OUT2",
+        "pinNumber": 15,
+        "role": "digital",
+        "signal": "Channel 2 open-collector output (pin 15)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "2C"
+        ],
+        "required": false
+      },
+      {
+        "name": "OUT1",
+        "pinNumber": 16,
+        "role": "digital",
+        "signal": "Channel 1 open-collector output (pin 16)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "1C"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          30,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bridge_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          2.5,
+          10
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          15,
+          12,
+          10
+        ],
+        "position": [
+          0,
+          7.6,
+          -4.5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          12,
+          9,
+          8
+        ],
+        "position": [
+          -8,
+          6.1,
+          9
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "uln2003",
+      "darlington",
+      "driver array",
+      "sink",
+      "relay driver",
+      "unipolar stepper"
+    ],
+    "aliases": [
+      "uln2003",
+      "uln2003a",
+      "darlington array",
+      "uln2803"
+    ]
+  }
+}

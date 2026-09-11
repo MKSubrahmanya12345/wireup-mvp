@@ -1,0 +1,177 @@
+{
+  "key": "fan-5v-40mm",
+  "catalogId": "fan-5v-40mm",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "fan-5v-40mm",
+    "name": "40 mm 5 V axial cooling fan (2-wire)",
+    "category": "actuator",
+    "description": "Standard 40 x 40 x 10 mm axial fan: square frame with four M3 corner holes, a seven-blade impeller and a hub carrying the motor. Two wires only, so speed control means switching the ground side.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 120,
+    "dimensions": {
+      "widthMm": 40,
+      "lengthMm": 40,
+      "heightMm": 10
+    },
+    "bodyColor": "#111827",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Fan supply +5 V",
+        "xMm": 20,
+        "yMm": 5,
+        "zMm": 2,
+        "direction": "right",
+        "aliases": [
+          "+",
+          "RED",
+          "5V"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Fan return (switched side)",
+        "xMm": 20,
+        "yMm": 5,
+        "zMm": -2,
+        "direction": "right",
+        "aliases": [
+          "-",
+          "BLACK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "frame",
+        "type": "box",
+        "dimensions": [
+          40,
+          10,
+          40
+        ],
+        "position": [
+          0,
+          5,
+          0
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "hub",
+        "type": "cylinder",
+        "dimensions": [
+          8,
+          10,
+          0
+        ],
+        "position": [
+          0,
+          5,
+          0
+        ],
+        "color": "#0f172a"
+      },
+      {
+        "name": "blade_ring",
+        "type": "cylinder",
+        "dimensions": [
+          18.5,
+          6,
+          0
+        ],
+        "position": [
+          0,
+          5,
+          0
+        ],
+        "color": "#374151"
+      },
+      {
+        "name": "mount_hole_a",
+        "type": "cylinder",
+        "dimensions": [
+          1.6,
+          10,
+          0
+        ],
+        "position": [
+          16,
+          5,
+          16
+        ],
+        "color": "#0b0f16"
+      },
+      {
+        "name": "mount_hole_b",
+        "type": "cylinder",
+        "dimensions": [
+          1.6,
+          10,
+          0
+        ],
+        "position": [
+          -16,
+          5,
+          16
+        ],
+        "color": "#0b0f16"
+      },
+      {
+        "name": "mount_hole_c",
+        "type": "cylinder",
+        "dimensions": [
+          1.6,
+          10,
+          0
+        ],
+        "position": [
+          16,
+          5,
+          -16
+        ],
+        "color": "#0b0f16"
+      },
+      {
+        "name": "mount_hole_d",
+        "type": "cylinder",
+        "dimensions": [
+          1.6,
+          10,
+          0
+        ],
+        "position": [
+          -16,
+          5,
+          -16
+        ],
+        "color": "#0b0f16"
+      }
+    ],
+    "protocols": [],
+    "keywords": [
+      "fan",
+      "cooling fan",
+      "axial fan",
+      "40mm",
+      "airflow"
+    ],
+    "aliases": [
+      "fan",
+      "5v fan",
+      "40mm fan",
+      "cooling fan"
+    ]
+  }
+}

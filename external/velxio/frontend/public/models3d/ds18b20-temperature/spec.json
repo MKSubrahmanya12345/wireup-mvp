@@ -1,0 +1,130 @@
+{
+  "key": "ds18b20-temperature",
+  "catalogId": "ds18b20-temperature",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "ds18b20-temperature",
+    "name": "DS18B20 1-Wire digital thermometer",
+    "category": "sensor",
+    "description": "TO-92 package, 4.3 x 4.3 x 5.2 mm body with three 0.5 mm leads on a 1.27 mm pitch. Flat face towards the viewer, the leads read GND, DQ, VDD left to right.",
+    "voltage": 5,
+    "minVoltage": 3,
+    "maxVoltage": 5.5,
+    "currentMa": 1.5,
+    "dimensions": {
+      "widthMm": 4.3,
+      "lengthMm": 4.3,
+      "heightMm": 5.2
+    },
+    "bodyColor": "#111827",
+    "pins": [
+      {
+        "name": "GND",
+        "pinNumber": 1,
+        "role": "ground",
+        "signal": "Ground (pin 1)",
+        "xMm": -1.27,
+        "yMm": 0,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "-",
+          "BLACK"
+        ],
+        "required": true
+      },
+      {
+        "name": "DQ",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "1-Wire data (pin 2), 4.7 kOhm pull-up required",
+        "xMm": 0,
+        "yMm": 0,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "DATA",
+          "YELLOW"
+        ],
+        "required": true
+      },
+      {
+        "name": "VDD",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Supply 3.0-5.5 V (pin 3)",
+        "xMm": 1.27,
+        "yMm": 0,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "VCC",
+          "RED"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "to92_body",
+        "type": "cylinder",
+        "dimensions": [
+          2.3,
+          5.2,
+          0
+        ],
+        "position": [
+          0,
+          2.6,
+          0
+        ],
+        "color": "#18181b"
+      },
+      {
+        "name": "flat_face",
+        "type": "box",
+        "dimensions": [
+          4.3,
+          5.2,
+          0.8
+        ],
+        "position": [
+          0,
+          2.6,
+          1.6
+        ],
+        "color": "#0f172a"
+      }
+    ],
+    "protocols": [
+      "one_wire"
+    ],
+    "keywords": [
+      "ds18b20",
+      "temperature",
+      "1-wire",
+      "thermometer",
+      "probe"
+    ],
+    "aliases": [
+      "ds18b20",
+      "dallas temperature sensor"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "OneWire",
+        "import": "OneWire.h",
+        "manager": "arduino",
+        "purpose": "1-Wire transport"
+      },
+      {
+        "name": "DallasTemperature",
+        "import": "DallasTemperature.h",
+        "manager": "arduino",
+        "purpose": "DS18B20 conversion"
+      }
+    ]
+  }
+}

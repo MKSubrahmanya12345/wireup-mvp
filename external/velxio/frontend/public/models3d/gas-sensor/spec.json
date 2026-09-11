@@ -1,0 +1,167 @@
+{
+  "key": "gas-sensor",
+  "catalogId": "mq-2-gas-sensor",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "mq-2-gas-sensor",
+    "name": "MQ-2 gas / smoke sensor module",
+    "category": "sensor",
+    "description": "Heated tin-dioxide sensor for LPG, propane, hydrogen, methane and smoke. The module carries an on-board heater, a comparator with a digital output (DO) and an analog output (AO) for ppm estimation. 5 V supply, heater draws 150–800 mA and needs 24–48 h burn-in for stable readings.",
+    "voltage": 5,
+    "minVoltage": 5,
+    "maxVoltage": 5.5,
+    "currentMa": 150,
+    "dimensions": {
+      "widthMm": 32,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "AO",
+        "pinNumber": 3,
+        "role": "analog",
+        "signal": "Analog gas concentration",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "A0",
+          "ANALOG"
+        ],
+        "required": false
+      },
+      {
+        "name": "DO",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Digital threshold alarm (active low on most modules)",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "D0",
+          "DOUT"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "mq2_heater_can",
+        "type": "cylinder",
+        "dimensions": [
+          8.5,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          8.6,
+          1.5
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "perforated_cap_band",
+        "type": "cylinder",
+        "dimensions": [
+          8.9,
+          1.2,
+          0
+        ],
+        "position": [
+          0,
+          13.9,
+          1.5
+        ],
+        "color": "#94a3b8"
+      },
+      {
+        "name": "lm393_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.2,
+          5
+        ],
+        "position": [
+          -9,
+          2.9000000000000004,
+          -5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensitivity_trimmer",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          3.5,
+          6
+        ],
+        "position": [
+          9,
+          4.6,
+          -5
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "mq-2",
+      "mq2",
+      "gas",
+      "smoke",
+      "lpg",
+      "air quality",
+      "flammable"
+    ],
+    "aliases": [
+      "mq2",
+      "mq-2",
+      "mq series",
+      "gas sensor",
+      "smoke sensor"
+    ]
+  }
+}

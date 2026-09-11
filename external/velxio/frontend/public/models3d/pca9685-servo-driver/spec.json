@@ -1,0 +1,249 @@
+{
+  "key": "pca9685-servo-driver",
+  "catalogId": "pca9685-servo-driver",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "pca9685-servo-driver",
+    "name": "PCA9685 16-channel PWM/servo driver",
+    "category": "driver",
+    "description": "Adafruit-style 62.5 x 25.4 mm board: I2C header on one edge, a screw terminal for the servo rail, six address-select solder jumpers and sixteen 3-pin servo headers along the body.",
+    "voltage": 3.3,
+    "minVoltage": 2.3,
+    "maxVoltage": 5.5,
+    "currentMa": 10,
+    "dimensions": {
+      "widthMm": 62.5,
+      "lengthMm": 25.4,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#166534",
+    "pins": [
+      {
+        "name": "GND",
+        "pinNumber": 1,
+        "role": "ground",
+        "signal": "Common ground",
+        "xMm": -28,
+        "yMm": 6,
+        "zMm": -11,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "OE",
+        "pinNumber": 2,
+        "role": "control",
+        "signal": "Output enable (active low)",
+        "xMm": -25.46,
+        "yMm": 6,
+        "zMm": -11,
+        "direction": "up",
+        "aliases": [
+          "nOE"
+        ],
+        "required": false
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C clock",
+        "xMm": -22.92,
+        "yMm": 6,
+        "zMm": -11,
+        "direction": "up",
+        "aliases": [
+          "CLK"
+        ],
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C data",
+        "xMm": -20.38,
+        "yMm": 6,
+        "zMm": -11,
+        "direction": "up",
+        "aliases": [
+          "DATA"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "Logic supply 2.3-5.5 V",
+        "xMm": -17.84,
+        "yMm": 6,
+        "zMm": -11,
+        "direction": "up",
+        "aliases": [
+          "VDD"
+        ],
+        "required": true
+      },
+      {
+        "name": "V+",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Servo power rail (separate supply)",
+        "xMm": -15.3,
+        "yMm": 6,
+        "zMm": -11,
+        "direction": "up",
+        "aliases": [
+          "VSERVO"
+        ],
+        "required": true
+      },
+      {
+        "name": "EXTCLK",
+        "pinNumber": 7,
+        "role": "control",
+        "signal": "Optional external clock input",
+        "xMm": -12.76,
+        "yMm": 6,
+        "zMm": -11,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "PWM0",
+        "pinNumber": 8,
+        "role": "pwm",
+        "signal": "Channel 0 output",
+        "xMm": -26,
+        "yMm": 6,
+        "zMm": 9,
+        "direction": "up",
+        "aliases": [
+          "CH0"
+        ],
+        "required": false
+      },
+      {
+        "name": "PWM15",
+        "pinNumber": 9,
+        "role": "pwm",
+        "signal": "Channel 15 output",
+        "xMm": 26,
+        "yMm": 6,
+        "zMm": 9,
+        "direction": "up",
+        "aliases": [
+          "CH15"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "pca9685_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          1.4,
+          6
+        ],
+        "position": [
+          0,
+          1.4,
+          0
+        ],
+        "color": "#18181b"
+      },
+      {
+        "name": "servo_rail_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          10,
+          9,
+          8
+        ],
+        "position": [
+          -2,
+          5,
+          -9
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "bulk_cap",
+        "type": "cylinder",
+        "dimensions": [
+          3,
+          7,
+          0
+        ],
+        "position": [
+          8,
+          4.6,
+          -6
+        ],
+        "color": "#1e293b"
+      },
+      {
+        "name": "servo_headers",
+        "type": "header_block",
+        "dimensions": [
+          56,
+          2.5,
+          7.62
+        ],
+        "position": [
+          0,
+          2,
+          9
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "i2c_header",
+        "type": "header_block",
+        "dimensions": [
+          17.78,
+          2.5,
+          2.5
+        ],
+        "position": [
+          -20.4,
+          2,
+          -11
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "i2c",
+      "pwm"
+    ],
+    "keywords": [
+      "pca9685",
+      "servo driver",
+      "16 channel",
+      "pwm",
+      "i2c"
+    ],
+    "aliases": [
+      "pca9685",
+      "servo shield",
+      "16 channel servo driver"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Adafruit PWM Servo Driver Library",
+        "import": "Adafruit_PWMServoDriver.h",
+        "manager": "arduino",
+        "purpose": "12-bit PWM over I2C"
+      }
+    ]
+  }
+}

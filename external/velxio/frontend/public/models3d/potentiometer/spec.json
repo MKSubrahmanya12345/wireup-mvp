@@ -1,0 +1,124 @@
+{
+  "key": "potentiometer",
+  "catalogId": "potentiometer-10k",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "potentiometer-10k",
+    "name": "10 kΩ rotary potentiometer",
+    "category": "input",
+    "description": "Three-terminal 10 kΩ linear-taper rotary potentiometer. Connect the two outer terminals to VCC and GND and read the wiper with an ADC pin for an analog input.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 5,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 17,
+      "lengthMm": 17,
+      "heightMm": 10
+    },
+    "bodyColor": "#2563eb",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Counter-clockwise end to VCC",
+        "xMm": -2.54,
+        "yMm": -5,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "1",
+          "CCW"
+        ],
+        "required": true
+      },
+      {
+        "name": "WIPER",
+        "pinNumber": 2,
+        "role": "analog",
+        "signal": "Center tap to an ADC pin",
+        "xMm": 0,
+        "yMm": -5,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "2",
+          "W",
+          "S",
+          "SIG"
+        ],
+        "required": true
+      },
+      {
+        "name": "B",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Clockwise end to GND",
+        "xMm": 2.54,
+        "yMm": -5,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "3",
+          "CW"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "potentiometer_body",
+        "type": "potentiometer",
+        "dimensions": [
+          17,
+          10,
+          17
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "knurled_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2.9,
+          15,
+          0
+        ],
+        "position": [
+          0,
+          11,
+          0
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "potentiometer",
+      "pot",
+      "knob",
+      "analog input",
+      "trimmer",
+      "throttle",
+      "variable resistor"
+    ],
+    "aliases": [
+      "potentiometer",
+      "pot",
+      "10k pot",
+      "rotary potentiometer"
+    ]
+  }
+}

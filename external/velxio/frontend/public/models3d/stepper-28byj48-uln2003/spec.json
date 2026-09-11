@@ -1,0 +1,190 @@
+{
+  "key": "stepper-28byj48-uln2003",
+  "catalogId": "stepper-28byj48-uln2003",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "stepper-28byj48-uln2003",
+    "name": "28BYJ-48 stepper with ULN2003 driver board",
+    "category": "actuator",
+    "description": "5 V unipolar stepper (64 steps/revolution) geared 64:1, supplied with a ULN2003A Darlington driver board. Driven by sequencing four logic inputs; ~2048 half-steps per output revolution.",
+    "voltage": 5,
+    "minVoltage": 5,
+    "maxVoltage": 12,
+    "currentMa": 200,
+    "dimensions": {
+      "widthMm": 25,
+      "lengthMm": 40,
+      "heightMm": 20
+    },
+    "bodyColor": "#1f2937",
+    "pins": [
+      {
+        "name": "IN1",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Phase A",
+        "xMm": -6.35,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "A"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN2",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Phase B",
+        "xMm": -3.81,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "B"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN3",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Phase C",
+        "xMm": -1.27,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "C"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN4",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Phase D",
+        "xMm": 1.27,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "D"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": 3.81,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "5V",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 6,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 6.35,
+        "yMm": 24.4,
+        "zMm": -17.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          15.24,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          21.2,
+          -17.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "motor_can",
+        "type": "cylinder",
+        "dimensions": [
+          12.5,
+          28,
+          0
+        ],
+        "position": [
+          0,
+          34,
+          0
+        ],
+        "color": "#4b5563"
+      },
+      {
+        "name": "output_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          54,
+          0
+        ],
+        "color": "#cbd5e1"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "stepper",
+      "28byj48",
+      "uln2003",
+      "unipolar",
+      "geared"
+    ],
+    "aliases": [
+      "stepper motor",
+      "28byj-48",
+      "28byj48",
+      "uln2003 stepper",
+      "unipolar stepper"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Stepper",
+        "import": "Stepper.h",
+        "manager": "arduino",
+        "purpose": "Built-in 4-phase stepper sequencing"
+      },
+      {
+        "name": "AccelStepper",
+        "import": "AccelStepper.h",
+        "manager": "arduino",
+        "purpose": "Acceleration profiles for smoother motion"
+      }
+    ]
+  }
+}
