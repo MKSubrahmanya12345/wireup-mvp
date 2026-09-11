@@ -375,6 +375,12 @@ capped by `WIREUP_MAX_EVENTS`.
   * `AGENT` shows revisions v1 → vN, each changeset, a computed diff against the
     previous revision, the stage timeline and every model call with token usage.
 
+The overview and project header expose **Download build pack** once artifacts exist. It
+creates one revision-pinned zip containing the handoff a person needs at the bench:
+README, firmware, BOM, wiring/pinout, both diagram formats, libraries, instructions and
+the validation report. It remains available for partial/failed builds so the output is
+honest and inspectable rather than hidden.
+
 The client polls `GET /api/projects/:id/events?after=<seq>` on a self-scheduling
 timer (1.1 s baseline, exponential backoff to 8 s on errors) and refetches the
 full project when the revision changes or the run reaches a terminal status.
@@ -400,6 +406,7 @@ All routes are Node runtime, `force-dynamic`, and return an envelope:
 | `GET /api/projects/:id` | `{ project, running }`; `404 not_found` when unknown |
 | `GET /api/projects/:id/events?after=SEQ` | `{ events, latestSeq, status, stage, revision, running, terminal }` |
 | `GET /api/projects/:id/diagram?target=wireup\|wokwi` | wireup: `{ diagram }`; wokwi: `{ diagram, skippedParts, skippedConnections, warnings }`; `409 diagram_not_ready` before the diagram exists |
+| `GET /api/projects/:id/export` | Downloads one revision-pinned `*-build-pack.zip` with README, firmware, BOM, wiring/pinout, Wokwi + canonical diagrams, libraries, instructions and validation report |
 | `GET /api/health` | `{ ok, status: ready\|degraded, mongo, catalog, bedrock, agent, notes }`; `503` when degraded |
 
 ---
