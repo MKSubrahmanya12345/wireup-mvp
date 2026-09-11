@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { projectOverview, humanStageLabel } from '@/lib/project-presentation';
 import { Badge, Card, Notice } from '../ui';
 import { BuildPackButton } from '../BuildPackButton';
+import { HardwareCopilot } from '../HardwareCopilot';
+import { ProjectAtlas } from '../ProjectAtlas';
 import { useHub } from '../hub-context';
 
 const LINKS = [
@@ -89,6 +91,9 @@ export function OverviewPanel() {
           ) : null}
         </div>
       </Card>
+
+      {project && !running ? <HardwareCopilot /> : null}
+      {project && !running ? <ProjectAtlas /> : null}
 
       <Card title="Dig in">
         <div className="overview__links">

@@ -8,6 +8,7 @@ import type { BehavioralSpec } from './behavioral';
 import type { Diagram } from './diagram';
 import type { AgentEvent } from './generation';
 import type { ExpandedBrief, EverflowState, HumanTask, IdeaGraphState, ProjectDoubt, ResearchFinding } from './everflow';
+import type { ProjectAtlasState } from './project-atlas';
 import type { ValidationResult } from './validation';
 import type { PinAssignment, WiringPlan } from './wiring';
 
@@ -368,4 +369,6 @@ export interface ProjectState {
    * it into the same projected graph when present.
    */
   ideaGraph?: IdeaGraphState | null;
+  /** Domain-neutral source clone, provenance graph and target transformation state. */
+  atlas?: ProjectAtlasState | null;
 }

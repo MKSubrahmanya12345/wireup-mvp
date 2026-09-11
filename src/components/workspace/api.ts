@@ -7,6 +7,7 @@
 
 import type { AgentEvent } from '@/types/generation';
 import type { ChatDiff, ChatMessage, ProjectState } from '@/types/project';
+import type { AtlasTargetSpec, ProjectAtlasState } from '@/types/project-atlas';
 import type { HardwareEditPlan } from '@/modules/hardware-copilot';
 
 export interface ApiEnvelope<T> {
@@ -396,4 +397,35 @@ export async function applyHardwareEdit(id: string, message: string, baseRevisio
     body: JSON.stringify({ mode: 'apply', message, baseRevision }),
   });
   return unwrap<HardwareCopilotPayload>(response);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Project Atlas — clone, graph, quantify, transform                         */
+/* -------------------------------------------------------------------------- */
+
+export interface ProjectAtlasPayload {
+  atlas: ProjectAtlasState;
+  applied?: boolean;
+}
+
+export async function analyzeProjectAtlas(
+  id: string,
+  source: { title?: string; kind?: 'brief' | 'profile' | 'document' | 'code' | 'data' | 'note'; content: string },
+  target: AtlasTargetSpec,
+): Promise<ProjectAtlasPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/atlas`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'analyze', source, target }),
+  });
+  return unwrap<ProjectAtlasPayload>(response);
+}
+
+export async function applyProjectAtlas(id: string, baseVersion: number, target: AtlasTargetSpec): Promise<ProjectAtlasPayload> {
+  const response = await fetch(`/api/projects/${encodeURIComponent(id)}/atlas`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'apply', baseVersion, target }),
+  });
+  return unwrap<ProjectAtlasPayload>(response);
 }

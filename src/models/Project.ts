@@ -11,7 +11,8 @@ import mongoose, { type Model, type Types } from 'mongoose';
 
 import type { ComponentSelection } from '@/types/component';
 import type { AgentEvent } from '@/types/generation';
-import type { ExpandedBrief, EverflowState, HumanTask, ProjectDoubt, ResearchFinding , IdeaGraphState } from '@/types/everflow';
+import type { ExpandedBrief, EverflowState, HumanTask, ProjectDoubt, ResearchFinding, IdeaGraphState } from '@/types/everflow';
+import type { ProjectAtlasState } from '@/types/project-atlas';
 import type {
   ChatMessage,
   GenerationError,
@@ -68,6 +69,7 @@ export interface ProjectDocument {
   expandedBrief: ExpandedBrief | null;
   research: ResearchFinding[];
   ideaGraph: IdeaGraphState | null;
+  atlas?: ProjectAtlasState | null;
 }
 
 const Mixed = mongoose.Schema.Types.Mixed;
@@ -126,6 +128,7 @@ const ProjectSchema = new mongoose.Schema(
   expandedBrief: { type: Mixed, default: null },
   research: { type: Mixed, default: [] },
   ideaGraph: { type: Mixed, default: null },
+  atlas: { type: Mixed, default: null },
   },
   {
     timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' },

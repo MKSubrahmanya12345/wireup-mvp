@@ -11,6 +11,7 @@ import { getProjectModel, type ProjectDocument } from '@/models/Project';
 import type { AgentEvent } from '@/types/generation';
 import type { ExpandedBrief, EverflowState, HumanTask, ProjectDoubt, ResearchFinding } from '@/types/everflow';
 import type { ChatMessage, ProjectArtifacts, ProjectState, ProjectStatus } from '@/types/project';
+import type { ProjectAtlasState } from '@/types/project-atlas';
 
 import { createLogger, describeError } from '@/lib/logging/logger';
 import { connectMongo } from '@/lib/mongodb/client';
@@ -92,6 +93,7 @@ export function serializeProject(raw: RawProject): ProjectState {
     expandedBrief: (raw.expandedBrief as ExpandedBrief | null) ?? null,
     research: Array.isArray(raw.research) ? (raw.research as ResearchFinding[]) : [],
     ideaGraph: (raw.ideaGraph as ProjectState['ideaGraph']) ?? null,
+    atlas: (raw.atlas as ProjectAtlasState | null) ?? null,
   };
 }
 
@@ -150,6 +152,7 @@ export async function createProjectRecord(input: CreateProjectInput): Promise<Pr
       intakeContext: null,
       expandedBrief: null,
       research: [],
+      atlas: null,
     });
     logger.info('project created (in-memory store)', { id: doc._id });
     return serializeProject(doc as RawProject);
@@ -183,6 +186,7 @@ export async function createProjectRecord(input: CreateProjectInput): Promise<Pr
     intakeContext: null,
     expandedBrief: null,
     research: [],
+    atlas: null,
   } satisfies Partial<ProjectDocument>);
 
   logger.info('project created', { id: doc._id.toString() });
