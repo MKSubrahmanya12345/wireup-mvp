@@ -197,7 +197,13 @@ export const SENSORS: ComponentDefinition[] = [
       { name: 'Adafruit Unified Sensor', import: 'Adafruit_Sensor.h', manager: 'arduino', repository: 'https://github.com/adafruit/Adafruit_Sensor', purpose: 'Dependency of the Adafruit sensor drivers' },
       { name: 'Wire', import: 'Wire.h', manager: 'arduino', purpose: 'I2C bus', builtIn: true },
     ],
-    simulator: { supported: false, notes: 'Part id unverified — confirm before use.' },
+    simulator: {
+      part: 'wokwi-mpu6050',
+      supported: true,
+      notes:
+        'Register-level I2C model at 0x68 (AD0 high → 0x69) with live acceleration, rotation and ' +
+        'temperature controls; the auxiliary XDA/XCL master bus is wired but not modelled.',
+    },
     metadata: { electrical: true, i2cAddress: '0x68', i2cAddressAlt: '0x69', i2cMaxClockHz: 400000, logicVoltage: 3.3 },
   }),
 
@@ -228,7 +234,16 @@ export const SENSORS: ComponentDefinition[] = [
     keywords: ['bme280', 'temperature', 'humidity', 'pressure', 'barometer', 'weather', 'altitude', 'environmental'],
     aliases: ['bme280', 'bme-280', 'bosch bme280', 'bmp280'],
     exampleUsage: ['Weather station logging to an OLED', 'Indoor air-comfort monitor over MQTT'],
-    simulator: { supported: false, notes: 'Part id unverified — represent as an I2C peripheral at 0x76.' },
+    simulator: {
+      // Deliberately NOT `supported: true`: the pinned Velxio build models the
+      // BMP280 (pressure + temperature only). Rather than present a different
+      // chip as this one, the BME280 stays a CAD bench part until a humidity
+      // model exists. See `wokwi.ts` PIN_MAPS for the shared-pin mapping.
+      supported: false,
+      notes:
+        'No emulator element with humidity in this build — the BMP280 element beside it models pressure and ' +
+        'temperature only, so it is not a stand-in for this part.',
+    },
     metadata: {
       electrical: true,
       i2cAddress: '0x76',
@@ -361,7 +376,11 @@ export const SENSORS: ComponentDefinition[] = [
     keywords: ['ir receiver', 'infrared', 'tsop', '38khz', 'remote control', 'nec'],
     aliases: ['tsop38238', 'ir receiver', 'vs1838b', 'infrared receiver'],
     exampleUsage: ['Controlling a robot from a TV remote', 'IR-triggered relay'],
-    simulator: { supported: false },
+    simulator: {
+      part: 'wokwi-ir-receiver',
+      supported: true,
+      notes: '38 kHz demodulator on the element’s DAT pin; remote codes drive it, idle is HIGH.',
+    },
     metadata: { electrical: true, carrierFrequencyHz: 38000, activeLow: true, pinOrder: 'OUT, GND, VS (looking at the domed face)' },
   }),
 

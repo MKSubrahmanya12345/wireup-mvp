@@ -13,6 +13,7 @@
  */
 
 import type { Diagram, DiagramComponent } from '@/types/diagram';
+import { isCadBenchComponent } from '@/modules/simulation/velxio-key';
 
 export interface WokwiPart {
   type: string;
@@ -33,11 +34,30 @@ export interface WokwiDiagram {
   connections: WokwiConnection[];
 }
 
+export interface WokwiSkippedPart {
+  id: string;
+  ref: string;
+  reason: string;
+  /**
+   * Present when the part is NOT missing from the project, only from THIS
+   * artifact: the emulator has no element for it, so it is carried as a CAD
+   * bench part (exact shape, real pin anchors, no electrical model) in the
+   * canonical Wireup diagram and in the Velxio/3D target. A plain Wokwi
+   * `diagram.json` cannot represent it — inventing a `wokwi-*` type for it
+   * would wire the firmware to pins that do not exist on the real part.
+   */
+  carriedAs?: 'cad-bench';
+  /** The `/cad-catalog.json` key its geometry is registered under. */
+  cadKey?: string;
+}
+
 export interface WokwiProjection {
   diagram: WokwiDiagram;
-  skippedParts: { id: string; ref: string; reason: string }[];
+  skippedParts: WokwiSkippedPart[];
   skippedConnections: { id: string; reason: string }[];
   warnings: string[];
+  /** CAD bench parts this projection kept in the project but cannot simulate. */
+  cadBench: { id: string; ref: string; name: string }[];
 }
 
 /* ------------------------------------------------------------------------- */
@@ -146,7 +166,27 @@ const PIN_MAPS: Record<string, PinMapper> = {
   'wokwi-potentiometer': table({ A: 'VCC', WIPER: 'SIG', B: 'GND' }),
   'wokwi-photoresistor-sensor': table({ VCC: 'VCC', GND: 'GND', DO: 'DO', AO: 'AO' }),
   'wokwi-neopixel': table({ VCC: 'VDD', GND: 'VSS', DIN: 'DIN', DOUT: 'DOUT' }),
-  'wokwi-mpu6050': table({ VCC: 'VCC', GND: 'GND', SCL: 'SCL', SDA: 'SDA', INT: 'INT', AD0: 'AD0' }),
+  // The MPU-6050 element carries the auxiliary master bus too (XDA/XCL); the
+  // catalog exposes those pins, so they must be mapped, not passed through.
+  'wokwi-mpu6050': table({
+    VCC: 'VCC',
+    GND: 'GND',
+    SCL: 'SCL',
+    SDA: 'SDA',
+    INT: 'INT',
+    AD0: 'AD0',
+    XDA: 'XDA',
+    XCL: 'XCL',
+  }),
+  /*
+   * The pinned Velxio build models the BMP280 (pressure + temperature) on a
+   * four-pin module, so this maps the shared I2C/power pins and deliberately
+   * leaves CSB/SDO unmapped: the BME280 catalog part has no emulator element
+   * of its own, and a wire to a pin the element does not have is *reported*
+   * rather than silently dropped. Keep `supported: false` until a humidity
+   * model exists — this table only makes a future flip safe.
+   */
+  'wokwi-bme280': table({ VIN: 'VCC', VCC: 'VCC', GND: 'GND', SCL: 'SCL', SDA: 'SDA' }),
   'wokwi-pir-motion-sensor': table({ VCC: 'VCC', OUT: 'OUT', GND: 'GND' }),
   'wokwi-relay-module': table({ VCC: 'VCC', GND: 'GND', IN: 'IN', COM: 'COM', NO: 'NO', NC: 'NC' }),
 
@@ -425,6 +465,20 @@ function normalizeAttrs(part: string, attrs: Record<string, string>): Record<str
   return result;
 }
 
+/**
+ * Catalog pin name → the simulator element's own pin name.
+ *
+ * Exported because the CAD bench wire builder in `velxio-project.ts` also has
+ * to translate the SIMULATED end of a mixed wire (a pump wired through a
+ * MOSFET to an Arduino pin): the part end keeps its catalog names, but the
+ * simulated end must speak the element's vocabulary or Velxio drops the wire
+ * on import. Returns undefined when the part has no mapping for that pin.
+ */
+export function translatePin(simulatorPart: string | undefined, pin: string): string | undefined {
+  const mapper = PIN_MAPS[simulatorPart ?? ''] ?? identity;
+  return mapper(pin);
+}
+
 /** Runtime guard for the actual Wokwi contract (useful at API boundaries). */
 export function checkWokwiDiagram(value: unknown): value is WokwiDiagram {
   if (!value || typeof value !== 'object') return false;
@@ -474,6 +528,7 @@ export function checkWokwiDiagram(value: unknown): value is WokwiDiagram {
 export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
   const parts: WokwiPart[] = [];
   const skippedParts: WokwiProjection['skippedParts'] = [];
+  const cadBench: WokwiProjection['cadBench'] = [];
   const skippedConnections: WokwiProjection['skippedConnections'] = [];
   const warnings: string[] = [];
 
@@ -483,6 +538,22 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
   for (const component of diagram.components) {
     const simulatorPart = component.simulator?.part;
     if (!simulatorPart) {
+      if (isCadBenchComponent(component)) {
+        // Not an unknown: the catalog has a CAD spec for it, so the project
+        // keeps the part and the 3D/canvas target draws it — but a Wokwi
+        // diagram cannot, and a lookalike element would be a lie.
+        cadBench.push({ id: component.id, ref: component.ref, name: component.name });
+        skippedParts.push({
+          id: component.id,
+          ref: component.ref,
+          reason:
+            'No emulator element for this part in the pinned simulator build. Kept in the project as a CAD bench part ' +
+            '(exact shape and pin anchors, no electrical simulation); a Wokwi diagram cannot draw it.',
+          carriedAs: 'cad-bench',
+          cadKey: component.ref,
+        });
+        continue;
+      }
       skippedParts.push({
         id: component.id,
         ref: component.ref,
@@ -504,10 +575,17 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
       continue;
     }
     if (component.simulator?.supported === false) {
+      // The catalog may still have a CAD spec for it; if so it is carried as a
+      // CAD bench part rather than dropped, and the claim stays honest.
+      const carried = isCadBenchComponent(component);
+      if (carried) cadBench.push({ id: component.id, ref: component.ref, name: component.name });
       skippedParts.push({
         id: component.id,
         ref: component.ref,
-        reason: component.simulator.notes ?? `Part mapping "${simulatorPart}" is not verified as supported by the target simulator.`,
+        reason:
+          component.simulator.notes ??
+          `Part mapping "${simulatorPart}" is not verified as supported by the target simulator.`,
+        ...(carried ? { carriedAs: 'cad-bench' as const, cadKey: component.ref } : {}),
       });
       continue;
     }
@@ -534,10 +612,8 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
     if (!PIN_MAPS[simulatorPart]) unmappedTypes.add(simulatorPart);
   }
 
-  const translate = (component: DiagramComponent, pin: string): string | undefined => {
-    const mapper = PIN_MAPS[component.simulator?.part ?? ''] ?? identity;
-    return mapper(pin);
-  };
+  const translate = (component: DiagramComponent, pin: string): string | undefined =>
+    translatePin(component.simulator?.part, pin);
 
   const connections: WokwiConnection[] = [];
   const seen = new Set<string>();
@@ -594,9 +670,19 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
     warnings.unshift('No native microcontroller board is present in this projection; it is not runnable until the selected controller has a verified target mapping.');
   }
 
-  if (skippedParts.some((part) => part.reason !== 'Wiring medium — not part of the electrical graph.')) {
-    const ids = skippedParts.filter((part) => !part.reason.startsWith('Wiring medium')).map((part) => part.id);
-    warnings.push(`${ids.length} part(s) have no verified simulator mapping and were omitted: ${ids.join(', ')}.`);
+  const carriedIds = skippedParts.filter((part) => part.carriedAs === 'cad-bench').map((part) => part.id);
+  const droppedIds = skippedParts
+    .filter((part) => part.carriedAs !== 'cad-bench' && !part.reason.startsWith('Wiring medium'))
+    .map((part) => part.id);
+  if (carriedIds.length > 0) {
+    warnings.push(
+      `${carriedIds.length} part(s) have no verified simulator element and are carried as CAD bench parts ` +
+        `(real shape and pin anchors, no electrical model) in Wireup's own simulator and 3D view: ${carriedIds.join(', ')}. ` +
+        'A plain Wokwi diagram cannot draw them; their wires are absent from THIS file only.',
+    );
+  }
+  if (droppedIds.length > 0) {
+    warnings.push(`${droppedIds.length} part(s) have no verified simulator mapping and were omitted: ${droppedIds.join(', ')}.`);
   }
   if (skippedConnections.length > 0) {
     warnings.push(`${skippedConnections.length} connection(s) were dropped because an endpoint is not representable in the simulator.`);
@@ -618,5 +704,6 @@ export function toWokwiDiagram(diagram: Diagram): WokwiProjection {
     skippedParts,
     skippedConnections,
     warnings,
+    cadBench,
   };
 }
