@@ -24,6 +24,7 @@ import { buildSteps, humanStageLabel, isIntake, isInProgress, statusPhrase } fro
 import { useProjectStream } from './useProjectStream';
 import { HubContext, type HubValue } from './hub-context';
 import { StatusBadge } from './ui';
+import { BuildPackButton } from './BuildPackButton';
 import { IntakeSession } from '@/components/everflow/IntakeSession';
 import { DrawerVeil, HumanDrawers, type DrawerSide } from './HumanDrawers';
 
@@ -65,6 +66,12 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
   const steps = buildSteps(project);
   const status = project?.status ?? 'pending';
   const inProgress = isInProgress(status);
+  const canExport = Boolean(
+    project &&
+      !inProgress &&
+      !isIntake(status) &&
+      (project.artifacts.code || project.artifacts.diagram || project.artifacts.instructions || project.artifacts.libraries || project.components.length > 0),
+  );
   const stage = humanStageLabel(stream.stage);
   const headline = statusPhrase(status);
   const subhead = inProgress
@@ -99,6 +106,8 @@ export function ProjectHub({ projectId, initial, children }: { projectId: string
           ) : (
             <StatusBadge status={status} />
           )}
+
+          <BuildPackButton projectId={projectId} disabled={!canExport} />
 
           <Link href={`${base}/log`} className="btn btn--ghost btn--sm">
             run log

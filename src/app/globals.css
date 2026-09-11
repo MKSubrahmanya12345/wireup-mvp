@@ -211,6 +211,36 @@ pre,
   width: 100%;
 }
 
+.build-pack {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.build-pack__button {
+  white-space: nowrap;
+}
+
+.build-pack__button:not(:disabled) {
+  border-color: var(--accent-deep);
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.build-pack__button:not(:disabled):hover {
+  border-color: var(--accent-deep);
+  background: #c8e94d;
+}
+
+.build-pack__error {
+  max-width: 260px;
+  color: var(--err);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
 /* ---------------------------------------------------------------------------
    Badges / pills / status
    --------------------------------------------------------------------------- */

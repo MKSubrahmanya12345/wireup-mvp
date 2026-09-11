@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 import { projectOverview, humanStageLabel } from '@/lib/project-presentation';
 import { Badge, Card, Notice } from '../ui';
+import { BuildPackButton } from '../BuildPackButton';
 import { useHub } from '../hub-context';
 
 const LINKS = [
@@ -29,6 +30,11 @@ export function OverviewPanel() {
   const prompt = project?.prompt;
   const failed = project?.status === 'failed';
   const pending = project === null;
+  const canExport = Boolean(
+    project &&
+      !running &&
+      (project.artifacts.code || project.artifacts.diagram || project.artifacts.instructions || project.artifacts.libraries || project.components.length > 0),
+  );
 
   return (
     <div className="col stack hub__stack">
@@ -42,7 +48,12 @@ export function OverviewPanel() {
         </Notice>
       ) : null}
 
-      <Card title="What you got" wide flush>
+      <Card
+        title="What you got"
+        wide
+        flush
+        actions={project ? <BuildPackButton projectId={project.id} disabled={!canExport} /> : null}
+      >
         <div className="overview__hero">
           <div className="overview__hero-topline">
             <span className="overview__hero-marker" aria-hidden="true" />
