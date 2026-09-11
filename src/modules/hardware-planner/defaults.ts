@@ -321,7 +321,17 @@ export function applyEngineeringDefaults(input: DefaultsInput): DefaultsResult {
     });
     if (covered) continue;
 
-    const chosen = rule.candidates.find((candidate) => byId.has(candidate));
+    let chosen = rule.candidates.find((candidate) => byId.has(candidate));
+    /*
+     * The 28BYJ-48 is a 5 V unipolar stepper sold with its ULN2003A driver
+     * board — a different part from a bare NEMA 17 bipolar stepper. When the
+     * brief names it (or the ULN2003 board), prefer that candidate so
+     * "a 28BYJ-48 on its ULN2003 driver" never becomes a NEMA 17 + chopper
+     * driver bill of materials.
+     */
+    if (rule.feature === 'stepper' && /28byj|uln2003|unipolar/i.test(analysis.prompt)) {
+      chosen = rule.candidates.find((candidate) => candidate.includes('28byj48')) ?? chosen;
+    }
     if (!chosen) {
       notes.push(`Feature "${rule.feature}" was detected but none of ${rule.candidates.join(' / ')} is in the catalog.`);
       continue;
