@@ -1,0 +1,119 @@
+{
+  "key": "water-pump-5v-submersible",
+  "catalogId": "water-pump-5v-submersible",
+  "tier": "preset",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "water-pump-5v-submersible",
+    "name": "Submersible water pump (5 V, 120 L/h)",
+    "category": "actuator",
+    "description": "Potted brushless-style mini pump in a plastic housing with an inlet cage at the base and a 7 mm barb outlet on top. Two flying leads, fully submersible.",
+    "voltage": 5,
+    "minVoltage": 3,
+    "maxVoltage": 6,
+    "currentMa": 200,
+    "dimensions": {
+      "widthMm": 24,
+      "lengthMm": 24,
+      "heightMm": 45
+    },
+    "bodyColor": "#1e293b",
+    "pins": [
+      {
+        "name": "+",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Pump positive (red)",
+        "xMm": -3,
+        "yMm": 44,
+        "zMm": -8,
+        "direction": "up",
+        "aliases": [
+          "VCC",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "-",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Pump negative (black, switched by the driver — not a ground net)",
+        "xMm": 3,
+        "yMm": 44,
+        "zMm": -8,
+        "direction": "up",
+        "aliases": [
+          "GND",
+          "BLACK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "motor_housing",
+        "type": "cylinder",
+        "dimensions": [
+          12,
+          28,
+          0
+        ],
+        "position": [
+          0,
+          26,
+          0
+        ],
+        "color": "#0f172a"
+      },
+      {
+        "name": "inlet_cage",
+        "type": "cylinder",
+        "dimensions": [
+          12,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          6,
+          0
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "outlet_barb",
+        "type": "cylinder",
+        "dimensions": [
+          3.5,
+          12,
+          0
+        ],
+        "position": [
+          0,
+          34,
+          12
+        ],
+        "color": "#475569",
+        "rotation": [
+          90,
+          0,
+          0
+        ]
+      }
+    ],
+    "protocols": [],
+    "keywords": [
+      "pump",
+      "water pump",
+      "submersible",
+      "irrigation"
+    ],
+    "aliases": [
+      "water pump",
+      "mini pump",
+      "5v pump"
+    ]
+  }
+}

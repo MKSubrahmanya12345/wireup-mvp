@@ -1,0 +1,120 @@
+{
+  "key": "ntc-temperature-sensor",
+  "catalogId": "ntc-thermistor-module",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "ntc-thermistor-module",
+    "name": "NTC thermistor temperature module (analog out)",
+    "category": "sensor",
+    "description": "10 kΩ NTC thermistor on a comparator board with a single amplified output. Read OUT with an ADC pin and convert with the beta/Steinhart-Hart equation — the module only scales the divider, it does not linearise. Output falls as temperature rises (NTC: resistance drops when hot).",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 1,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT",
+        "pinNumber": 3,
+        "role": "analog",
+        "signal": "Scaled divider voltage — colder = higher",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "AO",
+          "A0",
+          "SIG",
+          "S"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensor_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.4,
+          5
+        ],
+        "position": [
+          0,
+          2.8,
+          1.5
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "ntc",
+      "thermistor",
+      "temperature",
+      "analog temperature",
+      "thermal"
+    ],
+    "aliases": [
+      "ntc temperature sensor",
+      "thermistor module",
+      "ntc module",
+      "ntc sensor"
+    ]
+  }
+}

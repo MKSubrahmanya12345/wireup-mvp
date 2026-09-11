@@ -286,6 +286,21 @@ function SimulationHalf({
         </Notice>
       ) : null}
 
+      {velxio && velxio.cadBench.length > 0 ? (
+        <Notice tone="info" title={`${velxio.cadBench.length} part(s) are on the bench as CAD parts`}>
+          <ul className="sim__list">
+            {velxio.cadBench.map((entry) => (
+              <li key={entry.id}>
+                {entry.name} ({entry.catalogId})
+              </li>
+            ))}
+          </ul>
+          This build has no electrical model for them, so they hold their real shape and pin anchors on the
+          canvas and in the 3D view without reacting to signals. They are never substituted with a lookalike
+          emulator part.
+        </Notice>
+      ) : null}
+
       {velxio && velxio.unsupported.length > 0 ? (
         <Notice tone="warn" title={`${velxio.unsupported.length} item(s) could not be placed on the canvas`}>
           <ul className="sim__list">

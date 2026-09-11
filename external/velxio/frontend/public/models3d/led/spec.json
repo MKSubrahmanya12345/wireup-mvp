@@ -1,0 +1,121 @@
+{
+  "key": "led",
+  "catalogId": "led-5mm",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "led-5mm",
+    "name": "5 mm LED",
+    "category": "actuator",
+    "description": "Standard 5 mm through-hole LED. Forward voltage ~1.8–2.2 V (red/amber) or ~3.0–3.4 V (blue/white) at 20 mA. Always driven through a current-limiting series resistor: 220 Ω from a 5 V pin, 100–150 Ω from a 3.3 V pin.",
+    "voltage": 2.1,
+    "minVoltage": 1.8,
+    "maxVoltage": 3.4,
+    "currentMa": 10,
+    "dimensions": {
+      "widthMm": 5,
+      "lengthMm": 5,
+      "heightMm": 8.6
+    },
+    "bodyColor": "#ef4444",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Anode — long leg, to the MCU pin through a resistor",
+        "xMm": -1.27,
+        "yMm": -4.3,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "+",
+          "ANODE",
+          "LONG"
+        ],
+        "required": true
+      },
+      {
+        "name": "C",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Cathode — short leg, to GND",
+        "xMm": 1.27,
+        "yMm": -4.3,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "-",
+          "CATHODE",
+          "SHORT"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "diffused_5mm_epoxy_lens",
+        "type": "led",
+        "dimensions": [
+          5,
+          8.6,
+          5
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#ef4444"
+      },
+      {
+        "name": "anode_bond_wire",
+        "type": "cylinder",
+        "dimensions": [
+          0.08,
+          3.1,
+          0
+        ],
+        "position": [
+          -0.9,
+          -1.2,
+          0.05
+        ],
+        "color": "#facc15"
+      },
+      {
+        "name": "cathode_bond_wire",
+        "type": "cylinder",
+        "dimensions": [
+          0.08,
+          2.4,
+          0
+        ],
+        "position": [
+          0.9,
+          -1.55,
+          0.05
+        ],
+        "color": "#facc15"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "led",
+      "light",
+      "indicator",
+      "lamp"
+    ],
+    "aliases": [
+      "led",
+      "5mm led",
+      "light emitting diode",
+      "indicator led"
+    ]
+  }
+}

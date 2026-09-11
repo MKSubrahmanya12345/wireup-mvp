@@ -1,0 +1,175 @@
+{
+  "key": "stepper-motor",
+  "catalogId": "stepper-motor-nema17",
+  "tier": "preset",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "stepper-motor-nema17",
+    "name": "NEMA 17 bipolar stepper motor",
+    "category": "actuator",
+    "description": "NEMA 17 frame: 42.3 mm square body, 47 mm long, 5 mm D-shaft, 31 mm bolt circle. Four leads for two coils, driven from a chopper driver.",
+    "voltage": 12,
+    "minVoltage": 8,
+    "maxVoltage": 24,
+    "currentMa": 1500,
+    "dimensions": {
+      "widthMm": 42.3,
+      "lengthMm": 42.3,
+      "heightMm": 47
+    },
+    "bodyColor": "#1f2937",
+    "pins": [
+      {
+        "name": "COIL_A1",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Coil A +",
+        "xMm": -6,
+        "yMm": 4,
+        "zMm": -21,
+        "direction": "back",
+        "aliases": [
+          "A+",
+          "BLACK"
+        ],
+        "required": true
+      },
+      {
+        "name": "COIL_A2",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Coil A -",
+        "xMm": -2,
+        "yMm": 4,
+        "zMm": -21,
+        "direction": "back",
+        "aliases": [
+          "A-",
+          "GREEN"
+        ],
+        "required": true
+      },
+      {
+        "name": "COIL_B1",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Coil B +",
+        "xMm": 2,
+        "yMm": 4,
+        "zMm": -21,
+        "direction": "back",
+        "aliases": [
+          "B+",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "COIL_B2",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Coil B -",
+        "xMm": 6,
+        "yMm": 4,
+        "zMm": -21,
+        "direction": "back",
+        "aliases": [
+          "B-",
+          "BLUE"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "stator_stack",
+        "type": "box",
+        "dimensions": [
+          42.3,
+          34,
+          42.3
+        ],
+        "position": [
+          0,
+          23,
+          0
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "front_end_cap",
+        "type": "box",
+        "dimensions": [
+          42.3,
+          6,
+          42.3
+        ],
+        "position": [
+          0,
+          44,
+          0
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "rear_end_cap",
+        "type": "box",
+        "dimensions": [
+          42.3,
+          6,
+          42.3
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#1f2937"
+      },
+      {
+        "name": "shaft",
+        "type": "cylinder",
+        "dimensions": [
+          2.5,
+          24,
+          0
+        ],
+        "position": [
+          0,
+          59,
+          0
+        ],
+        "color": "#e2e8f0"
+      },
+      {
+        "name": "pilot_boss",
+        "type": "cylinder",
+        "dimensions": [
+          11,
+          2,
+          0
+        ],
+        "position": [
+          0,
+          48,
+          0
+        ],
+        "color": "#94a3b8"
+      }
+    ],
+    "protocols": [],
+    "keywords": [
+      "stepper",
+      "nema17",
+      "bipolar",
+      "3d printer",
+      "cnc"
+    ],
+    "aliases": [
+      "nema 17",
+      "nema17",
+      "bipolar stepper"
+    ]
+  }
+}

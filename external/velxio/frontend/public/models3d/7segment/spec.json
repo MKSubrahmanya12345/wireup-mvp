@@ -1,0 +1,206 @@
+{
+  "key": "7segment",
+  "catalogId": "seven-segment-1digit",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "seven-segment-1digit",
+    "name": "1-digit 7-segment display (common cathode, 5161AS)",
+    "category": "display",
+    "description": "Single-digit 10-pin common-cathode 7-segment LED display (0.36\", 5161AS-style). Each segment is an independent LED: drive segments HIGH through 220-330 Ω resistors while holding the common cathode at GND. Multiplex several digits by sharing segment lines and switching each COM in turn.",
+    "voltage": 2.2,
+    "minVoltage": 1.8,
+    "maxVoltage": 2.4,
+    "currentMa": 80,
+    "dimensions": {
+      "widthMm": 27,
+      "lengthMm": 27,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0f172a",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Segment A (top), through a resistor",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "SEG_A"
+        ],
+        "required": true
+      },
+      {
+        "name": "B",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Segment B (top-right), through a resistor",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "SEG_B"
+        ],
+        "required": true
+      },
+      {
+        "name": "C",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Segment C (bottom-right), through a resistor",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "SEG_C"
+        ],
+        "required": true
+      },
+      {
+        "name": "D",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Segment D (bottom), through a resistor",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "SEG_D"
+        ],
+        "required": true
+      },
+      {
+        "name": "E",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Segment E (bottom-left), through a resistor",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "SEG_E"
+        ],
+        "required": true
+      },
+      {
+        "name": "F",
+        "pinNumber": 6,
+        "role": "digital",
+        "signal": "Segment F (top-left), through a resistor",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "SEG_F"
+        ],
+        "required": true
+      },
+      {
+        "name": "G",
+        "pinNumber": 7,
+        "role": "digital",
+        "signal": "Segment G (middle), through a resistor",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "SEG_G"
+        ],
+        "required": true
+      },
+      {
+        "name": "DP",
+        "pinNumber": 8,
+        "role": "digital",
+        "signal": "Decimal point, through a resistor",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "DOT",
+          "SEG_DP"
+        ],
+        "required": false
+      },
+      {
+        "name": "COM",
+        "pinNumber": 9,
+        "role": "ground",
+        "signal": "Common cathode (the package exposes two COM pins on one internal net)",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "COM.1",
+          "COM.2",
+          "CATHODE",
+          "GND"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          22.86,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -10.96
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "glass_panel",
+        "type": "screen",
+        "dimensions": [
+          22.95,
+          2,
+          13.5
+        ],
+        "position": [
+          0,
+          2.8,
+          2.5
+        ],
+        "color": "#090d16"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "7 segment",
+      "seven segment",
+      "7-segment",
+      "display",
+      "digit",
+      "led display",
+      "counter display"
+    ],
+    "aliases": [
+      "7 segment display",
+      "seven segment",
+      "7seg",
+      "segment display",
+      "5161as"
+    ]
+  }
+}

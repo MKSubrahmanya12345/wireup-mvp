@@ -1,0 +1,203 @@
+{
+  "key": "neopixel",
+  "catalogId": "neopixel-ws2812b-strip",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "neopixel-ws2812b-strip",
+    "name": "WS2812B addressable LED strip (NeoPixel)",
+    "category": "actuator",
+    "description": "Single-wire 800 kHz addressable RGB LEDs, 5 V supply, up to ~60 mA per LED at full white. Data in is a strict timing protocol; level shift from a 3.3 V MCU and inject power at both ends for long runs.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 60,
+      "lengthMm": 10,
+      "heightMm": 1
+    },
+    "bodyColor": "#f8fafc",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "DIN",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "800 kHz data in",
+        "xMm": -3.81,
+        "yMm": 5.4,
+        "zMm": -2.46,
+        "direction": "up",
+        "aliases": [
+          "DI",
+          "DATA",
+          "IN"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -1.27,
+        "yMm": 5.4,
+        "zMm": -2.46,
+        "direction": "up",
+        "aliases": [
+          "+5V",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 1.27,
+        "yMm": 5.4,
+        "zMm": -2.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "DOUT",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Data out to the next segment",
+        "xMm": 3.81,
+        "yMm": 5.4,
+        "zMm": -2.46,
+        "direction": "up",
+        "aliases": [
+          "DO"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "flex_strip_substrate",
+        "type": "box",
+        "dimensions": [
+          60,
+          0.6,
+          10
+        ],
+        "position": [
+          0,
+          0.3,
+          0
+        ],
+        "color": "#fef3c7"
+      },
+      {
+        "name": "din_pad_label",
+        "type": "box",
+        "dimensions": [
+          5,
+          0.08,
+          3
+        ],
+        "position": [
+          -25,
+          0.75,
+          0
+        ],
+        "color": "#22c55e"
+      },
+      {
+        "name": "dout_pad_label",
+        "type": "box",
+        "dimensions": [
+          5,
+          0.08,
+          3
+        ],
+        "position": [
+          25,
+          0.75,
+          0
+        ],
+        "color": "#3b82f6"
+      },
+      {
+        "name": "ws2812b_5050_pixel_1",
+        "type": "led",
+        "dimensions": [
+          5,
+          2,
+          5
+        ],
+        "position": [
+          -18,
+          2,
+          0
+        ],
+        "color": "#e0f2fe"
+      },
+      {
+        "name": "ws2812b_5050_pixel_2",
+        "type": "led",
+        "dimensions": [
+          5,
+          2,
+          5
+        ],
+        "position": [
+          0,
+          2,
+          0
+        ],
+        "color": "#e0f2fe"
+      },
+      {
+        "name": "ws2812b_5050_pixel_3",
+        "type": "led",
+        "dimensions": [
+          5,
+          2,
+          5
+        ],
+        "position": [
+          18,
+          2,
+          0
+        ],
+        "color": "#e0f2fe"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "neopixel",
+      "ws2812",
+      "ws2812b",
+      "addressable led",
+      "led strip",
+      "rgb strip"
+    ],
+    "aliases": [
+      "neopixel",
+      "ws2812b",
+      "led strip",
+      "addressable leds"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Adafruit NeoPixel",
+        "import": "Adafruit_NeoPixel.h",
+        "manager": "arduino",
+        "purpose": "WS2812B timing and colour control"
+      }
+    ]
+  }
+}

@@ -24,7 +24,38 @@
 import type { Diagram } from '@/types/diagram';
 import type { GeneratedCodeFile } from '@/types/project';
 
-import { toWokwiDiagram } from '@/modules/diagram-generator/wokwi';
+import { toWokwiDiagram, translatePin } from '@/modules/diagram-generator/wokwi';
+import {
+  BOARD_KIND_BY_CATALOG_ID,
+  BOARD_KIND_BY_WOKWI_TYPE,
+  CAD_BENCH_PREFIX,
+  METADATA_BY_WOKWI_TYPE,
+  WOKWI_TYPE_BY_METADATA,
+  cadBenchCatalogId,
+  cadBenchId,
+  isCadBenchComponent,
+  refinePart,
+  velxioCatalogKeyFor,
+} from './velxio-key';
+
+/*
+ * Re-exported so the rest of the codebase keeps importing these from the
+ * `.vlx` module it already knows. The definitions live in `velxio-key.ts`
+ * because `wokwi.ts` needs them too and must not import this file back.
+ */
+export {
+  BOARD_KIND_BY_CATALOG_ID,
+  BOARD_KIND_BY_WOKWI_TYPE,
+  CAD_BENCH_PREFIX,
+  METADATA_BY_WOKWI_TYPE,
+  WOKWI_TYPE_BY_METADATA,
+  cadBenchCatalogId,
+  cadBenchId,
+  isCadBenchComponent,
+  velxioCatalogKeyFor,
+};
+export type { VelxioCatalogKey } from './velxio-key';
+import { getSeedComponent } from '@/modules/components/catalog';
 
 /* -------------------------------------------------------------------------- */
 /* The .vlx shape (mirrors upstream VlxPayload)                               */
@@ -87,174 +118,15 @@ export interface VelxioProjectResult {
   unsupported: string[];
   /** Everything the Wokwi projection itself could not represent. */
   warnings: string[];
+  /**
+   * Instances placed on the canvas as CAD bench parts (see `cadBenchId`).
+   * Their shape and pins are real; the emulator has no electrical model for
+   * them, so they are inert. Reported so the UI can say exactly that instead
+   * of pretending they simulate.
+   */
+  cadBench: { id: string; catalogId: string; name: string }[];
 }
 
-/* -------------------------------------------------------------------------- */
-/* Mapping tables                                                             */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Wokwi board part type → Velxio `boardKind` (this picks which CPU core
- * emulates the sketch). Only boards present in Velxio's `BoardKind` union are
- * listed; an unlisted board falls back to `arduino-uno` ONLY if it is an AVR
- * part, otherwise the caller is told the board is unsupported.
- */
-export const BOARD_KIND_BY_WOKWI_TYPE: Record<string, string> = {
-  'wokwi-esp32-devkit-v1': 'esp32',
-  'wokwi-esp32-devkit-c-v4': 'esp32-devkit-c-v4',
-  'wokwi-esp32-s3-devkitc-1': 'esp32-s3',
-  'wokwi-esp32-c3-devkitm-1': 'esp32-c3',
-  'wokwi-arduino-uno': 'arduino-uno',
-  'wokwi-arduino-nano': 'arduino-nano',
-  'wokwi-arduino-mega': 'arduino-mega',
-  'wokwi-pi-pico': 'raspberry-pi-pico',
-  'wokwi-pi-pico-w': 'pi-pico-w',
-  'wokwi-attiny85': 'attiny85',
-};
-
-/**
- * Catalog controller id → Velxio `boardKind`.
- *
- * The table above is keyed by Wokwi *element*, which only exists once the
- * diagram projection has placed the board. When the controller is skipped — no
- * simulator part in the catalog, or `supported: false` — that lookup finds
- * nothing, and the exporter used to open an Arduino Uno regardless of what the
- * user actually designed. The diagram still names the controller (`ref`), so
- * fall back to that before falling back to a guess.
- */
-export const BOARD_KIND_BY_CATALOG_ID: Record<string, string> = {
-  'esp32-devkit-v1': 'esp32',
-  'arduino-uno-r3': 'arduino-uno',
-  'arduino-nano': 'arduino-nano',
-};
-
-/**
- * Wokwi part type → Velxio component `metadataId`.
- *
- * Velxio's catalog (`external/velxio/frontend/public/components-metadata.json`,
- * 156 parts) is generated from wokwi-elements, so the id is usually the element
- * name without the `wokwi-` prefix — with a few upstream renames (`bme280` →
- * `bmp280`, the L293D module → `motor-driver-l293d`). Anything not listed here
- * has no verified Velxio model and is reported instead of guessed.
- *
- * Every value below is machine-verified by `pnpm verify:simulator` against two
- * ground truths in the vendored repo: the metadata file itself (the id must
- * exist AND its tag must be runtime-definable in the pinned build) and the
- * `PartSimulationRegistry` `register(...)` calls in
- * `frontend/src/simulation/parts/` (which decide whether the part actually
- * *behaves*, not just renders). The catalog `simulator.supported` claims are
- * held to the same standard — a `supported: true` without registered behaviour
- * fails the gate.
- */
-export const METADATA_BY_WOKWI_TYPE: Record<string, string> = {
-  'wokwi-led': 'led',
-  'wokwi-rgb-led': 'rgb-led',
-  'wokwi-buzzer': 'buzzer',
-  'wokwi-pushbutton': 'pushbutton',
-  'wokwi-potentiometer': 'potentiometer',
-  'wokwi-resistor': 'resistor',
-  'wokwi-capacitor': 'capacitor',
-  'wokwi-servo': 'servo',
-  'wokwi-stepper-motor': 'stepper-motor',
-  'wokwi-dht22': 'dht22',
-  'wokwi-hc-sr04': 'hc-sr04',
-  'wokwi-pir-motion-sensor': 'pir-motion-sensor',
-  'wokwi-photoresistor-sensor': 'photoresistor-sensor',
-  'wokwi-ntc-temperature-sensor': 'ntc-temperature-sensor',
-  'wokwi-mpu6050': 'mpu6050',
-  'wokwi-ssd1306': 'ssd1306',
-  'wokwi-lcd1602': 'lcd1602',
-  'wokwi-lcd2004': 'lcd2004',
-  'wokwi-neopixel': 'neopixel',
-  'wokwi-neopixel-matrix': 'neopixel-matrix',
-  'wokwi-bme280': 'bmp280',
-  'wokwi-bmp280': 'bmp280',
-  'wokwi-gas-sensor': 'gas-sensor',
-  'wokwi-relay-module': 'relay',
-  'wokwi-ks2e-m-dc5': 'ks2e-m-dc5',
-  // Deliberately no `wokwi-dc-motor` entry: the pinned Velxio runtime has no
-  // registered DC-motor element. The canonical Wireup graph keeps the motor;
-  // the projection reports it as unsupported instead of drawing a lookalike.
-  'wokwi-membrane-keypad': 'membrane-keypad',
-  'wokwi-ir-receiver': 'ir-receiver',
-  'wokwi-analog-joystick': 'analog-joystick',
-  'wokwi-slide-switch': 'slide-switch',
-  'wokwi-slide-potentiometer': 'slide-potentiometer',
-  'wokwi-hx711': 'hx711',
-  'wokwi-ds1307': 'ds1307',
-  'wokwi-a4988': 'a4988',
-  'wokwi-microsd-card': 'microsd-card',
-  'wokwi-7segment': '7segment',
-  'wokwi-led-bar-graph': 'led-bar-graph',
-  'wokwi-led-ring': 'led-ring',
-  'wokwi-ili9341': 'ili9341',
-  'wokwi-breadboard': 'breadboard',
-  'wokwi-breadboard-mini': 'breadboard-mini',
-  'wokwi-dip-switch-8': 'dip-switch-8',
-  'wokwi-tilt-switch': 'tilt-switch',
-  'wokwi-ky-040': 'ky-040',
-  'wokwi-gps-neo6m': 'gps-neo6m',
-  'wokwi-ds3231': 'ds3231',
-  // SPICE tier: active semiconductors + the solved power parts.
-  'wokwi-diode-1n4007': 'diode-1n4007',
-  'wokwi-diode-1n4148': 'diode-1n4148',
-  'wokwi-diode-1n5819': 'diode-1n5819',
-  'wokwi-bjt-2n2222': 'bjt-2n2222',
-  'wokwi-mosfet-2n7000': 'mosfet-2n7000',
-  'wokwi-mosfet-irf540': 'mosfet-irf540',
-  'wokwi-opto-pc817': 'opto-pc817',
-  'wokwi-battery-9v': 'battery-9v',
-  'wokwi-reg-7805': 'reg-7805',
-  // NOTE deliberately absent: 'wokwi-ds18b20', 'wokwi-l298n'. The pinned
-  // Velxio catalog has no model for them, and putting a lookalike on the canvas
-  // (an L293D standing in for an L298N, say) would wire the firmware to pins
-  // that do not exist on the real part. They stay unsupported.
-};
-
-/**
- * Parts whose Velxio model depends on which catalog entry the instance came
- * from, not just on its Wokwi element.
- *
- * Velxio separates a polarised capacitor (`capacitor-electrolytic`, terminals
- * `+` and `\u2212`, and it verifies the polarity against the rail voltage) from a
- * plain one (`capacitor`, terminals `1`/`2`). Both reach the Wokwi projection as
- * `wokwi-capacitor`, so the instance id decides, and the terminals are renamed
- * to the polarised part's own names — Velxio's minus is U+2212, not a hyphen.
- */
-const METADATA_REFINEMENTS: {
-  matches: RegExp;
-  metadataId: string;
-  pins?: Record<string, string>;
-}[] = [
-  { matches: /^capacitor-[\w-]*electrolytic/i, metadataId: 'capacitor-electrolytic', pins: { '1': '+', '2': '\u2212' } },
-  // Battery elements name their negative terminal with U+2212 (a true minus),
-  // not the hyphen the catalog uses — same treatment as the electrolytic.
-  { matches: /^battery-/i, metadataId: '', pins: { '-': '\u2212' } },
-];
-
-function refinePart(partId: string, metadataId: string): { metadataId: string; pins?: Record<string, string> } {
-  for (const refinement of METADATA_REFINEMENTS) {
-    // Match the mapped METADATA ID first, the instance id second: a hand-made
-    // instance id ("bat-1") must not silently skip a pin rename that the part
-    // type itself calls for. Both current refinements match either form.
-    if (refinement.matches.test(metadataId) || refinement.matches.test(partId)) {
-      return {
-        metadataId: refinement.metadataId || metadataId,
-        ...(refinement.pins ? { pins: refinement.pins } : {}),
-      };
-    }
-  }
-  return { metadataId };
-}
-
-/** The inverse table, used by the canvas→diagram sync. Kept adjacent on purpose. */
-export const WOKWI_TYPE_BY_METADATA: Record<string, string> = Object.fromEntries(
-  Object.entries(METADATA_BY_WOKWI_TYPE)
-    // bmp280/bme280 both map to `bmp280`; the reverse picks the BME280 element,
-    // which is the one the Wireup catalog actually ships.
-    .filter(([wokwiType]) => wokwiType !== 'wokwi-bmp280')
-    .map(([wokwiType, metadataId]) => [metadataId, wokwiType]),
-);
 
 /**
  * Normalise a Wokwi board pin to the pin NAME the Velxio board element exposes.
@@ -322,6 +194,10 @@ function classifyPartWire(fromPin: string, toPin: string): { color: string; sign
 
 const BOARD_POS = { x: 120, y: 160 };
 const PART_COLUMN_X = 660;
+/** CAD bench parts hold their own column, to the right of the simulated ones,
+ *  so a user can see at a glance which half of the design the emulator can
+ *  actually solve. */
+const CAD_PART_COLUMN_X = 1180;
 const PART_ROW_Y = 60;
 const PART_ROW_HEIGHT = 170;
 /** Rough pin anchors. Velxio recalculates them from real element geometry on
@@ -419,6 +295,52 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
     if (refined.pins) pinRenames.set(part.id, refined.pins);
     components.push({ id: part.id, metadataId: refined.metadataId, ...position, properties: { ...part.attrs } });
   }
+  /*
+   * CAD bench parts ---------------------------------------------------------
+   *
+   * Everything the projection could not place as a simulated part gets a
+   * second chance here, as long as it is a real electrical part rather than a
+   * wiring medium: it is carried onto the canvas with its catalog id as its
+   * CAD key, wired like any other part. `component.ref` is the catalog id the
+   * CAD layer is indexed by, so the geometry the canvas and the 3D bench draw
+   * is the same spec the admin studio previews — no second model to drift.
+   *
+   * Deliberately excluded:
+   *   • the controller (an inert board on the canvas would run nothing, and a
+   *     fake board is exactly what Wireup refuses to do — its `unsupported`
+   *     report stands);
+   *   • wiring media (`metadata.electrical === false`: breadboard, jumpers);
+   *   • anything already placed as a simulated part.
+   */
+  const cadBench: VelxioProjectResult['cadBench'] = [];
+  /*
+   * The ids the mapping loop above actually PLACED. A part the Wokwi
+   * projection carried into `wokwi.parts` but Velxio has no element for (its
+   * type is absent from `METADATA_BY_WOKWI_TYPE`, e.g. a motor with no
+   * registered element) never became a component — so it must be eligible for
+   * the CAD bench tier below instead of vanishing from both.
+   */
+  const projectedIds = new Set(components.map((component) => component.id));
+  const componentById = new Map(input.diagram.components.map((component) => [component.id, component]));
+  let cadRow = 0;
+  for (const component of input.diagram.components) {
+    if (projectedIds.has(component.id)) continue;
+    if (!isCadBenchComponent(component)) continue;
+    const catalogId = component.ref;
+    const position = { x: CAD_PART_COLUMN_X, y: PART_ROW_Y + cadRow * PART_ROW_HEIGHT };
+    cadRow += 1;
+    positions.set(component.id, position);
+    components.push({
+      id: component.id,
+      metadataId: cadBenchId(catalogId),
+      ...position,
+      properties: { cadKey: catalogId, ...(component.simulator?.attrs ?? {}) },
+    });
+    cadBench.push({ id: component.id, catalogId, name: component.name });
+  }
+  /** Built AFTER the loop above — a Set snapshot taken earlier would be empty. */
+  const cadBenchIds = new Set(cadBench.map((entry) => entry.id));
+  const cadCatalogIdById = new Map(cadBench.map((entry) => [entry.id, entry.catalogId]));
   const placed = new Set(components.map((component) => component.id));
   const renamePin = (partId: string, pin: string): string => pinRenames.get(partId)?.[pin] ?? pin;
 
@@ -427,6 +349,13 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
   wokwi.connections.forEach(([from, to], index) => {
     const [fromId = '', fromPin = ''] = splitEndpoint(from);
     const [toId = '', toPin = ''] = splitEndpoint(to);
+    /*
+     * A wire with a CAD bench end is rebuilt below straight from the canonical
+     * diagram: the Wokwi projection drops it (it cannot place that endpoint),
+     * and handling it here would report it as unsupported and then draw it
+     * anyway.
+     */
+    if (cadBenchIds.has(fromId) || cadBenchIds.has(toId)) return;
 
     // Normalise so the board is always the END of the wire, matching the
     // generator's own convention and making the reverse sync unambiguous.
@@ -500,6 +429,135 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
     });
   });
 
+  /*
+   * CAD-bench wires ---------------------------------------------------------
+   *
+   * The Wokwi projection drops every connection whose endpoint it cannot
+   * place, so wires to a CAD bench part never reach the loop above — a pump
+   * would arrive on the canvas with its body and no wires, which is exactly
+   * the "half the build is missing" complaint this tier exists to fix.
+   *
+   * They are therefore rebuilt from the CANONICAL diagram (the same source the
+   * projection reads). One deliberate difference: a CAD bench part's pin name
+   * is passed through untouched, because those pins ARE the catalog pins (its
+   * spec is derived from the same registry entry, and `verify:cad-link` holds
+   * its anchors to it). A pin the catalog part does not have is reported
+   * instead of exported — Velxio would drop such a wire silently on import.
+   */
+  const boardInstanceIds = new Set(
+    input.diagram.components
+      .filter((component) => component.category === 'microcontroller')
+      .map((component) => component.id),
+  );
+  const endpointKey = (componentId: string, pin: string): string => `${componentId}:${pin}`;
+  const emitted = new Set(
+    wires.map((wire) => `${endpointKey(wire.start.componentId, wire.start.pinName)}>${endpointKey(wire.end.componentId, wire.end.pinName)}`),
+  );
+
+  input.diagram.connections.forEach((connection, index) => {
+    const touchesCad = cadBenchIds.has(connection.from.component) || cadBenchIds.has(connection.to.component);
+    if (!touchesCad) return; // simulated-tier wires were built above
+
+    const fromIsBoard = boardInstanceIds.has(connection.from.component);
+    const toIsBoard = boardInstanceIds.has(connection.to.component);
+
+    /*
+     * Normalise a CAD bench part's pin to the catalog's canonical spelling
+     * (accepting a declared alias), and refuse a pin the part does not have:
+     * the canvas resolves pins by name, so an alias or a typo would be dropped
+     * silently there — and would never resolve against the 3D anchor either.
+     * Both the 2D symbol and the 3D body are keyed by the canonical name.
+     */
+    const canonicalPin = (componentId: string, pin: string): string | null => {
+      const catalogId = cadCatalogIdById.get(componentId);
+      if (!catalogId) return pin; // a simulated part: name passes through
+      const definition = getSeedComponent(catalogId);
+      if (!definition) return pin; // nothing to check it against
+      const lower = pin.toLowerCase();
+      const match = definition.pins.find(
+        (candidate) =>
+          candidate.name.toLowerCase() === lower ||
+          candidate.aliases?.some((alias) => alias.toLowerCase() === lower),
+      );
+      return match ? match.name : null;
+    };
+    const fromPin = canonicalPin(connection.from.component, connection.from.pin);
+    const toPin = canonicalPin(connection.to.component, connection.to.pin);
+    if (fromPin === null || toPin === null) {
+      const missing = fromPin === null ? `${connection.from.component}.${connection.from.pin}` : `${connection.to.component}.${connection.to.pin}`;
+      unsupported.push(`pin:${missing} (not present on the catalog part backing its CAD bench model)`);
+      return;
+    }
+
+    // Translate the board end (if this wire has one) to the emulator's pin
+    // vocabulary; part ends keep their catalog names.
+    const resolveEnd = (
+      componentId: string,
+      pin: string,
+      isBoard: boolean,
+    ): { componentId: string; pinName: string; x: number; y: number } | null => {
+      const anchor = positions.get(componentId) ?? { x: CAD_PART_COLUMN_X, y: PART_ROW_Y };
+      if (isBoard) {
+        const translated = velxioBoardPin(pin, boardKind);
+        if (!translated) {
+          if (!unsupported.includes(`pin:${pin}`)) unsupported.push(`pin:${pin}`);
+          return null;
+        }
+        return {
+          componentId: BOARD_ID,
+          pinName: translated,
+          x: BOARD_POS.x + PIN_OFFSET.x,
+          y: BOARD_POS.y + PIN_OFFSET.y + index * 12,
+        };
+      }
+      if (!placed.has(componentId)) {
+        unsupported.push(`wire:${connection.from.component}:${connection.from.pin}->${connection.to.component}:${connection.to.pin} (endpoint not placed)`);
+        return null;
+      }
+      if (!cadCatalogIdById.has(componentId)) {
+        /*
+         * The other end is a SIMULATED part (a pump driven through a MOSFET,
+         * say). Its pin must be translated into the simulator element's own
+         * vocabulary exactly like the main wire loop does — the CAD part keeps
+         * its catalog names, the simulated part does not.
+         */
+        const simulated = componentById.get(componentId);
+        const translated = translatePin(simulated?.simulator?.part, pin);
+        if (!translated) {
+          unsupported.push(`pin:${componentId}.${pin} has no equivalent on ${simulated?.simulator?.part ?? 'its simulator element'}`);
+          return null;
+        }
+        return {
+          componentId,
+          pinName: renamePin(componentId, translated),
+          x: anchor.x + PIN_OFFSET.x,
+          y: anchor.y + PIN_OFFSET.y + index * 12,
+        };
+      }
+      return {
+        componentId,
+        pinName: pin,
+        x: anchor.x + PIN_OFFSET.x,
+        y: anchor.y + PIN_OFFSET.y + index * 12,
+      };
+    };
+
+    const start = resolveEnd(connection.from.component, fromPin, fromIsBoard);
+    const end = resolveEnd(connection.to.component, toPin, toIsBoard);
+    if (!start || !end) return;
+    if (start.componentId === end.componentId) return; // self-connection
+
+    const key = `${endpointKey(start.componentId, start.pinName)}>${endpointKey(end.componentId, end.pinName)}`;
+    const reverse = `${endpointKey(end.componentId, end.pinName)}>${endpointKey(start.componentId, start.pinName)}`;
+    if (emitted.has(key) || emitted.has(reverse)) return;
+    emitted.add(key);
+
+    const { color, signalType } = end.pinName && start.componentId === BOARD_ID
+      ? classifyWire(start.pinName, end.pinName)
+      : classifyPartWire(start.pinName, end.pinName);
+    wires.push({ id: `wire-${wires.length + 1}`, start, end, waypoints: [], color, signalType });
+  });
+
   /* Files ------------------------------------------------------------------ */
   const sources = input.files.filter((file) => isCompilableSource(file.path));
   const entry = input.entryPoint
@@ -545,6 +603,7 @@ export function generateVelxioProject(input: VelxioProjectInput): VelxioProjectR
     json: JSON.stringify(project, null, 2),
     unsupported,
     warnings: projection.warnings,
+    cadBench,
   };
 }
 

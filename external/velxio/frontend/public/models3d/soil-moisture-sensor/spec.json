@@ -1,0 +1,179 @@
+{
+  "key": "soil-moisture-sensor",
+  "catalogId": "soil-moisture-sensor",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "soil-moisture-sensor",
+    "name": "Resistive soil moisture sensor module",
+    "category": "sensor",
+    "description": "Two-probe resistive soil moisture sensor with a comparator module providing an analog output (AO, more moisture = lower resistance = higher voltage) and a digital threshold output (DO). 3.3–5 V supply.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 15,
+    "dimensions": {
+      "widthMm": 60,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#14532d",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "AO",
+        "pinNumber": 3,
+        "role": "analog",
+        "signal": "Analog moisture level to an ADC pin",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "A0",
+          "ANALOG"
+        ],
+        "required": false
+      },
+      {
+        "name": "DO",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Digital threshold output",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "D0",
+          "DIGITAL"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "fork_probe_left",
+        "type": "box",
+        "dimensions": [
+          6,
+          0.8,
+          42
+        ],
+        "position": [
+          -5,
+          1.9000000000000001,
+          9
+        ],
+        "color": "#d6a940"
+      },
+      {
+        "name": "fork_probe_right",
+        "type": "box",
+        "dimensions": [
+          6,
+          0.8,
+          42
+        ],
+        "position": [
+          5,
+          1.9000000000000001,
+          9
+        ],
+        "color": "#d6a940"
+      },
+      {
+        "name": "comparator_board",
+        "type": "box",
+        "dimensions": [
+          20,
+          1.2,
+          18
+        ],
+        "position": [
+          0,
+          2.3,
+          -18
+        ],
+        "color": "#14532d"
+      },
+      {
+        "name": "lm393_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.2,
+          5
+        ],
+        "position": [
+          -4,
+          3.1,
+          -18
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensitivity_trimmer",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          3.5,
+          6
+        ],
+        "position": [
+          5.5,
+          4.6,
+          -18
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "soil",
+      "moisture",
+      "plant",
+      "irrigation",
+      "water level",
+      "garden"
+    ],
+    "aliases": [
+      "soil moisture sensor",
+      "soil sensor",
+      "moisture module"
+    ]
+  }
+}

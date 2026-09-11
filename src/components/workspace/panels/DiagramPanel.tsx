@@ -239,18 +239,42 @@ export function DiagramPanel() {
             <div className="row row--tight" style={{ margin: '10px 0 6px' }}>
               <Badge>{Array.isArray((wokwi.diagram as { parts?: unknown[] }).parts) ? (wokwi.diagram as { parts: unknown[] }).parts.length : 0} native parts</Badge>
               <Badge>{Array.isArray((wokwi.diagram as { connections?: unknown[] }).connections) ? (wokwi.diagram as { connections: unknown[] }).connections.length : 0} wires</Badge>
-              {(wokwi.skippedParts?.length ?? 0) > 0 ? <Badge tone="warn">{wokwi.skippedParts?.length} parts omitted honestly</Badge> : null}
+              {(wokwi.cadBench?.length ?? 0) > 0 ? (
+                <Badge tone="neutral">{wokwi.cadBench?.length} parts carried as CAD bench</Badge>
+              ) : null}
+              {(wokwi.skippedParts?.filter((part) => part.carriedAs !== 'cad-bench').length ?? 0) > 0 ? (
+                <Badge tone="warn">
+                  {wokwi.skippedParts?.filter((part) => part.carriedAs !== 'cad-bench').length} parts omitted honestly
+                </Badge>
+              ) : null}
               {(wokwi.skippedConnections?.length ?? 0) > 0 ? <Badge tone="warn">{wokwi.skippedConnections?.length} wires omitted</Badge> : null}
             </div>
-            {(wokwi.skippedParts?.length ?? 0) > 0 ? (
+            {(wokwi.cadBench?.length ?? 0) > 0 ? (
+              <div className="small muted" style={{ marginBottom: 10 }}>
+                <strong>Carried as CAD bench parts:</strong> a Wokwi file is a closed schema and this build has no
+                emulator element for them, so they are not in the file above — but they are not lost either. The
+                Velxio canvas and the 3D bench place each one with its real shape, its real pin anchors and its
+                wires, marked as having no electrical model.
+                <ul className="list list--tight" style={{ margin: '4px 0 0' }}>
+                  {wokwi.cadBench?.map((part) => (
+                    <li key={part.id}>
+                      <span className="mono-sm">{part.ref}</span> — {part.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {(wokwi.skippedParts?.filter((part) => part.carriedAs !== 'cad-bench').length ?? 0) > 0 ? (
               <div className="small muted" style={{ marginBottom: 10 }}>
                 <strong>Not substituted:</strong>
                 <ul className="list list--tight" style={{ margin: '4px 0 0' }}>
-                  {wokwi.skippedParts?.map((part) => (
-                    <li key={part.id}>
-                      <span className="mono-sm">{part.ref}</span> — {part.reason}
-                    </li>
-                  ))}
+                  {wokwi.skippedParts
+                    ?.filter((part) => part.carriedAs !== 'cad-bench')
+                    .map((part) => (
+                      <li key={part.id}>
+                        <span className="mono-sm">{part.ref}</span> — {part.reason}
+                      </li>
+                    ))}
                 </ul>
               </div>
             ) : null}

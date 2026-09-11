@@ -1,0 +1,132 @@
+{
+  "key": "ir-receiver",
+  "catalogId": "ir-receiver-tsop38238",
+  "tier": "derived",
+  "cadOnly": false,
+  "assetKind": "generated-model",
+  "renderedModel": "ir-receiver/ir-receiver.glb",
+  "note": "Geometry and pin anchors are generated from the CAD spec by Wireup.",
+  "spec": {
+    "id": "ir-receiver-tsop38238",
+    "name": "TSOP38238 38 kHz IR receiver",
+    "category": "sensor",
+    "description": "Three-pin demodulating infrared receiver tuned to a 38 kHz carrier: it outputs the decoded bitstream (active low) so the MCU only sees the data, not the carrier. Works with almost any consumer remote at up to ~10 m. A 100 Ω series resistor and 4.7 µF decoupling capacitor are recommended on the supply.",
+    "voltage": 5,
+    "minVoltage": 2.5,
+    "maxVoltage": 5.5,
+    "currentMa": 0.7,
+    "dimensions": {
+      "widthMm": 6.9,
+      "lengthMm": 5.6,
+      "heightMm": 5.3
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "OUT",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Demodulated data, idles HIGH and pulses LOW (pin 1)",
+        "xMm": -2.54,
+        "yMm": -2.65,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "SIG",
+          "DATA",
+          "Y"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Ground (pin 2)",
+        "xMm": 0,
+        "yMm": -2.65,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "VS",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Supply 2.5–5.5 V (pin 3)",
+        "xMm": 2.54,
+        "yMm": -2.65,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "VCC",
+          "VDD",
+          "+"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "tsop_black_package",
+        "type": "box",
+        "dimensions": [
+          6.9,
+          5.3,
+          5.6
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "rounded_ir_window",
+        "type": "lens",
+        "dimensions": [
+          5,
+          3,
+          5
+        ],
+        "position": [
+          0,
+          1.2,
+          2.85
+        ],
+        "color": "#171717"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "ir receiver",
+      "infrared",
+      "tsop",
+      "38khz",
+      "remote control",
+      "nec"
+    ],
+    "aliases": [
+      "tsop38238",
+      "ir receiver",
+      "vs1838b",
+      "infrared receiver"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "IRremote",
+        "import": "IRremote.hpp",
+        "manager": "arduino",
+        "purpose": "Decoding NEC/RC5/Sony remote protocols"
+      }
+    ]
+  }
+}

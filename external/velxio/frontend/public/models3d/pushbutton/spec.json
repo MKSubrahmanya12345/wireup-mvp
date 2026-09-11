@@ -1,0 +1,108 @@
+{
+  "key": "pushbutton",
+  "catalogId": "pushbutton-6mm",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "pushbutton-6mm",
+    "name": "6 mm tactile pushbutton",
+    "category": "input",
+    "description": "Momentary 4-leg tactile switch. Legs on the same side are internally connected, so use one leg per side. Wire between a GPIO and GND with the internal pull-up enabled (reads LOW when pressed), or between GPIO and VCC with a pull-down.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 12,
+    "currentMa": 0,
+    "dimensions": {
+      "widthMm": 6,
+      "lengthMm": 6,
+      "heightMm": 5
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "1",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "1 (digital)",
+        "xMm": -1.27,
+        "yMm": -2.5,
+        "zMm": 1.8,
+        "direction": "down",
+        "aliases": [
+          "A",
+          "LEG1"
+        ],
+        "required": true
+      },
+      {
+        "name": "2",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "2 (digital)",
+        "xMm": 1.27,
+        "yMm": -2.5,
+        "zMm": 1.8,
+        "direction": "down",
+        "aliases": [
+          "B",
+          "LEG2"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "tactile_switch_base",
+        "type": "box",
+        "dimensions": [
+          6,
+          3,
+          6
+        ],
+        "position": [
+          0,
+          -0.3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "round_button_cap",
+        "type": "potentiometer",
+        "dimensions": [
+          3.6,
+          2.8,
+          3.6
+        ],
+        "position": [
+          0,
+          2.6,
+          0
+        ],
+        "color": "#e5e7eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "button",
+      "pushbutton",
+      "push button",
+      "switch",
+      "tactile",
+      "input",
+      "key"
+    ],
+    "aliases": [
+      "pushbutton",
+      "push button",
+      "tact switch",
+      "momentary switch",
+      "button"
+    ]
+  }
+}

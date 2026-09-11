@@ -1,0 +1,158 @@
+{
+  "key": "bh1750-light-sensor",
+  "catalogId": "bh1750-light-sensor",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "bh1750-light-sensor",
+    "name": "BH1750 digital ambient light sensor",
+    "category": "sensor",
+    "description": "I2C 16-bit ambient light sensor reading directly in lux (1–65535 lx) with a spectral response close to the human eye — no calibration curve, unlike an LDR. Address is 0x23 with ADDR low, 0x5C with ADDR high.",
+    "voltage": 3.3,
+    "minVoltage": 2.4,
+    "maxVoltage": 3.6,
+    "currentMa": 0.12,
+    "dimensions": {
+      "widthMm": 21,
+      "lengthMm": 16,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#7c3aed",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Supply 2.4–3.6 V (modules with a regulator accept 5 V)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "VIN",
+          "VDD",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C clock",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "SCK"
+        ],
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C data",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "ADDR",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Address select: LOW/floating = 0x23, HIGH = 0x5C",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -5.46,
+        "direction": "up",
+        "aliases": [
+          "ADD"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "primary_ic",
+        "type": "box",
+        "dimensions": [
+          3.2,
+          1.1,
+          3.2
+        ],
+        "position": [
+          0,
+          2.7,
+          1.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "breakout_header",
+        "type": "header_block",
+        "dimensions": [
+          12.7,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -5.46
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "i2c"
+    ],
+    "keywords": [
+      "bh1750",
+      "light",
+      "lux",
+      "ambient light",
+      "illuminance",
+      "photometer"
+    ],
+    "aliases": [
+      "bh1750",
+      "gy-302",
+      "lux sensor",
+      "light sensor i2c"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "BH1750",
+        "import": "BH1750.h",
+        "manager": "arduino",
+        "purpose": "Lux measurement modes"
+      },
+      {
+        "name": "Wire",
+        "import": "Wire.h",
+        "manager": "arduino",
+        "purpose": "I2C bus"
+      }
+    ]
+  }
+}

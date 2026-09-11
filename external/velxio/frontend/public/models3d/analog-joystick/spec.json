@@ -1,0 +1,183 @@
+{
+  "key": "analog-joystick",
+  "catalogId": "joystick-module-2axis",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "joystick-module-2axis",
+    "name": "2-axis analog thumb joystick module",
+    "category": "input",
+    "description": "PS2-style thumb joystick: two 10 kOhm potentiometers on X and Y plus a momentary push switch under the stick. Each axis reads roughly mid-scale at rest (about 512 on a 10-bit ADC) and needs a dead-band in firmware because the spring return is not exact.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 1,
+    "dimensions": {
+      "widthMm": 26,
+      "lengthMm": 34,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Supply — sets the ADC full-scale reference for both axes",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -14.46,
+        "direction": "up",
+        "aliases": [
+          "+5V",
+          "+",
+          "VDD"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -14.46,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "VRX",
+        "pinNumber": 3,
+        "role": "analog",
+        "signal": "X axis wiper voltage",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -14.46,
+        "direction": "up",
+        "aliases": [
+          "VRx",
+          "X",
+          "HOR"
+        ],
+        "required": true
+      },
+      {
+        "name": "VRY",
+        "pinNumber": 4,
+        "role": "analog",
+        "signal": "Y axis wiper voltage",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -14.46,
+        "direction": "up",
+        "aliases": [
+          "VRy",
+          "Y",
+          "VER"
+        ],
+        "required": true
+      },
+      {
+        "name": "SW",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Push switch, active LOW, needs an internal pull-up",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -14.46,
+        "direction": "up",
+        "aliases": [
+          "SEL",
+          "BUTTON",
+          "KEY"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "joystick_gimbal",
+        "type": "potentiometer",
+        "dimensions": [
+          17,
+          9,
+          17
+        ],
+        "position": [
+          0,
+          7.1,
+          4
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "thumb_stick",
+        "type": "cylinder",
+        "dimensions": [
+          4,
+          18,
+          0
+        ],
+        "position": [
+          0,
+          19.6,
+          4
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          12.7,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -14.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "actuator_cap",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          4,
+          6
+        ],
+        "position": [
+          0,
+          4.6,
+          1.5
+        ],
+        "color": "#e2e8f0"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "joystick",
+      "thumbstick",
+      "analog stick",
+      "2-axis",
+      "ps2 joystick",
+      "control"
+    ],
+    "aliases": [
+      "joystick",
+      "joystick module",
+      "thumb joystick",
+      "ky-023"
+    ]
+  }
+}

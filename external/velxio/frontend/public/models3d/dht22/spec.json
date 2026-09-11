@@ -1,0 +1,152 @@
+{
+  "key": "dht22",
+  "catalogId": "dht22-temperature-humidity",
+  "tier": "derived",
+  "cadOnly": false,
+  "assetKind": "print-export-of-spec",
+  "renderedModel": "dht22/dht22.glb",
+  "note": "The rendered 3D model is the reviewed GLB named in renderedModel; these STLs are exported from the CAD spec.",
+  "spec": {
+    "id": "dht22-temperature-humidity",
+    "name": "DHT22 (AM2302) temperature & humidity sensor",
+    "category": "sensor",
+    "description": "Single-wire digital temperature (-40–80 °C, ±0.5 °C) and humidity (0–100 %RH, ±2 %) sensor. 0.5 Hz maximum sample rate, 3.3–6 V supply. Needs a 4.7–10 kΩ pull-up on DATA.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 6,
+    "currentMa": 0.5,
+    "dimensions": {
+      "widthMm": 28,
+      "lengthMm": 12,
+      "heightMm": 8
+    },
+    "bodyColor": "#f8fafc",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -2.54,
+        "yMm": -4,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "DATA",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Single-wire digital data",
+        "xMm": 0,
+        "yMm": -4,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "OUT",
+          "S",
+          "SIG",
+          "DQ"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 2.54,
+        "yMm": -4,
+        "zMm": 0,
+        "direction": "down",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "white_vented_dht22_body",
+        "type": "box",
+        "dimensions": [
+          28,
+          8,
+          12
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#f8fafc"
+      },
+      {
+        "name": "vent_slots",
+        "type": "box",
+        "dimensions": [
+          20.16,
+          0.08,
+          1
+        ],
+        "position": [
+          0,
+          0.6,
+          6.05
+        ],
+        "color": "#0f172a"
+      },
+      {
+        "name": "label_panel",
+        "type": "box",
+        "dimensions": [
+          15.400000000000002,
+          0.08,
+          2.1
+        ],
+        "position": [
+          0,
+          -1.2,
+          6.06
+        ],
+        "color": "#e5e7eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "dht22",
+      "am2302",
+      "temperature",
+      "humidity",
+      "weather"
+    ],
+    "aliases": [
+      "dht22",
+      "am2302",
+      "dht 22"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "DHT sensor library",
+        "import": "DHT.h",
+        "manager": "arduino",
+        "purpose": "Decodes the DHT single-wire protocol"
+      },
+      {
+        "name": "Adafruit Unified Sensor",
+        "import": "Adafruit_Sensor.h",
+        "manager": "arduino",
+        "purpose": "Dependency of the DHT sensor library"
+      }
+    ]
+  }
+}

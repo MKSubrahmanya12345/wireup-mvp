@@ -1,0 +1,144 @@
+{
+  "key": "neopixel-matrix",
+  "catalogId": "led-matrix-ws2812-8x8",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "led-matrix-ws2812-8x8",
+    "name": "WS2812B 8x8 LED matrix (NeoPixel matrix, 64 pixels)",
+    "category": "actuator",
+    "description": "64 addressable WS2812B LEDs in an 8x8 grid on one data line — the same single-pin protocol as the strip and ring, scrolled into a matrix. One pin drives every pixel (index = row*8 + col with the common left-to-right, top-to-bottom wiring; cheap boards vary, so verify direction before fixing a layout). Full-white draw is ~3.8 A: budget a dedicated 5 V supply, inject power at the connector, and keep data runs short with a ~330-470 ohm series resistor and a ~1000 uF cap across the supply.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 60,
+    "dimensions": {
+      "widthMm": 24,
+      "lengthMm": 30,
+      "heightMm": 12
+    },
+    "bodyColor": "#334155",
+    "pins": [
+      {
+        "name": "DIN",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "800 kHz data in",
+        "xMm": -3.81,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "DI",
+          "DATA",
+          "IN"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "+5V",
+          "+",
+          "VDD"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 1.27,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "VSS"
+        ],
+        "required": true
+      },
+      {
+        "name": "DOUT",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Data out to the next matrix in the chain",
+        "xMm": 3.81,
+        "yMm": 16.4,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "DO"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          13.2,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "actuator_body",
+        "type": "box",
+        "dimensions": [
+          19.200000000000003,
+          10,
+          21
+        ],
+        "position": [
+          0,
+          17.5,
+          0
+        ],
+        "color": "#475569"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "neopixel matrix",
+      "ws2812 matrix",
+      "led matrix",
+      "8x8 matrix",
+      "pixel matrix",
+      "addressable matrix"
+    ],
+    "aliases": [
+      "neopixel matrix",
+      "ws2812 matrix",
+      "8x8 matrix",
+      "led matrix",
+      "pixel matrix"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "Adafruit NeoPixel",
+        "import": "Adafruit_NeoPixel.h",
+        "manager": "arduino",
+        "purpose": "WS2812B timing and colour control"
+      }
+    ]
+  }
+}

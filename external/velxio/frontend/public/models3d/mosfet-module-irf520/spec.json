@@ -1,0 +1,207 @@
+{
+  "key": "mosfet-module-irf520",
+  "catalogId": "mosfet-module-irf520",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "mosfet-module-irf520",
+    "name": "IRF520 MOSFET switch module",
+    "category": "driver",
+    "description": "Single low-side N-channel MOSFET switch board for DC loads up to 24 V. Convenient for fans, LED strips, pumps and solenoids, but note the IRF520 is not a true logic-level FET: at 5 V gate drive it is only partially enhanced, so keep continuous current under ~1 A on this module and prefer an IRLZ44N/AO3400-based board for heavier loads.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 24,
+    "currentMa": 500,
+    "dimensions": {
+      "widthMm": 30,
+      "lengthMm": 30,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "SIG",
+        "pinNumber": 1,
+        "role": "pwm",
+        "signal": "Gate drive from the MCU (PWM capable)",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "PWM",
+          "IN",
+          "SIGNAL"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Logic reference supply",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "5V",
+          "+"
+        ],
+        "required": false
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Common ground with the MCU and the load supply",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "V+",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "Load supply input (up to 24 V)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VIN",
+          "POWER+"
+        ],
+        "required": true
+      },
+      {
+        "name": "V-",
+        "pinNumber": 5,
+        "role": "ground",
+        "signal": "Load supply ground",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "POWER-"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT+",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Load positive (passes V+ straight through)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "LOAD+"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT-",
+        "pinNumber": 7,
+        "role": "power",
+        "signal": "Load negative — switched to ground by the MOSFET",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "LOAD-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          17.78,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bridge_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          2.5,
+          10
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          15,
+          12,
+          10
+        ],
+        "position": [
+          0,
+          7.6,
+          -4.5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          12,
+          9,
+          8
+        ],
+        "position": [
+          -8,
+          6.1,
+          9
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "mosfet",
+      "irf520",
+      "switch",
+      "low side",
+      "pwm",
+      "led strip",
+      "fan driver"
+    ],
+    "aliases": [
+      "irf520",
+      "mosfet module",
+      "mosfet switch",
+      "irf520n module"
+    ]
+  }
+}

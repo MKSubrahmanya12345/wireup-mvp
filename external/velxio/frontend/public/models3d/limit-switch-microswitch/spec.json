@@ -1,0 +1,144 @@
+{
+  "key": "limit-switch-microswitch",
+  "catalogId": "limit-switch-microswitch",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "limit-switch-microswitch",
+    "name": "Lever microswitch (limit switch)",
+    "category": "input",
+    "description": "Snap-action lever switch with common, normally-open and normally-closed terminals. Standard end-stop for motion systems. Wire NC-to-ground for a fail-safe end-stop: a broken wire then reads as \"triggered\" rather than as \"clear\".",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 250,
+    "currentMa": 0,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 10,
+      "heightMm": 6.5
+    },
+    "bodyColor": "#111827",
+    "bodyStyle": "none",
+    "pinStyle": "leads",
+    "pins": [
+      {
+        "name": "COM",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "Common terminal",
+        "xMm": -2.54,
+        "yMm": -3.25,
+        "zMm": 3.8,
+        "direction": "down",
+        "aliases": [
+          "C",
+          "POLE"
+        ],
+        "required": true
+      },
+      {
+        "name": "NO",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Normally open — closes when the lever is pressed",
+        "xMm": 0,
+        "yMm": -3.25,
+        "zMm": 3.8,
+        "direction": "down",
+        "aliases": [
+          "NORMALLY_OPEN"
+        ],
+        "required": false
+      },
+      {
+        "name": "NC",
+        "pinNumber": 3,
+        "role": "bidirectional",
+        "signal": "Normally closed — opens when the lever is pressed (fail-safe wiring)",
+        "xMm": 2.54,
+        "yMm": -3.25,
+        "zMm": 3.8,
+        "direction": "down",
+        "aliases": [
+          "NORMALLY_CLOSED"
+        ],
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "microswitch_case",
+        "type": "box",
+        "dimensions": [
+          20,
+          6.5,
+          10
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "roller_lever",
+        "type": "box",
+        "dimensions": [
+          18,
+          0.65,
+          2
+        ],
+        "position": [
+          0,
+          4.6,
+          -3
+        ],
+        "rotation": [
+          0,
+          0,
+          -12
+        ],
+        "color": "#d1d5db"
+      },
+      {
+        "name": "roller",
+        "type": "cylinder",
+        "dimensions": [
+          1.8,
+          2.2,
+          0
+        ],
+        "position": [
+          8.2,
+          5.7,
+          -4.2
+        ],
+        "rotation": [
+          90,
+          0,
+          0
+        ],
+        "color": "#94a3b8"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "limit switch",
+      "microswitch",
+      "end stop",
+      "endstop",
+      "lever switch",
+      "homing"
+    ],
+    "aliases": [
+      "limit switch",
+      "microswitch",
+      "endstop",
+      "end stop switch"
+    ]
+  }
+}

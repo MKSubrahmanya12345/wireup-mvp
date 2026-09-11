@@ -1,0 +1,312 @@
+{
+  "key": "tb6612fng-motor-driver",
+  "catalogId": "tb6612fng-motor-driver",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "tb6612fng-motor-driver",
+    "name": "TB6612FNG dual motor driver breakout",
+    "category": "driver",
+    "description": "MOSFET dual H-bridge breakout: 1.2 A continuous (3.2 A peak) per channel, motor supply 2.5–13.5 V, logic 2.7–5.5 V. Much lower voltage drop than the L298N so motors get nearly the full supply. STBY must be pulled high for any output.",
+    "voltage": 3.3,
+    "minVoltage": 2.7,
+    "maxVoltage": 5.5,
+    "currentMa": 400,
+    "dimensions": {
+      "widthMm": 30,
+      "lengthMm": 30,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "VM",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Motor supply 2.5–13.5 V",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VMOT",
+          "VCC_MOTOR"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "Logic supply 2.7–5.5 V",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VLOGIC",
+          "VDD"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VSS"
+        ],
+        "required": true
+      },
+      {
+        "name": "STBY",
+        "pinNumber": 4,
+        "role": "control",
+        "signal": "Standby — drive HIGH to enable outputs",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "STBY",
+          "ENABLE"
+        ],
+        "required": true
+      },
+      {
+        "name": "AIN1",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Channel A direction bit 0",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A_IN1",
+          "IN1"
+        ],
+        "required": true
+      },
+      {
+        "name": "AIN2",
+        "pinNumber": 6,
+        "role": "digital",
+        "signal": "Channel A direction bit 1",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A_IN2",
+          "IN2"
+        ],
+        "required": true
+      },
+      {
+        "name": "PWMA",
+        "pinNumber": 7,
+        "role": "pwm",
+        "signal": "Channel A speed PWM",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "ENA",
+          "A_PWM"
+        ],
+        "required": true
+      },
+      {
+        "name": "AO1",
+        "pinNumber": 8,
+        "role": "power",
+        "signal": "Channel A output +",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A01",
+          "MOTOR_A+"
+        ],
+        "required": true
+      },
+      {
+        "name": "AO2",
+        "pinNumber": 9,
+        "role": "power",
+        "signal": "Channel A output -",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "A02",
+          "MOTOR_A-"
+        ],
+        "required": true
+      },
+      {
+        "name": "BIN1",
+        "pinNumber": 10,
+        "role": "digital",
+        "signal": "Channel B direction bit 0",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "B_IN1",
+          "IN3"
+        ],
+        "required": true
+      },
+      {
+        "name": "BIN2",
+        "pinNumber": 11,
+        "role": "digital",
+        "signal": "Channel B direction bit 1",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "B_IN2",
+          "IN4"
+        ],
+        "required": true
+      },
+      {
+        "name": "PWMB",
+        "pinNumber": 12,
+        "role": "pwm",
+        "signal": "Channel B speed PWM",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "ENB",
+          "B_PWM"
+        ],
+        "required": true
+      },
+      {
+        "name": "BO1",
+        "pinNumber": 13,
+        "role": "power",
+        "signal": "Channel B output +",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "B01",
+          "MOTOR_B+"
+        ],
+        "required": true
+      },
+      {
+        "name": "BO2",
+        "pinNumber": 14,
+        "role": "power",
+        "signal": "Channel B output -",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "B02",
+          "MOTOR_B-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          30,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bridge_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          2.5,
+          10
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          15,
+          12,
+          10
+        ],
+        "position": [
+          0,
+          7.6,
+          -4.5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          12,
+          9,
+          8
+        ],
+        "position": [
+          -8,
+          6.1,
+          9
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "tb6612",
+      "tb6612fng",
+      "motor driver",
+      "dual",
+      "mosfet",
+      "low drop"
+    ],
+    "aliases": [
+      "tb6612",
+      "tb6612fng",
+      "tb6612fng breakout"
+    ]
+  }
+}

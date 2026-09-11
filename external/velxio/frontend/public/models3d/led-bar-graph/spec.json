@@ -1,0 +1,326 @@
+{
+  "key": "led-bar-graph",
+  "catalogId": "led-bar-graph-10",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "led-bar-graph-10",
+    "name": "10-segment LED bar graph (JL-B10D style)",
+    "category": "display",
+    "description": "Ten independent LEDs in a bar package, 20 pins: anodes A1-A10 on one side, cathodes C1-C10 on the other. Each segment needs its own series resistor and its own pin (or a charlieplexed/multiplexed arrangement). The classic VU meter / level indicator: light n segments for a 0-10 reading.",
+    "voltage": 2.2,
+    "minVoltage": 1.8,
+    "maxVoltage": 2.4,
+    "currentMa": 100,
+    "dimensions": {
+      "widthMm": 27,
+      "lengthMm": 27,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0f172a",
+    "pins": [
+      {
+        "name": "A1",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Segment 1 anode, through a resistor",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C1",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Segment 1 cathode",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "K1"
+        ],
+        "required": true
+      },
+      {
+        "name": "A2",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Segment 2 anode, through a resistor",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C2",
+        "pinNumber": 4,
+        "role": "ground",
+        "signal": "Segment 2 cathode",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "K2"
+        ],
+        "required": true
+      },
+      {
+        "name": "A3",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Segment 3 anode, through a resistor",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C3",
+        "pinNumber": 6,
+        "role": "ground",
+        "signal": "Segment 3 cathode",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "K3"
+        ],
+        "required": true
+      },
+      {
+        "name": "A4",
+        "pinNumber": 7,
+        "role": "digital",
+        "signal": "Segment 4 anode, through a resistor",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C4",
+        "pinNumber": 8,
+        "role": "ground",
+        "signal": "Segment 4 cathode",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "aliases": [
+          "K4"
+        ],
+        "required": true
+      },
+      {
+        "name": "A5",
+        "pinNumber": 9,
+        "role": "digital",
+        "signal": "Segment 5 anode, through a resistor",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -10.96,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C5",
+        "pinNumber": 10,
+        "role": "ground",
+        "signal": "Segment 5 cathode",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "aliases": [
+          "K5"
+        ],
+        "required": true
+      },
+      {
+        "name": "A6",
+        "pinNumber": 11,
+        "role": "digital",
+        "signal": "Segment 6 anode, through a resistor",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C6",
+        "pinNumber": 12,
+        "role": "ground",
+        "signal": "Segment 6 cathode",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "aliases": [
+          "K6"
+        ],
+        "required": true
+      },
+      {
+        "name": "A7",
+        "pinNumber": 13,
+        "role": "digital",
+        "signal": "Segment 7 anode, through a resistor",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C7",
+        "pinNumber": 14,
+        "role": "ground",
+        "signal": "Segment 7 cathode",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "aliases": [
+          "K7"
+        ],
+        "required": true
+      },
+      {
+        "name": "A8",
+        "pinNumber": 15,
+        "role": "digital",
+        "signal": "Segment 8 anode, through a resistor",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C8",
+        "pinNumber": 16,
+        "role": "ground",
+        "signal": "Segment 8 cathode",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "aliases": [
+          "K8"
+        ],
+        "required": true
+      },
+      {
+        "name": "A9",
+        "pinNumber": 17,
+        "role": "digital",
+        "signal": "Segment 9 anode, through a resistor",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C9",
+        "pinNumber": 18,
+        "role": "ground",
+        "signal": "Segment 9 cathode",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -8.42,
+        "direction": "up",
+        "aliases": [
+          "K9"
+        ],
+        "required": true
+      },
+      {
+        "name": "A10",
+        "pinNumber": 19,
+        "role": "digital",
+        "signal": "Segment 10 anode, through a resistor",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -5.88,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "C10",
+        "pinNumber": 20,
+        "role": "ground",
+        "signal": "Segment 10 cathode",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -5.88,
+        "direction": "up",
+        "aliases": [
+          "K10"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          27,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -10.96
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "glass_panel",
+        "type": "screen",
+        "dimensions": [
+          22.95,
+          2,
+          13.5
+        ],
+        "position": [
+          0,
+          2.8,
+          2.5
+        ],
+        "color": "#090d16"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "led bar",
+      "bar graph",
+      "voltage indicator",
+      "vu meter",
+      "level meter",
+      "segment display",
+      "bargraph"
+    ],
+    "aliases": [
+      "led bar graph",
+      "bar graph",
+      "10 segment led",
+      "vu meter",
+      "level indicator"
+    ]
+  }
+}

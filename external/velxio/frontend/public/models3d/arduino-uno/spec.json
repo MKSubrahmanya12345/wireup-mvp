@@ -1,0 +1,552 @@
+{
+  "key": "arduino-uno",
+  "catalogId": "arduino-uno-r3",
+  "tier": "reference",
+  "cadOnly": false,
+  "assetKind": "print-export-of-spec",
+  "renderedModel": "arduino-uno/arduino-uno.glb",
+  "note": "The rendered 3D model is the reviewed GLB named in renderedModel; these STLs are exported from the CAD spec.",
+  "spec": {
+    "id": "arduino-uno-r3",
+    "name": "Arduino Uno R3",
+    "category": "controller",
+    "description": "Arduino Uno R3 development board with ATmega328P, USB-B, barrel jack, header rows and on-board power circuitry.",
+    "voltage": 5,
+    "minVoltage": 5,
+    "maxVoltage": 12,
+    "currentMa": 50,
+    "dimensions": {
+      "widthMm": 53.4,
+      "lengthMm": 68.6,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0b4f9c",
+    "pins": [
+      {
+        "name": "AREF",
+        "pinNumber": 1,
+        "role": "analog",
+        "signal": "Analog reference",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 20.5,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "GND.1",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "Digital-header ground",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 17.96,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "0",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Digital I/O 0",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 15.42,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "1",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Digital I/O 1",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 12.879999999999999,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "2",
+        "pinNumber": 5,
+        "role": "digital",
+        "signal": "Digital I/O 2",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 10.34,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "3",
+        "pinNumber": 6,
+        "role": "pwm",
+        "signal": "Digital I/O 3",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 7.8,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "4",
+        "pinNumber": 7,
+        "role": "digital",
+        "signal": "Digital I/O 4",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 5.26,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "5",
+        "pinNumber": 8,
+        "role": "pwm",
+        "signal": "Digital I/O 5",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 2.7200000000000006,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "6",
+        "pinNumber": 9,
+        "role": "pwm",
+        "signal": "Digital I/O 6",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": 0.17999999999999972,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "7",
+        "pinNumber": 10,
+        "role": "digital",
+        "signal": "Digital I/O 7",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": -2.360000000000001,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "8",
+        "pinNumber": 11,
+        "role": "digital",
+        "signal": "Digital I/O 8",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": -4.9,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "9",
+        "pinNumber": 12,
+        "role": "pwm",
+        "signal": "Digital I/O 9",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": -7.4399999999999995,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "10",
+        "pinNumber": 13,
+        "role": "pwm",
+        "signal": "Digital I/O 10",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": -9.979999999999999,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "11",
+        "pinNumber": 14,
+        "role": "pwm",
+        "signal": "Digital I/O 11",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": -12.520000000000001,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "12",
+        "pinNumber": 15,
+        "role": "digital",
+        "signal": "Digital I/O 12",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": -15.06,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "13",
+        "pinNumber": 16,
+        "role": "digital",
+        "signal": "Digital I/O 13",
+        "xMm": -24.3,
+        "yMm": 5.6,
+        "zMm": -17.6,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "IOREF",
+        "pinNumber": 17,
+        "role": "power",
+        "signal": "IOREF rail",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": 20.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "RESET",
+        "pinNumber": 18,
+        "role": "control",
+        "signal": "RESET rail",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": 17.96,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "3V3",
+        "pinNumber": 19,
+        "role": "power",
+        "signal": "3V3 rail",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": 15.42,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "5V",
+        "pinNumber": 20,
+        "role": "power",
+        "signal": "5V rail",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": 12.88,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "GND.2",
+        "pinNumber": 21,
+        "role": "ground",
+        "signal": "GND.2 rail",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": 10.34,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "GND.3",
+        "pinNumber": 22,
+        "role": "ground",
+        "signal": "GND.3 rail",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": 7.8,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "VIN",
+        "pinNumber": 23,
+        "role": "power",
+        "signal": "VIN rail",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": 5.26,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "A0",
+        "pinNumber": 24,
+        "role": "analog",
+        "signal": "A0 input",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": -8.5,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "A1",
+        "pinNumber": 25,
+        "role": "analog",
+        "signal": "A1 input",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": -11.04,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "A2",
+        "pinNumber": 26,
+        "role": "analog",
+        "signal": "A2 input",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": -13.58,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "A3",
+        "pinNumber": 27,
+        "role": "analog",
+        "signal": "A3 input",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": -16.12,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "A4",
+        "pinNumber": 28,
+        "role": "i2c",
+        "signal": "A4 input",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": -18.66,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "A5",
+        "pinNumber": 29,
+        "role": "i2c",
+        "signal": "A5 input",
+        "xMm": 24.3,
+        "yMm": 5.6,
+        "zMm": -21.2,
+        "direction": "up",
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "usb_b_connector",
+        "type": "box",
+        "dimensions": [
+          14.5,
+          11.5,
+          15.5
+        ],
+        "position": [
+          -25.8,
+          7,
+          23.5
+        ],
+        "color": "#c8ced8"
+      },
+      {
+        "name": "barrel_jack",
+        "type": "box",
+        "dimensions": [
+          13,
+          11,
+          14
+        ],
+        "position": [
+          -17.5,
+          7,
+          -24.5
+        ],
+        "color": "#12161d"
+      },
+      {
+        "name": "atmega328p_dip",
+        "type": "box",
+        "dimensions": [
+          10,
+          4.6,
+          35.5
+        ],
+        "position": [
+          1.5,
+          4,
+          -1
+        ],
+        "color": "#111318"
+      },
+      {
+        "name": "atmega16u2",
+        "type": "box",
+        "dimensions": [
+          7,
+          2,
+          7
+        ],
+        "position": [
+          -17,
+          2.6,
+          2.5
+        ],
+        "color": "#171a20"
+      },
+      {
+        "name": "crystal_16mhz",
+        "type": "box",
+        "dimensions": [
+          10.5,
+          3.6,
+          4.8
+        ],
+        "position": [
+          -6.5,
+          3.3,
+          13
+        ],
+        "color": "#c5c9c8"
+      },
+      {
+        "name": "reset_button",
+        "type": "potentiometer",
+        "dimensions": [
+          4.4,
+          2,
+          4.4
+        ],
+        "position": [
+          -11.5,
+          3,
+          19.5
+        ],
+        "color": "#d9dde5"
+      },
+      {
+        "name": "power_led",
+        "type": "led",
+        "dimensions": [
+          1.8,
+          2.4,
+          1.8
+        ],
+        "position": [
+          -5.5,
+          2.8,
+          19
+        ],
+        "color": "#31d17c"
+      },
+      {
+        "name": "tx_led",
+        "type": "led",
+        "dimensions": [
+          1.5,
+          1.8,
+          1.5
+        ],
+        "position": [
+          -2.8,
+          2.5,
+          19
+        ],
+        "color": "#f5a623"
+      },
+      {
+        "name": "rx_led",
+        "type": "led",
+        "dimensions": [
+          1.5,
+          1.8,
+          1.5
+        ],
+        "position": [
+          -0.4,
+          2.5,
+          19
+        ],
+        "color": "#f5a623"
+      },
+      {
+        "name": "capacitor_47uf_a",
+        "type": "cylinder",
+        "dimensions": [
+          3.6,
+          8,
+          0
+        ],
+        "position": [
+          -18.8,
+          5.2,
+          -9.5
+        ],
+        "color": "#20242c"
+      },
+      {
+        "name": "capacitor_47uf_b",
+        "type": "cylinder",
+        "dimensions": [
+          3.6,
+          8,
+          0
+        ],
+        "position": [
+          -13.8,
+          5.2,
+          -9.5
+        ],
+        "color": "#20242c"
+      },
+      {
+        "name": "voltage_regulator",
+        "type": "box",
+        "dimensions": [
+          7.5,
+          3,
+          6
+        ],
+        "position": [
+          -16.5,
+          3,
+          -15.5
+        ],
+        "color": "#20242c"
+      }
+    ],
+    "visualAsset": {
+      "key": "arduino-uno-r3",
+      "quality": "reference"
+    },
+    "protocols": [
+      "gpio",
+      "i2c",
+      "spi",
+      "uart",
+      "pwm",
+      "analog"
+    ],
+    "keywords": [
+      "arduino",
+      "uno",
+      "atmega328p",
+      "microcontroller",
+      "development board"
+    ],
+    "aliases": [
+      "arduino uno",
+      "uno r3",
+      "arduino-uno-r3"
+    ]
+  }
+}

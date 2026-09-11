@@ -1,0 +1,197 @@
+{
+  "key": "esp8266-esp01-wifi",
+  "catalogId": "esp8266-esp01-wifi",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "esp8266-esp01-wifi",
+    "name": "ESP8266 ESP-01 Wi-Fi module",
+    "category": "communication",
+    "description": "Minimal Wi-Fi module controlled over AT commands on a 3.3 V UART. Needs a 3.3 V supply capable of ~300 mA bursts and careful level shifting when attached to a 5 V MCU. Only two usable GPIO (GPIO0/GPIO2).",
+    "voltage": 3.3,
+    "minVoltage": 3,
+    "maxVoltage": 3.6,
+    "currentMa": 70,
+    "dimensions": {
+      "widthMm": 24.8,
+      "lengthMm": 14.3,
+      "heightMm": 1.2
+    },
+    "bodyColor": "#123b73",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -8.89,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "aliases": [
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -6.35,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "TX",
+        "pinNumber": 3,
+        "role": "uart",
+        "signal": "TX (uart)",
+        "xMm": -3.81,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "aliases": [
+          "TXD"
+        ],
+        "required": true
+      },
+      {
+        "name": "RX",
+        "pinNumber": 4,
+        "role": "uart",
+        "signal": "RX (uart)",
+        "xMm": -1.27,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "aliases": [
+          "RXD"
+        ],
+        "required": true
+      },
+      {
+        "name": "CH_PD",
+        "pinNumber": 5,
+        "role": "control",
+        "signal": "Chip enable — must be HIGH",
+        "xMm": 1.27,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "aliases": [
+          "EN",
+          "CE"
+        ],
+        "required": true
+      },
+      {
+        "name": "RST",
+        "pinNumber": 6,
+        "role": "control",
+        "signal": "RST (control)",
+        "xMm": 3.81,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "aliases": [
+          "RESET"
+        ],
+        "required": false
+      },
+      {
+        "name": "GPIO0",
+        "pinNumber": 7,
+        "role": "bidirectional",
+        "signal": "Strapping pin — HIGH for normal boot",
+        "xMm": 6.35,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "GPIO2",
+        "pinNumber": 8,
+        "role": "bidirectional",
+        "signal": "Strapping pin — HIGH for normal boot",
+        "xMm": 8.89,
+        "yMm": 5.6,
+        "zMm": -4.61,
+        "direction": "up",
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "esp8266_shield_can",
+        "type": "box",
+        "dimensions": [
+          16,
+          2.2,
+          12
+        ],
+        "position": [
+          -2.8,
+          2.7,
+          0
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "pcb_antenna_zone",
+        "type": "box",
+        "dimensions": [
+          6,
+          0.15,
+          12
+        ],
+        "position": [
+          9,
+          3.8,
+          0
+        ],
+        "color": "#d6a940"
+      },
+      {
+        "name": "two_by_four_header",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          5.08
+        ],
+        "position": [
+          -7,
+          2.5,
+          -4.61
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "uart",
+      "wifi",
+      "tcp"
+    ],
+    "keywords": [
+      "esp8266",
+      "esp-01",
+      "wifi",
+      "at commands",
+      "wireless"
+    ],
+    "aliases": [
+      "esp8266",
+      "esp-01",
+      "esp01"
+    ]
+  }
+}

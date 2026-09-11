@@ -1,0 +1,87 @@
+{
+  "key": "usb-webcam-generic",
+  "catalogId": "usb-webcam-generic",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "usb-webcam-generic",
+    "name": "USB webcam (UVC, generic)",
+    "category": "sensor",
+    "description": "Any USB Video Class webcam (1080p class). Needs only a USB connection — it appears as /dev/video0 (or the next free index) and OpenCV can open it by index. The practical route for MORE cameras than the Pi CSI ports allow.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 150,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "USB",
+        "pinNumber": 1,
+        "role": "control",
+        "signal": "USB connection (video + power) to a Pi USB port",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "USB-A"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          2.54,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "sensor_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.4,
+          5
+        ],
+        "position": [
+          0,
+          2.8,
+          1.5
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "usb"
+    ],
+    "keywords": [
+      "webcam",
+      "usb",
+      "camera",
+      "face",
+      "vision"
+    ],
+    "aliases": [
+      "webcam",
+      "usb camera",
+      "usb webcam"
+    ],
+    "libraryRequirements": []
+  }
+}

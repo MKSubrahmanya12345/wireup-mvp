@@ -1,0 +1,144 @@
+{
+  "key": "ky-040",
+  "catalogId": "rotary-encoder-ky040",
+  "tier": "preset",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "rotary-encoder-ky040",
+    "name": "KY-040 Rotary Encoder Module",
+    "category": "input",
+    "description": "Incremental rotary encoder with built-in momentary push button switch and pull-up resistors.",
+    "voltage": 5,
+    "minVoltage": 3.3,
+    "maxVoltage": 5.5,
+    "currentMa": 5,
+    "dimensions": {
+      "widthMm": 26,
+      "lengthMm": 19,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e293b",
+    "pins": [
+      {
+        "name": "CLK",
+        "pinNumber": 1,
+        "role": "digital",
+        "signal": "Encoder Output A (Clock)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -7.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "DT",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Encoder Output B (Data)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -7.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "SW",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Pushbutton Switch",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.5,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "+",
+        "pinNumber": 4,
+        "role": "power",
+        "signal": "VCC Supply (5V/3.3V)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -7.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 5,
+        "role": "ground",
+        "signal": "Ground Reference",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -7.5,
+        "direction": "up",
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "encoder_body",
+        "type": "box",
+        "dimensions": [
+          12,
+          5,
+          12
+        ],
+        "position": [
+          0,
+          4,
+          1.5
+        ],
+        "color": "#94a3b8"
+      },
+      {
+        "name": "encoder_shaft",
+        "type": "cylinder",
+        "dimensions": [
+          3,
+          15,
+          0
+        ],
+        "position": [
+          0,
+          14,
+          1.5
+        ],
+        "color": "#cbd5e1"
+      },
+      {
+        "name": "header_strip",
+        "type": "header_block",
+        "dimensions": [
+          12.7,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2,
+          -7.5
+        ],
+        "color": "#0f172a"
+      }
+    ],
+    "protocols": [
+      "gpio",
+      "quadrature"
+    ],
+    "keywords": [
+      "rotary encoder",
+      "ky-040",
+      "knob",
+      "dial",
+      "pulse encoder",
+      "push switch"
+    ],
+    "aliases": [
+      "ky040",
+      "ky-040",
+      "rotary encoder"
+    ]
+  }
+}

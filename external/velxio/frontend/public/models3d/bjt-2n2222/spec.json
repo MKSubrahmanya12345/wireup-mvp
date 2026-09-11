@@ -1,0 +1,117 @@
+{
+  "key": "bjt-2n2222",
+  "catalogId": "transistor-2n2222",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "transistor-2n2222",
+    "name": "2N2222 / PN2222 NPN transistor (TO-92)",
+    "category": "other",
+    "description": "The default small-power NPN. VCEO 40 V, 600 mA continuous collector current (1 A peak), hFE 100-300. As a low-side switch from a GPIO: base resistor = (Voh - 0.7 V) / (Ic / 10) — roughly 1 kohm for 100 mA from a 5 V pin, 470 ohms from 3.3 V. VCEsat is ~0.3 V at 150 mA, so it dissipates (0.3 V x Ic) — fine to ~200 mA in free air.",
+    "voltage": 40,
+    "maxVoltage": 40,
+    "currentMa": 100,
+    "dimensions": {
+      "widthMm": 20,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#1e3a8a",
+    "pins": [
+      {
+        "name": "B",
+        "pinNumber": 1,
+        "role": "control",
+        "signal": "Base — drive through a series resistor (rule of thumb: Ic/10 for hard saturation)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "BASE"
+        ],
+        "required": true
+      },
+      {
+        "name": "C",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Collector — to the load; the load returns to the supply",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "COLLECTOR"
+        ],
+        "required": true
+      },
+      {
+        "name": "E",
+        "pinNumber": 3,
+        "role": "ground",
+        "signal": "Emitter — to GND (low-side switch)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "EMITTER"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "main_ic",
+        "type": "box",
+        "dimensions": [
+          6,
+          1.4,
+          6
+        ],
+        "position": [
+          0,
+          2.8,
+          0
+        ],
+        "color": "#18181b"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "transistor",
+      "npn",
+      "2n2222",
+      "pn2222",
+      "switch",
+      "driver",
+      "bjt"
+    ],
+    "aliases": [
+      "2n2222",
+      "pn2222",
+      "npn transistor",
+      "transistor",
+      "bjt"
+    ]
+  }
+}

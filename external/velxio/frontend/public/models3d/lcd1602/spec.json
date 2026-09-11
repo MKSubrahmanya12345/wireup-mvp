@@ -1,0 +1,210 @@
+{
+  "key": "lcd1602",
+  "catalogId": "lcd-1602-i2c",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "lcd-1602-i2c",
+    "name": "1602 LCD with I2C backpack (PCF8574)",
+    "category": "display",
+    "description": "16x2 character LCD on a PCF8574 I2C backpack. Only four wires are needed (VCC, GND, SDA, SCL). Default address 0x27 (some backpacks use 0x3F), 5 V supply with a contrast trimmer and backlight jumper.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 5.5,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 80,
+      "lengthMm": 36,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#14532d",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "VCC (power)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -15.46,
+        "direction": "up",
+        "aliases": [
+          "+",
+          "V+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -15.46,
+        "direction": "up",
+        "aliases": [
+          "-",
+          "V-"
+        ],
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C data",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -15.46,
+        "direction": "up",
+        "aliases": [
+          "D",
+          "SDI"
+        ],
+        "required": true
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C clock",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -15.46,
+        "direction": "up",
+        "aliases": [
+          "C",
+          "SCK"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "lcd_bezel",
+        "type": "box",
+        "dimensions": [
+          72,
+          6.5,
+          25
+        ],
+        "position": [
+          0,
+          5,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "green_lcd_glass",
+        "type": "screen",
+        "dimensions": [
+          64.5,
+          2.2,
+          16
+        ],
+        "position": [
+          0,
+          8.4,
+          0
+        ],
+        "color": "#7dd3a8"
+      },
+      {
+        "name": "i2c_backpack_pcb",
+        "type": "box",
+        "dimensions": [
+          41,
+          1.4,
+          19
+        ],
+        "position": [
+          0,
+          -1,
+          -3
+        ],
+        "color": "#0f766e"
+      },
+      {
+        "name": "pcf8574_ic",
+        "type": "box",
+        "dimensions": [
+          8,
+          1.6,
+          8
+        ],
+        "position": [
+          -7,
+          -2.1,
+          -3
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "contrast_trimmer",
+        "type": "potentiometer",
+        "dimensions": [
+          6,
+          3.2,
+          6
+        ],
+        "position": [
+          8.5,
+          -2,
+          -3
+        ],
+        "color": "#2563eb"
+      },
+      {
+        "name": "i2c_header",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -15.46
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "i2c"
+    ],
+    "keywords": [
+      "lcd",
+      "1602",
+      "display",
+      "i2c lcd",
+      "character lcd",
+      "screen",
+      "text display"
+    ],
+    "aliases": [
+      "lcd1602",
+      "16x2 lcd",
+      "lcd display",
+      "i2c lcd"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "LiquidCrystal I2C",
+        "import": "LiquidCrystal_I2C.h",
+        "manager": "arduino",
+        "purpose": "PCF8574 backpack driver for HD44780 LCDs"
+      },
+      {
+        "name": "Wire",
+        "import": "Wire.h",
+        "manager": "arduino",
+        "purpose": "I2C bus"
+      }
+    ]
+  }
+}

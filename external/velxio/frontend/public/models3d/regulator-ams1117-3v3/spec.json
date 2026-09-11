@@ -1,0 +1,113 @@
+{
+  "key": "regulator-ams1117-3v3",
+  "catalogId": "regulator-ams1117-3v3",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "regulator-ams1117-3v3",
+    "name": "AMS1117-3.3 3.3 V LDO regulator",
+    "category": "power",
+    "description": "Low-dropout regulator producing 3.3 V from 4.75–12 V at up to ~800 mA. Dropout is ~1.1 V at full load, so 5 V in is workable but leaves little headroom. Standard choice for powering 3.3 V logic from a 5 V rail.",
+    "voltage": 3.3,
+    "minVoltage": 3.2,
+    "maxVoltage": 3.4,
+    "currentMa": 200,
+    "dimensions": {
+      "widthMm": 16,
+      "lengthMm": 12,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#15803d",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "IN",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Input 4.75–12 V",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -3.46,
+        "direction": "up",
+        "aliases": [
+          "VIN"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -3.46,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "OUT",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Regulated 3.3 V output",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -3.46,
+        "direction": "up",
+        "aliases": [
+          "VOUT",
+          "3V3"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "primary_ic",
+        "type": "box",
+        "dimensions": [
+          3.2,
+          1.1,
+          3.2
+        ],
+        "position": [
+          0,
+          2.7,
+          1.5
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "breakout_header",
+        "type": "header_block",
+        "dimensions": [
+          7.62,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -3.46
+        ],
+        "color": "#111827"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "ams1117",
+      "3.3v regulator",
+      "ldo",
+      "regulator",
+      "voltage regulator"
+    ],
+    "aliases": [
+      "ams1117",
+      "ams1117-3.3",
+      "3.3v ldo"
+    ]
+  }
+}

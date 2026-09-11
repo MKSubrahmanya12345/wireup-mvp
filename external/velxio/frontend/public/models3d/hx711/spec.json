@@ -1,0 +1,256 @@
+{
+  "key": "hx711",
+  "catalogId": "load-cell-hx711",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "load-cell-hx711",
+    "name": "HX711 24-bit load-cell amplifier",
+    "category": "sensor",
+    "description": "24-bit ADC dedicated to strain-gauge bridges: connects a 4-wire load cell (E+/E-/A+/A-) to two ordinary GPIOs through a bit-banged clock/data protocol. Selectable gain 128/64 (channel A) or 32 (channel B), 10 or 80 samples per second. Needs a tare and a known-mass calibration factor in firmware.",
+    "voltage": 5,
+    "minVoltage": 2.6,
+    "maxVoltage": 5.5,
+    "currentMa": 1.5,
+    "dimensions": {
+      "widthMm": 34,
+      "lengthMm": 20,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#7c3aed",
+    "pinStyle": "headers",
+    "pins": [
+      {
+        "name": "VCC",
+        "pinNumber": 1,
+        "role": "power",
+        "signal": "Digital supply 2.6–5.5 V",
+        "xMm": -11.43,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "VDD",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND",
+        "pinNumber": 2,
+        "role": "ground",
+        "signal": "GND (ground)",
+        "xMm": -8.89,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "-"
+        ],
+        "required": true
+      },
+      {
+        "name": "DT",
+        "pinNumber": 3,
+        "role": "digital",
+        "signal": "Serial data out — goes LOW when a conversion is ready",
+        "xMm": -6.35,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "DOUT",
+          "DATA",
+          "SDA"
+        ],
+        "required": true
+      },
+      {
+        "name": "SCK",
+        "pinNumber": 4,
+        "role": "digital",
+        "signal": "Serial clock in (also sets gain by pulse count)",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "PD_SCK",
+          "CLK",
+          "SCL"
+        ],
+        "required": true
+      },
+      {
+        "name": "E+",
+        "pinNumber": 5,
+        "role": "power",
+        "signal": "Bridge excitation + (to the load cell red wire)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "EXC+",
+          "RED"
+        ],
+        "required": true
+      },
+      {
+        "name": "E-",
+        "pinNumber": 6,
+        "role": "ground",
+        "signal": "Bridge excitation - (to the load cell black wire)",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "EXC-",
+          "BLACK"
+        ],
+        "required": true
+      },
+      {
+        "name": "A+",
+        "pinNumber": 7,
+        "role": "analog",
+        "signal": "Channel A signal + (load cell white/green wire)",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "SIG+",
+          "WHITE"
+        ],
+        "required": true
+      },
+      {
+        "name": "A-",
+        "pinNumber": 8,
+        "role": "analog",
+        "signal": "Channel A signal - (load cell green/white wire)",
+        "xMm": 6.35,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "aliases": [
+          "SIG-",
+          "GREEN"
+        ],
+        "required": true
+      },
+      {
+        "name": "B+",
+        "pinNumber": 9,
+        "role": "analog",
+        "signal": "Channel B signal + (fixed gain 32)",
+        "xMm": 8.89,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "required": false
+      },
+      {
+        "name": "B-",
+        "pinNumber": 10,
+        "role": "analog",
+        "signal": "Channel B signal -",
+        "xMm": 11.43,
+        "yMm": 6,
+        "zMm": -7.46,
+        "direction": "up",
+        "required": false
+      }
+    ],
+    "features": [
+      {
+        "name": "hx711_ic",
+        "type": "box",
+        "dimensions": [
+          5,
+          1.2,
+          5
+        ],
+        "position": [
+          0,
+          2.8,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "load_cell_header",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          2.5
+        ],
+        "position": [
+          -10,
+          2.8,
+          -7
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "mcu_header",
+        "type": "header_block",
+        "dimensions": [
+          10.16,
+          2.5,
+          2.5
+        ],
+        "position": [
+          10,
+          2.8,
+          -7
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "excitation_resistor_bank",
+        "type": "box",
+        "dimensions": [
+          16,
+          0.7,
+          2.2
+        ],
+        "position": [
+          0,
+          2.6,
+          6
+        ],
+        "color": "#d6b47a"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "hx711",
+      "load cell",
+      "weight",
+      "scale",
+      "strain gauge",
+      "force"
+    ],
+    "aliases": [
+      "hx711",
+      "load cell amplifier",
+      "weight sensor",
+      "scale module"
+    ],
+    "libraryRequirements": [
+      {
+        "name": "HX711",
+        "import": "HX711.h",
+        "manager": "arduino",
+        "purpose": "Reading and scaling the 24-bit bridge value"
+      }
+    ]
+  }
+}

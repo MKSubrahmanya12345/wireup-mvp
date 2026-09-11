@@ -1,0 +1,119 @@
+{
+  "key": "diode-1n4148",
+  "catalogId": "diode-1n4148",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "diode-1n4148",
+    "name": "1N4148 small-signal switching diode (DO-35)",
+    "category": "power",
+    "description": "The fast small-signal diode: 100 V reverse, ~150 mA continuous forward, 0.6-0.7 V drop at tens of milliamps and a ~4 ns recovery that makes it the standard clamp for logic-level switching, steering/OR-ing inputs and small relay/buzzer coils. For anything above ~100 mA continuous use a 1N4007; for low-drop rectification use a Schottky.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 100,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 43,
+      "lengthMm": 21,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#15803d",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "Anode — toward the more positive point when forward-biased",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "ANODE",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "K",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Cathode (striped end)",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "CATHODE",
+          "-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          5.08,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.96
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "regulator_ic",
+        "type": "box",
+        "dimensions": [
+          8,
+          3,
+          6
+        ],
+        "position": [
+          -8.6,
+          3.4000000000000004,
+          0
+        ],
+        "color": "#20242c"
+      },
+      {
+        "name": "bulk_capacitor",
+        "type": "cylinder",
+        "dimensions": [
+          4,
+          10,
+          0
+        ],
+        "position": [
+          8.6,
+          6.800000000000001,
+          0
+        ],
+        "color": "#1e293b"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "diode",
+      "1n4148",
+      "switching diode",
+      "signal diode",
+      "fast diode",
+      "clamp"
+    ],
+    "aliases": [
+      "1n4148",
+      "switching diode",
+      "signal diode",
+      "small signal diode"
+    ]
+  }
+}

@@ -11,6 +11,101 @@ import type {
   ComponentMetadataCollection,
 } from '../types/component-metadata';
 
+/** Shape of `/cad-catalog.json` (see Wireup's
+ *  `scripts/export-cad-catalog-to-velxio.ts`). Only the fields this file
+ *  needs are declared. */
+interface CadCatalogEntry {
+  catalogId: string;
+  kind: 'board' | 'part';
+  tier: string;
+  spec: {
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    bodyColor?: string;
+    pins: { name: string }[];
+    keywords?: string[];
+  };
+}
+
+/** Wireup registry category -> this catalogue's category vocabulary. */
+function cadCategory(category: string): ComponentCategory {
+  switch (category) {
+    case 'sensor':
+      return 'sensors';
+    case 'display':
+      return 'displays';
+    case 'input_device':
+      return 'input';
+    case 'actuator':
+      return 'output';
+    case 'motor':
+      return 'motors';
+    case 'communication':
+      return 'communication';
+    case 'passive':
+    case 'electromechanical':
+      return 'passive';
+    default:
+      return 'other';
+  }
+}
+
+/** A tiny picker card: the part's own body colour + a CAD corner mark. */
+function cadThumbnail(entry: CadCatalogEntry): string {
+  const fill = entry.spec.bodyColor ?? '#475569';
+  const label = entry.spec.name.length > 9 ? `${entry.spec.name.slice(0, 8)}…` : entry.spec.name;
+  return (
+    `<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg">` +
+    `<rect x="6" y="14" width="52" height="36" rx="3" fill="${fill}" stroke="#0b1220" stroke-width="1.5"/>` +
+    `<circle cx="11" cy="30" r="2.4" fill="#e2b53c"/><circle cx="11" cy="38" r="2.4" fill="#e2b53c"/>` +
+    `<circle cx="53" cy="30" r="2.4" fill="#e2b53c"/><circle cx="53" cy="38" r="2.4" fill="#e2b53c"/>` +
+    `<text x="32" y="36" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" ` +
+    `font-size="8" fill="#f8fafc">${label.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>` +
+    `<rect x="38" y="46" width="20" height="12" rx="2.5" fill="#f4c95d"/>` +
+    `<text x="48" y="55" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" ` +
+    `font-size="7" font-weight="700" fill="#0b1220">CAD</text></svg>`
+  );
+}
+
+/**
+ * Turn a CAD catalog into registry entries for the parts the simulator has
+ * no element for.
+ *
+ * Boards are skipped: Wireup refuses to project a controller with no verified
+ * emulation target (substituting one would run the firmware on the wrong
+ * chip), so a `kind: 'board'` entry is never emitted as a bench part.
+ */
+export function cadBenchMetadata(catalog: { entries?: Record<string, CadCatalogEntry> }): ComponentMetadata[] {
+  const out: ComponentMetadata[] = [];
+  for (const [key, entry] of Object.entries(catalog?.entries ?? {})) {
+    if (!entry || entry.kind !== 'part') continue;
+    out.push({
+      id: `cad-bench-${key}`,
+      tagName: 'velxio-cad-bench-part',
+      name: `${entry.spec.name} (CAD)`,
+      category: cadCategory(entry.spec.category),
+      description:
+        `${entry.spec.description} — rendered as a CAD bench part: the shape and every pin anchor are real, ` +
+        `but this build has no electrical model for it, so it does not react to signals.`,
+      thumbnail: cadThumbnail(entry),
+      properties: [
+        {
+          name: 'cadKey',
+          type: 'string',
+          defaultValue: key,
+          description: 'Catalog key into /cad-catalog.json (set by the exporter).',
+        },
+      ],
+      defaultValues: { cadKey: key },
+      pinCount: entry.spec.pins.length,
+      tags: ['cad', 'bench', 'mechanical', 'no-simulation', ...(entry.spec.keywords ?? [])].slice(0, 12),
+    });
+  }
+  return out;
+}
+
 export class ComponentRegistry {
   private static instance: ComponentRegistry;
   private metadata: Map<string, ComponentMetadata> = new Map();
@@ -219,6 +314,29 @@ export class ComponentRegistry {
         pinCount: 0,
         tags: ['custom', 'chip', 'wasm', 'c', 'wokwi', 'eeprom', 'rtc', 'logic', 'cpu', '8080', 'z80'],
       });
+
+      // CAD bench parts — catalog parts Wireup knows the SHAPE of but the
+      // simulator has no element for (a pump, an L298N, an HC-05, a bare LDR
+      // cell …). They are appended as `<velxio-cad-bench-part>` entries keyed
+      // `cad-bench-<cadKey>`, which is what Wireup's exporter puts in the .vlx
+      // (see its `src/modules/simulation/velxio-project.ts`). Without this the
+      // canvas resolves no metadata for them and renders NOTHING — the parts
+      // a project was actually built around would silently vanish, which is
+      // the exact failure this whole tier exists to remove.
+      //
+      // Deliberately appended AFTER the real catalogue: an id collision can
+      // then never shadow a simulated part. The fetch is optional in every
+      // sense — a missing /cad-catalog.json (Velxio running standalone) just
+      // means no CAD bench parts, never a failed registry load.
+      try {
+        const catalogResponse = await fetch('/cad-catalog.json', { cache: 'no-store' });
+        if (catalogResponse.ok) {
+          const catalog = await catalogResponse.json();
+          data.components.push(...cadBenchMetadata(catalog));
+        }
+      } catch {
+        // No CAD catalog in this deployment — nothing to add.
+      }
 
       this.processMetadata(data.components);
       this.loaded = true;

@@ -1,0 +1,117 @@
+{
+  "key": "ssd1306",
+  "catalogId": "oled-ssd1306-i2c",
+  "tier": "preset",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "oled-ssd1306-i2c",
+    "name": "0.96\" I2C OLED Display (SSD1306)",
+    "category": "display",
+    "description": "128x64 pixel monochrome OLED display module communicating over I2C interface.",
+    "voltage": 3.3,
+    "minVoltage": 3,
+    "maxVoltage": 5.5,
+    "currentMa": 20,
+    "dimensions": {
+      "widthMm": 27,
+      "lengthMm": 27,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#0f172a",
+    "pins": [
+      {
+        "name": "GND",
+        "pinNumber": 1,
+        "role": "ground",
+        "signal": "Ground",
+        "xMm": -3.81,
+        "yMm": 6,
+        "zMm": -11.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "VCC",
+        "pinNumber": 2,
+        "role": "power",
+        "signal": "3.3V/5V Power Supply",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -11.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "SCL",
+        "pinNumber": 3,
+        "role": "i2c",
+        "signal": "I2C Clock Line",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -11.5,
+        "direction": "up",
+        "required": true
+      },
+      {
+        "name": "SDA",
+        "pinNumber": 4,
+        "role": "i2c",
+        "signal": "I2C Data Line",
+        "xMm": 3.81,
+        "yMm": 6,
+        "zMm": -11.5,
+        "direction": "up",
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "oled_glass",
+        "type": "screen",
+        "dimensions": [
+          24,
+          2,
+          14
+        ],
+        "position": [
+          0,
+          2,
+          2.5
+        ],
+        "color": "#090d16"
+      },
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          10.2,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2,
+          -11.5
+        ],
+        "color": "#1c1917"
+      }
+    ],
+    "protocols": [
+      "i2c"
+    ],
+    "keywords": [
+      "oled",
+      "ssd1306",
+      "display",
+      "screen",
+      "128x64",
+      "i2c display"
+    ],
+    "aliases": [
+      "ssd1306",
+      "oled 0.96",
+      "oled i2c"
+    ]
+  }
+}

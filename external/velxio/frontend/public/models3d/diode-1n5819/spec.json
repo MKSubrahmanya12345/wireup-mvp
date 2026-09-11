@@ -1,0 +1,118 @@
+{
+  "key": "diode-1n5819",
+  "catalogId": "diode-1n5819",
+  "tier": "derived",
+  "cadOnly": false,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "diode-1n5819",
+    "name": "1N5819 Schottky diode (40 V, 1 A)",
+    "category": "power",
+    "description": "Schottky barrier rectifier: ~0.45 V typical forward drop at 1 A (0.6 V max) against the ~0.9 V of a silicon diode, and essentially zero recovery time. The choice where every hundred millivolts is heat or runtime: reverse-polarity protection in series with a supply rail, low-voltage rectification, flyback on bigger coils where a hot diode wastes your budget. 40 V reverse limit — not for mains-side work.",
+    "voltage": 0,
+    "minVoltage": 0,
+    "maxVoltage": 40,
+    "currentMa": 500,
+    "dimensions": {
+      "widthMm": 43,
+      "lengthMm": 21,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#15803d",
+    "pins": [
+      {
+        "name": "A",
+        "pinNumber": 1,
+        "role": "bidirectional",
+        "signal": "Anode (black bar end is the cathode)",
+        "xMm": -1.27,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "ANODE",
+          "+"
+        ],
+        "required": true
+      },
+      {
+        "name": "K",
+        "pinNumber": 2,
+        "role": "bidirectional",
+        "signal": "Cathode — to the more positive point in a protection diode",
+        "xMm": 1.27,
+        "yMm": 6,
+        "zMm": -7.96,
+        "direction": "up",
+        "aliases": [
+          "CATHODE",
+          "-"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          5.08,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -7.96
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "regulator_ic",
+        "type": "box",
+        "dimensions": [
+          8,
+          3,
+          6
+        ],
+        "position": [
+          -8.6,
+          3.4000000000000004,
+          0
+        ],
+        "color": "#20242c"
+      },
+      {
+        "name": "bulk_capacitor",
+        "type": "cylinder",
+        "dimensions": [
+          4,
+          10,
+          0
+        ],
+        "position": [
+          8.6,
+          6.800000000000001,
+          0
+        ],
+        "color": "#1e293b"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "diode",
+      "schottky",
+      "1n5819",
+      "low drop",
+      "rectifier",
+      "polarity protection"
+    ],
+    "aliases": [
+      "1n5819",
+      "schottky diode",
+      "1a schottky"
+    ]
+  }
+}

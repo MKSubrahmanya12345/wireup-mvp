@@ -1,0 +1,338 @@
+{
+  "key": "l293d-motor-driver",
+  "catalogId": "l293d-motor-driver",
+  "tier": "derived",
+  "cadOnly": true,
+  "generatedFrom": "wireup/cad-helper",
+  "spec": {
+    "id": "l293d-motor-driver",
+    "name": "L293D quad half-bridge driver",
+    "category": "driver",
+    "description": "DIP-16 driver with internal clamp diodes: two full bridges (600 mA continuous, 1.2 A peak per channel) or four half-bridges. Separate logic (VCC1, 4.5–7 V) and motor (VCC2, 4.5–36 V) supplies, and four ground pins that must all be tied together.",
+    "voltage": 5,
+    "minVoltage": 4.5,
+    "maxVoltage": 36,
+    "currentMa": 300,
+    "dimensions": {
+      "widthMm": 30,
+      "lengthMm": 30,
+      "heightMm": 1.6
+    },
+    "bodyColor": "#b91c1c",
+    "pins": [
+      {
+        "name": "EN1_2",
+        "pinNumber": 1,
+        "role": "control",
+        "signal": "Enable for channel 1 (pin 1)",
+        "xMm": -12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "EN1",
+          "ENABLE1_2",
+          "ENA"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN1",
+        "pinNumber": 2,
+        "role": "digital",
+        "signal": "Input 1 (pin 2)",
+        "xMm": -10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "1A",
+          "A1"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT1",
+        "pinNumber": 3,
+        "role": "power",
+        "signal": "Output 1 (pin 3)",
+        "xMm": -7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "1Y",
+          "Y1"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND4",
+        "pinNumber": 4,
+        "role": "ground",
+        "signal": "Ground (pin 4)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND5",
+        "pinNumber": 5,
+        "role": "ground",
+        "signal": "Ground (pin 5)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT2",
+        "pinNumber": 6,
+        "role": "power",
+        "signal": "Output 2 (pin 6)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "2Y",
+          "Y2"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN2",
+        "pinNumber": 7,
+        "role": "digital",
+        "signal": "Input 2 (pin 7)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "2A",
+          "A2"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC2",
+        "pinNumber": 8,
+        "role": "power",
+        "signal": "Motor supply 4.5–36 V (pin 8)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "VM",
+          "VMOTOR"
+        ],
+        "required": true
+      },
+      {
+        "name": "EN3_4",
+        "pinNumber": 9,
+        "role": "control",
+        "signal": "Enable for channel 2 (pin 9)",
+        "xMm": 7.62,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "EN2",
+          "ENABLE3_4",
+          "ENB"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN3",
+        "pinNumber": 10,
+        "role": "digital",
+        "signal": "Input 3 (pin 10)",
+        "xMm": 10.16,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "3A",
+          "B1"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT3",
+        "pinNumber": 11,
+        "role": "power",
+        "signal": "Output 3 (pin 11)",
+        "xMm": 12.7,
+        "yMm": 6,
+        "zMm": -12.46,
+        "direction": "up",
+        "aliases": [
+          "3Y"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND12",
+        "pinNumber": 12,
+        "role": "ground",
+        "signal": "Ground (pin 12)",
+        "xMm": -5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "GND13",
+        "pinNumber": 13,
+        "role": "ground",
+        "signal": "Ground (pin 13)",
+        "xMm": -2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "GND"
+        ],
+        "required": true
+      },
+      {
+        "name": "OUT4",
+        "pinNumber": 14,
+        "role": "power",
+        "signal": "Output 4 (pin 14)",
+        "xMm": 0,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "4Y"
+        ],
+        "required": true
+      },
+      {
+        "name": "IN4",
+        "pinNumber": 15,
+        "role": "digital",
+        "signal": "Input 4 (pin 15)",
+        "xMm": 2.54,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "4A",
+          "B2"
+        ],
+        "required": true
+      },
+      {
+        "name": "VCC1",
+        "pinNumber": 16,
+        "role": "power",
+        "signal": "Logic supply 4.5–7 V (pin 16)",
+        "xMm": 5.08,
+        "yMm": 6,
+        "zMm": -9.92,
+        "direction": "up",
+        "aliases": [
+          "VCC",
+          "VLOGIC"
+        ],
+        "required": true
+      }
+    ],
+    "features": [
+      {
+        "name": "header_block",
+        "type": "header_block",
+        "dimensions": [
+          30,
+          2.5,
+          2.5
+        ],
+        "position": [
+          0,
+          2.8,
+          -12.46
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "bridge_ic",
+        "type": "box",
+        "dimensions": [
+          10,
+          2.5,
+          10
+        ],
+        "position": [
+          0,
+          3,
+          0
+        ],
+        "color": "#111827"
+      },
+      {
+        "name": "heatsink",
+        "type": "heatsink",
+        "dimensions": [
+          15,
+          12,
+          10
+        ],
+        "position": [
+          0,
+          7.6,
+          -4.5
+        ],
+        "color": "#334155"
+      },
+      {
+        "name": "screw_terminal",
+        "type": "screw_terminal",
+        "dimensions": [
+          12,
+          9,
+          8
+        ],
+        "position": [
+          -8,
+          6.1,
+          9
+        ],
+        "color": "#2563eb"
+      }
+    ],
+    "protocols": [
+      "gpio"
+    ],
+    "keywords": [
+      "l293d",
+      "l293",
+      "motor driver",
+      "h-bridge",
+      "quad half bridge"
+    ],
+    "aliases": [
+      "l293d",
+      "l293",
+      "l293d ic"
+    ]
+  }
+}
