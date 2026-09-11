@@ -107,6 +107,48 @@ describe('layoutInstances', () => {
     expect(order).toEqual([]);
   });
 
+  it('rests every auto-placed part ON the bench (no sinking through the grid)', () => {
+    const models = new Map([['led', fakeModel()]]);
+    const { places } = layoutInstances([{ id: 'a', key: 'led' }], models);
+    const a = places.get('a') as InstancePlace;
+    // Models are origin-centred at their bbox centroid by the loader, so a
+    // part that is not lifted by half its height has half its body under the
+    // bench. y must be exactly height / 2 (the fake model is 5 mm tall).
+    expect(a.pos.y).toBeCloseTo(2.5, 5);
+  });
+
+  it('anchors boards on the back row and packs parts in front of them (+z)', () => {
+    const models = new Map([
+      ['board', fakeModel(80)],
+      ['led', fakeModel(10)],
+    ]);
+    const { places } = layoutInstances(
+      [
+        { id: 'b', key: 'board', kind: 'board' },
+        { id: 'p', key: 'led', kind: 'part' },
+      ],
+      models,
+    );
+    const board = places.get('b') as InstancePlace;
+    const part = places.get('p') as InstancePlace;
+    expect(board.pos.z).toBe(0);
+    expect(part.pos.z).toBeGreaterThan(board.pos.z);
+    // Both are seated, not floating and not sunk.
+    expect(board.pos.y).toBeCloseTo(2.5, 5);
+    expect(part.pos.y).toBeCloseTo(2.5, 5);
+  });
+
+  it('wraps a long row instead of running off to infinity', () => {
+    const models = new Map([['led', fakeModel(400)]]);
+    const instances = Array.from({ length: 4 }, (_, index) => ({ id: `p${index}`, key: 'led', kind: 'part' as const }));
+    const { places } = layoutInstances(instances, models);
+    const zs = instances.map((inst) => (places.get(inst.id) as InstancePlace).pos.z);
+    // 400 mm parts + a 40 mm gap: three fit in the 1000 mm span, so the fourth
+    // must start a new row further from the boards.
+    expect(new Set(zs).size).toBeGreaterThan(1);
+    expect(Math.max(...zs)).toBeGreaterThan(Math.min(...zs));
+  });
+
   it('accepts a numeric-string saved position (post diagram.json round-trip)', () => {
     const models = new Map([['led', fakeModel()]]);
     const { places } = layoutInstances(
