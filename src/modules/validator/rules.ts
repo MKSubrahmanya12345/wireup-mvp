@@ -28,6 +28,8 @@ import { issueId } from '@/lib/validation/ids';
 import { analyzeCoverage } from '@/modules/project-understanding';
 import { isProvisional, provisionalVerification } from '@/modules/components/contracts';
 import { braceBalance } from '@/modules/code-generator';
+import { stripCodeComments } from '@/modules/code-generator/comments';
+import { evaluateQuantityDelivery, shortfallSeverity } from './quantities';
 import { constantName, pinLiteral } from '@/modules/code-generator/templates';
 import { checkDiagramIntegrity, findMissingDiagramComponents } from '@/modules/diagram-generator';
 import { detectConflicts } from '@/modules/wiring-planner/conflicts';
@@ -65,6 +67,7 @@ export const AUTO_FIXABLE_CODES: ValidationIssueCode[] = [
   'instructions_missing_section',
   'instructions_out_of_sync',
   'missing_component',
+  'quantity_shortfall',
   'behavioral_assertion_failed',
 ];
 
@@ -224,13 +227,32 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
         target: { artifact: 'requirements' },
       });
     }
+    /*
+     * Evidence is what the design *does*, not what it says about itself.
+     *
+     * Two corpus entries used to make this check circular, and both had to go:
+     *
+     *   1. The firmware's machine-managed header restates the user's prompt and
+     *      the extracted behaviours. The generator wrote the requirement into
+     *      the file and the validator found it there, so a build with no line
+     *      sensor at all scored a full 5/5 token match on "follow a black line
+     *      on white floor". Comments are stripped so only real code counts.
+     *   2. The build guide is written last, *from* the requirements — so it can
+     *      only ever restate them. It is the same circularity one stage removed,
+     *      and it was the last source still carrying every target token after
+     *      the comments were stripped.
+     *
+     * What remains is independent: the parts chosen, why they were chosen, the
+     * software architecture, and the wiring graph. None of those are derived
+     * from the requirement text, so finding the requirement in them means the
+     * design actually implements it.
+     */
     const corpus = [
       ...project.components.map((selection) => `${selection.name} ${selection.reason} ${selection.notes ?? ''}`),
-      ...(project.artifacts.code?.files ?? []).map((file) => file.content),
+      ...(project.artifacts.code?.files ?? []).map((file) => stripCodeComments(file.content)),
       project.softwarePlan?.architecture ?? '',
       ...(project.softwarePlan?.modules ?? []).map((module) => `${module.name} ${module.responsibility}`),
       ...(project.wiring?.connections ?? []).map((connection) => connection.explanation),
-      project.artifacts.instructions?.markdown ?? '',
     ].join('\n');
 
     const coverage = analyzeCoverage({ requirements, searchCorpus: corpus });
@@ -247,6 +269,52 @@ export function runRuleEngine(context: RuleContext): RuleEngineResult {
     }
   }
   finishCheck('requirements.coverage', 'Requirement coverage', 'requirements', mark, 'Every stated requirement is reflected in the design');
+
+  /* 2b. Stated quantities vs delivered parts -------------------------------- */
+  /*
+   * Structural, not textual. Coverage asks whether the design's words resemble
+   * the requirement's words; this asks how many of the part the brief counted
+   * are actually in the bill of materials. That difference is the whole point:
+   * "3 IR sensors" with zero sensors selected used to pass coverage on the
+   * strength of prose alone, and no amount of wording can make zero into three.
+   */
+  mark = issues.length;
+  for (const shortfall of evaluateQuantityDelivery({
+    requirements,
+    selections: project.components,
+    catalog,
+  })) {
+    const severity = shortfallSeverity(shortfall);
+    const where =
+      shortfall.delivered === 0
+        ? `the design contains none`
+        : `only ${shortfall.delivered} of ${shortfall.expected} are in the design`;
+
+    add('requirements', {
+      code: 'quantity_shortfall',
+      severity,
+      domain: 'requirements',
+      message: `The brief asks for ${shortfall.expected} ${shortfall.label} but ${where}.`,
+      details:
+        shortfall.delivered === 0
+          ? 'No selected component matches this family, so the firmware has nothing to read from or drive.'
+          : `${shortfall.missing} more ${shortfall.label} are needed to match the stated count.`,
+      fixHint: shortfall.suggestedComponentName
+        ? `Add ${shortfall.missing} × ${shortfall.suggestedComponentName} from the catalog and re-derive pins, wiring and firmware.`
+        : 'Add the missing hardware or record the reduced count as an explicit scope decision.',
+      target: {
+        artifact: 'components',
+        ...(shortfall.suggestedComponentId ? { componentId: shortfall.suggestedComponentId } : {}),
+      },
+    });
+  }
+  finishCheck(
+    'requirements.quantities',
+    'Stated quantities delivered',
+    'requirements',
+    mark,
+    'Every quantity the brief counted is present in the design',
+  );
 
   /* 3. Components ----------------------------------------------------------- */
   mark = issues.length;
