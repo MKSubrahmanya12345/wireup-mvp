@@ -531,7 +531,7 @@ async function sectionPass(): Promise<void> {
     legacy.events.map((event) => event.message).join('\n') === graphed.events.map((event) => event.message).join('\n'),
     `${graphed.events.length} events`,
   );
-  check('graph runner walked every node', graphResult.path.join(',') === 'materialize,evaluate,foldSteers,plan,idea,research,persist', graphResult.path.join(','));
+  check('graph runner walked every node', graphResult.path.join(',') === 'materialize,evaluate,foldSteers,act,plan,idea,research,persist', graphResult.path.join(','));
 
   // The materialised graph is structurally valid.
   const report = validateEverflowGraph(graphResult.graph);

@@ -107,6 +107,8 @@ hardcoded. `.env.example` documents each variable; the validated shape lives in
 | `WIREUP_ENABLE_LLM_VALIDATION` | Run the critical model review in addition to the rule engine |
 | `WIREUP_ENABLE_LLM_CODEGEN` | AI-first firmware authoring: the model writes the sketch logic against the grounded pin plan and the rooting gate keeps the managed blocks authoritative (default on; inert without Bedrock; falls back to the deterministic template on any violation) |
 | `WIREUP_ENABLE_FIRMWARE_COMPILE` | Host compile gate: the sketch is type-checked against the stub Arduino core (g++/clang++) before a revision is frozen — generation, fixes and workbench edits all pass through it. Skipped honestly when no compiler is on PATH |
+| `WIREUP_ENABLE_EVERFLOW_ACTIONS` | Everflow act phase: before filing any ask, the loop runs its own engineering moves — revalidate a drifted design, reprove behaviour in the emulator, run a bounded deterministic fix pass. Fingerprint-guarded, recorded, offline-complete; off restores the ask-only loop |
+| `WIREUP_EVERFLOW_MAX_REPAIRS`, `WIREUP_EVERFLOW_MAX_REPROOFS` | Backstops on loop-driven fix passes and behavioural re-runs per project (fingerprints, not these caps, normally stop repeats) |
 | `WIREUP_AUTOSEED_COMPONENTS` | Seed the catalog into MongoDB when the collection is empty |
 | `WIREUP_MAX_REVISIONS`, `WIREUP_MAX_EVENTS` | Storage caps per project document |
 | `WIREUP_LOG_LEVEL` | Structured server log verbosity |
@@ -200,12 +202,26 @@ merged**:
    pass; a design change needs your explicit *apply*, which rebuilds the
    project as a new, diff-able revision.
 
+Before a pass asks you anything, it **acts**. The act phase is the loop's own
+engineering hand, running between the goal evaluation and the planner: a
+design that drifted since the validation the loop last saw (a canvas sync, a
+ladder repair, an applied addition) is **revalidated** by the rule engine;
+unproven behavioural promises are **reproved** in the emulator — what the
+evaluator proves by code never becomes a human verify ask; and a fresh set of
+blocking issues gets one bounded, deterministic **repair** pass that freezes a
+diff-able revision like every other design change. Every move is
+fingerprint-guarded (never re-run on unchanged content), budgeted
+(`WIREUP_EVERFLOW_MAX_REPAIRS`, `WIREUP_EVERFLOW_MAX_REPROOFS`), recorded in
+the loop-moves ledger on the project, and emitted as an `everflow_move` event
+— a human is asked only for what the loop could not close itself
+(`WIREUP_ENABLE_EVERFLOW_ACTIONS=false` restores the ask-only loop exactly).
+
 The live view is the **Everflow tab** of the project hub: the graph canvas
 (every node's goal state at a glance, click a node for its evidence), the
-two-column human channel, and the completion ribbon with the rendered project
-brief. The first pass runs automatically when generation finalises; more
-passes run on demand (`POST …/everflow/continue`) and are bounded by
-`WIREUP_EVERFLOW_MAX_PASSES`.
+two-column human channel, the loop-moves ledger, and the completion ribbon
+with the rendered project brief. The first pass runs automatically when
+generation finalises; more passes run on demand (`POST …/everflow/continue`)
+and are bounded by `WIREUP_EVERFLOW_MAX_PASSES`.
 
 Messy briefs (often dictated) are expanded at intake into a global project
 document — clean goal, platform, implied components with quantities,
@@ -238,7 +254,7 @@ Full design, invariants and the verification harness:
 | `src/modules/validator/` | `rules.ts` (deterministic engine, the source of engineering truth), `llm.ts` (critical review that may add but never remove engine findings), `index.ts` |
 | `src/modules/fixer/` | `strategies.ts` (deterministic change planning per issue code), `llm.ts` (model changeset), `codePatch.ts` (surgical firmware edits), `apply.ts` (apply + re-derive dependent artifacts), `index.ts` |
 | `src/modules/orchestrator/` | `pipeline.ts` (stage execution with fallbacks), `revisions.ts` (freezing), `persistence.ts` (writes + event flushing), `context.ts`, `index.ts` (`runGeneration`, `startGeneration`, `isRunning`) |
-| `src/modules/everflow/` | `intake.ts` (doubt session: deterministic seeds + LLM merge + context), `materialize.ts` (state → graph, stable ids), `evaluate.ts` (deterministic goal judge + dangling detection + brief), `continuation.ts` (planner + bounded pass runner), `index.ts` (orchestrated entry points) |
+| `src/modules/everflow/` | `intake.ts` (doubt session: deterministic seeds + LLM merge + context), `materialize.ts` (state → graph, stable ids), `evaluate.ts` (deterministic goal judge + dangling detection + brief), `actions.ts` (the act phase: fingerprint-guarded revalidate/reprove/repair moves the loop runs itself before any ask), `planner.ts` (the ask planner), `continuation.ts` (bounded pass runner), `pass-graph.ts` (the same pass as a checkpointed StateGraph), `pass-summary.ts` (one pass-event builder, both runners), `index.ts` (orchestrated entry points) |
 | `src/lib/bedrock/` | Single reusable client: `client.ts` (`converse`, model resolution, retries, timeouts, token usage, `describeBedrockConfig`), `structured.ts` (JSON extraction + zod parse + repair), `prompts.ts`, `operations.ts` (the only place prompts are built) |
 | `src/lib/mongodb/` | `client.ts` (connection + typed connection errors), `projects.ts` (state, events, LLM calls, stalled-project recovery), `components.ts` (catalog reads/upserts with seed fallback) |
 | `src/lib/logging/` | `logger.ts` (structured logs, `describeError`), `events.ts` (agent event log with sequence cursor and sinks) |
@@ -613,10 +629,11 @@ src/components/                   PromptForm + workspace (console, cards,
 * The event log is polled (not streamed over a socket) by design, so the UI
   latency is bounded by the poll interval.
 * Everflow's loop is offline-complete: intake, materialisation, goal
-  evaluation and the planner all run with no model and no network. The LLM
-  only *adds* doubts at intake and powers the pipeline the loop iterates on;
-  with Bedrock disabled the loop still converges (and still asks humans for
-  what it cannot prove).
+  evaluation, the act phase (engine-only revalidation, the host-shim
+  behavioural reproof, the deterministic repair pass) and the planner all run
+  with no model and no network. The LLM only *adds* doubts at intake and
+  powers the pipeline the loop iterates on; with Bedrock disabled the loop
+  still converges (and still asks humans for what it cannot prove).
 * Catalog coverage is finite by construction: a project needing a part that is
   not seeded will be reported as an uncovered requirement rather than invented.
 l be reported as an uncovered requirement rather than invented.

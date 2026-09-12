@@ -81,6 +81,8 @@ export type AgentEventType =
   | 'idea_graph_test'
   | 'idea_graph_review'
   | 'idea_graph_swarm'
+  /** Everflow act phase — an engineering move the loop ran itself. */
+  | 'everflow_move'
   | 'info';
 
 export type AgentEventStatus = 'started' | 'completed' | 'failed' | 'info';

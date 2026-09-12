@@ -39,6 +39,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       research: state.research,
       expandedBrief: state.expandedBrief,
       brief: evaluation.brief,
+      actions: state.everflow?.actions ?? null,
       capabilities: { midTurnSteer: midTurnSteerEnabled(), steerTier: steerTier() },
     });
   } catch (error) {

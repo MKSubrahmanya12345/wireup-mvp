@@ -42,6 +42,8 @@ import { runIdeaMoves, type IdeaMovesOptions } from './idea-moves';
 import { materializeGraph } from './materialize';
 import { EVERFLOW_DEFAULT_MAX_HUMAN_TASKS, planContinuation } from './planner';
 import { planAutoResearch, researchNode } from './research';
+import { runEverflowActions, type ActOptions } from './actions';
+import { passEventMessage, passEventMetadata, type PassSummaryInput } from './pass-summary';
 
 /* ------------------------------------------------------------------------- */
 /* Store — the only persistence seam (tests pass an in-memory implementation) */
@@ -82,6 +84,12 @@ export interface EverflowPassOptions {
    * when a model id is configured — so offline runs never touch the SDK.
    */
   ideaGraph?: IdeaMovesOptions & { enabled?: boolean };
+  /**
+   * Act-phase wiring (runs when WIREUP_ENABLE_EVERFLOW_ACTIONS, default on).
+   * Tests inject a catalog / budgets here; production reads the environment
+   * and loads the catalog lazily, so offline runs never touch MongoDB.
+   */
+  actions?: ActOptions;
 }
 
 /**
@@ -101,6 +109,7 @@ export async function runEverflowPass(projectId: string, trigger: string, store:
       const result = await runPassGraph(projectId, trigger, store, {
         ...(options.maxHumanTasks !== undefined ? { maxHumanTasks: options.maxHumanTasks } : {}),
         ...(options.ideaGraph ? { ideaGraph: options.ideaGraph } : {}),
+        ...(options.actions ? { actions: options.actions } : {}),
       });
       if (result) return { state: result.state, graph: result.graph, evaluation: result.evaluation, plan: result.plan, progressed: result.progressed };
       return null;
@@ -138,10 +147,29 @@ export async function runEverflowPassLegacy(projectId: string, trigger: string, 
   const pass = state.everflow?.pass ?? 0;
   let graph = materializeGraph(state);
   let evaluation = evaluateEverflow(state, graph, pass + 1);
-  const plan = planContinuation(state, graph, evaluation, maxHumanTasks);
+
+  /* --- the act phase: engineering moves the loop runs ITSELF, before any
+   * ask is filed (revalidate drift → reprove behaviour → targeted repair).
+   * Humans get asked only what the loop could not close by code. ------------ */
+  const act = await runEverflowActions(state, pass + 1, options.actions ?? {});
+  // The act events ride inside the working state's log so the idea moves —
+  // which sequence from `state.events` — number strictly after them, and the
+  // single save below persists them exactly once.
+  const working: ProjectState =
+    act.sequencedEvents.length > 0
+      ? { ...act.state, events: [...act.state.events, ...(act.sequencedEvents as AgentEvent[])] }
+      : act.state;
+  if (act.moved) {
+    // The design moved: re-project and re-judge so the plan sees fresh goals.
+    graph = materializeGraph(working);
+    evaluation = evaluateEverflow(working, graph, pass + 1);
+  }
+  const actionsChanged = act.records.filter((record) => record.outcome === 'changed').length;
+
+  const plan = planContinuation(working, graph, evaluation, maxHumanTasks);
 
   /* --- the idea-graph move (one per pass, flag-gated) ---------------------- */
-  const ideaOutcome = await runIdeaMoves(state, projectId, {
+  const ideaOutcome = await runIdeaMoves(working, projectId, {
     ...(options.ideaGraph?.enabled !== undefined ? { enabled: options.ideaGraph.enabled } : {}),
     ...(options.ideaGraph?.model ? { model: options.ideaGraph.model } : {}),
     ...(options.ideaGraph?.maxExpansions !== undefined ? { maxExpansions: options.ideaGraph.maxExpansions } : {}),
@@ -171,14 +199,14 @@ export async function runEverflowPassLegacy(projectId: string, trigger: string, 
     ...passState,
     humanTasks,
     research,
-    everflow: { graph, evaluation, pass: pass + 1 },
+    everflow: { graph, evaluation, pass: pass + 1, actions: act.actions },
     ...(ideaMoved && ideaGraph ? { ideaGraph } : {}),
   };
   if (findings.length > 0 || ideaMoved) {
     // Re-project: new evidence/idea nodes join the graph and the brief.
     graph = materializeGraph(next);
     evaluation = evaluateEverflow(next, graph, pass + 1);
-    next = { ...next, everflow: { graph, evaluation, pass: pass + 1 } };
+    next = { ...next, everflow: { graph, evaluation, pass: pass + 1, actions: act.actions } };
   }
 
   const saved = await store.save(projectId, {
@@ -194,33 +222,32 @@ export async function runEverflowPassLegacy(projectId: string, trigger: string, 
     await store.appendEvent(projectId, event);
   }
 
-  const progressed = plan.newTasks.length + plan.followUps.length + plan.processedInjections.length + findings.length + (ideaMoved ? 1 : 0) > 0;
-  const pct = Math.round(evaluation.completion * 100);
+  const progressed =
+    plan.newTasks.length + plan.followUps.length + plan.processedInjections.length + findings.length + (ideaMoved ? 1 : 0) + actionsChanged > 0;
+
+  const summary: PassSummaryInput = {
+    pass: pass + 1,
+    trigger,
+    evaluation,
+    tasksFiled: plan.newTasks.length + plan.followUps.length + ideaTasks.length,
+    docsChecked: findings.length,
+    injectionsProcessed: plan.processedInjections.length,
+    ideaMoved,
+    ideaGraph,
+    steersFolded: 0,
+    actionsChanged,
+    actionsRun: act.records.length,
+    runner: 'legacy',
+  };
 
   await store.appendEvent(projectId, {
     id: createId('evt'),
     type: 'everflow_pass',
     status: 'info',
-    message:
-      evaluation.done
-        ? `Everflow pass ${pass + 1} (${trigger}): every goal satisfied — the project is complete.`
-        : `Everflow pass ${pass + 1} (${trigger}): ${pct}% complete, ${evaluation.totals.openEnds} dangling, ${plan.newTasks.length + plan.followUps.length + ideaTasks.length} ask(s) filed${ideaMoved ? ', idea graph advanced' : ''}${findings.length > 0 ? `, ${findings.length} doc check(s) recorded` : ''}.`,
+    message: passEventMessage(summary),
     timestamp: nowIso(),
     stage: 'completed',
-    metadata: {
-      trigger,
-      pass: pass + 1,
-      completion: pct,
-      done: evaluation.done,
-      blockedOnHuman: evaluation.blockedOnHuman,
-      openEnds: evaluation.totals.openEnds,
-      tasksFiled: plan.newTasks.length + plan.followUps.length + ideaTasks.length,
-      docsChecked: findings.length,
-      injectionsProcessed: plan.processedInjections.length,
-      ideaGraphMoved: ideaMoved,
-      runner: 'legacy',
-      ...(ideaGraph ? { ideaGraphExpansions: ideaGraph.expansions, ideaGraphPhase: ideaGraph.phase } : {}),
-    },
+    metadata: passEventMetadata(summary),
   });
 
   return { state: finalState, graph, evaluation, plan, progressed };
@@ -235,7 +262,7 @@ export async function continueEverflow(
   projectId: string,
   trigger: string,
   store: EverflowStore,
-  options: { maxPasses?: number; maxHumanTasks?: number; ideaGraph?: EverflowPassOptions['ideaGraph'] } = {},
+  options: { maxPasses?: number; maxHumanTasks?: number; ideaGraph?: EverflowPassOptions['ideaGraph']; actions?: EverflowPassOptions['actions'] } = {},
 ): Promise<EverflowPassResult | null> {
   const maxPasses = options.maxPasses ?? 3;
   let last: EverflowPassResult | null = null;
@@ -243,6 +270,7 @@ export async function continueEverflow(
     const result = await runEverflowPass(projectId, trigger, store, {
       maxHumanTasks: options.maxHumanTasks,
       ...(options.ideaGraph ? { ideaGraph: options.ideaGraph } : {}),
+      ...(options.actions ? { actions: options.actions } : {}),
     });
     if (!result) break;
     last = result;

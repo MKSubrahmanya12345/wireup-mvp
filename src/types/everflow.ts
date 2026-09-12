@@ -404,6 +404,72 @@ export interface EverflowState {
   evaluation: EverflowEvaluation | null;
   /** How many continuation passes have run. */
   pass: number;
+  /**
+   * The act phase — the loop's own engineering moves (revalidate a drifted
+   * design, reprove behaviour in the emulator, run a targeted fix pass).
+   * Optional so pre-act-phase persisted documents stay valid; the first new
+   * pass seeds the bookkeeping from the state it finds.
+   */
+  actions?: EverflowActionState | null;
+}
+
+/* ------------------------------------------------------------------------- */
+/* The act phase — moves the loop runs itself, before it asks a human         */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * What the loop can DO on its own between evaluating the goals and planning
+ * asks. Every move is deterministic-first, fingerprint-guarded (it never
+ * re-runs on an unchanged design), budgeted, and recorded — a guess is never
+ * a silent fact, and a repair is never a silent self-modification: it freezes
+ * a revision like every other design change.
+ */
+export type EverflowMoveKind =
+  /** The design drifted since the validation the loop last saw → re-run the validator. */
+  | 'revalidate'
+  /** Unmet behavioural promises + firmware/spec drift → re-run the emulator before asking a human. */
+  | 'reprove'
+  /** Unmet `validation_clean` → the loop's own targeted fix pass (deterministic, budgeted). */
+  | 'repair';
+
+/** One executed (or deliberately skipped) move, for the UI and the audit trail. */
+export interface EverflowActionRecord {
+  id: string;
+  move: EverflowMoveKind;
+  /** Continuation pass the move ran in. */
+  pass: number;
+  at: string;
+  /** Why the move was chosen — grounded in the evaluation, never in a mood. */
+  trigger: string;
+  outcome: 'changed' | 'no_change' | 'skipped' | 'failed';
+  /** What happened, in one human line. */
+  summary: string;
+  /** Design fingerprint the move saw (the idempotency guard). */
+  fingerprint?: string;
+  /** Revision frozen by the move, when it changed the design. */
+  revision?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Act-phase bookkeeping. The fingerprints are what make the moves idempotent:
+ * a move only runs when the content it reads has actually changed since the
+ * loop last observed it, so repeated passes over a stable project do nothing.
+ */
+export interface EverflowActionState {
+  /** Design fingerprint at the last validation the loop observed. */
+  lastValidatedFingerprint: string | null;
+  /** Firmware+spec fingerprint at the last behavioural evaluation the loop observed. */
+  lastReprovedFingerprint: string | null;
+  /** Issue signature the last repair attempt saw — never retried unchanged. */
+  lastRepairSignature: string | null;
+  /** Repairs executed against this project (bounded by WIREUP_EVERFLOW_MAX_REPAIRS). */
+  repairsUsed: number;
+  /** Behavioural re-runs executed (bounded by WIREUP_EVERFLOW_MAX_REPROOFS). */
+  reproofsUsed: number;
+  /** The audit trail, newest last, capped. */
+  history: EverflowActionRecord[];
+  lastRunAt: string | null;
 }
 
 /* ------------------------------------------------------------------------- */

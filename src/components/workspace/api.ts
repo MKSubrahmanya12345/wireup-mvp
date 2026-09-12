@@ -246,7 +246,7 @@ export async function saveFirmwareFile(id: string, path: string, content: string
 /* Everflow — the project graph + the two-directional human channel           */
 /* -------------------------------------------------------------------------- */
 
-import type { ExpandedBrief, EverflowEvaluation, EverflowGraph, HumanTask, ProjectDoubt, ResearchFinding } from '@/types/everflow';
+import type { EverflowActionState, ExpandedBrief, EverflowEvaluation, EverflowGraph, HumanTask, ProjectDoubt, ResearchFinding } from '@/types/everflow';
 
 export interface EverflowPayload {
   projectId: string;
@@ -260,6 +260,8 @@ export interface EverflowPayload {
   research?: ResearchFinding[];
   expandedBrief?: ExpandedBrief | null;
   brief?: string;
+  /** Act-phase bookkeeping + the audit trail of moves the loop ran itself. */
+  actions?: EverflowActionState | null;
   /** What the human channel may do in this deployment (steer gate lives server-side). */
   capabilities?: { midTurnSteer: boolean; steerTier?: 'off' | 'tier1' | 'tier1.5' };
 }

@@ -123,6 +123,18 @@ const ServerEnvSchema = z.object({
   WIREUP_EVERFLOW_MAX_PASSES: intFrom(3),
   // Open human-channel tasks allowed per project before new asks stay parked.
   WIREUP_EVERFLOW_MAX_HUMAN_TASKS: intFrom(12),
+  // Act phase: the loop's own engineering moves inside a pass (revalidate a
+  // drifted design, reprove behaviour in the emulator, run a targeted fix
+  // pass) BEFORE it files asks — humans are asked only what the loop could
+  // not close itself. Every move is fingerprint-guarded, budgeted, recorded
+  // and offline-complete; switching this off restores the ask-only loop.
+  WIREUP_ENABLE_EVERFLOW_ACTIONS: boolFrom(true),
+  // BACKSTOP on loop-driven fix passes per project (never the normal way work
+  // finishes; the build's own fix loop and the idea ladder repair first).
+  WIREUP_EVERFLOW_MAX_REPAIRS: intFrom(2),
+  // BACKSTOP on behavioural re-runs per project (the fingerprint guard, not
+  // this cap, is what normally stops repeats).
+  WIREUP_EVERFLOW_MAX_REPROOFS: intFrom(3),
   // Research tool: allow the agent to pull a snippet from the cited page
   // (best-effort; offline sources always work and web findings are flagged
   // for human review).
@@ -204,6 +216,9 @@ export interface ServerEnv {
     maxEvents: number;
     everflowMaxPasses: number;
     everflowMaxHumanTasks: number;
+    everflowActionsEnabled: boolean;
+    everflowMaxRepairs: number;
+    everflowMaxReproofs: number;
     webDocsEnabled: boolean;
     webDocsTimeoutMs: number;
     ideaGraphEnabled: boolean;
@@ -294,6 +309,9 @@ function read(): ServerEnv {
       maxEvents: Math.max(50, parsed.WIREUP_MAX_EVENTS),
       everflowMaxPasses: Math.max(1, parsed.WIREUP_EVERFLOW_MAX_PASSES),
       everflowMaxHumanTasks: Math.max(1, parsed.WIREUP_EVERFLOW_MAX_HUMAN_TASKS),
+      everflowActionsEnabled: parsed.WIREUP_ENABLE_EVERFLOW_ACTIONS,
+      everflowMaxRepairs: Math.max(0, parsed.WIREUP_EVERFLOW_MAX_REPAIRS),
+      everflowMaxReproofs: Math.max(0, parsed.WIREUP_EVERFLOW_MAX_REPROOFS),
       webDocsEnabled: parsed.WIREUP_ENABLE_WEB_DOCS,
       webDocsTimeoutMs: Math.max(500, parsed.WIREUP_WEB_DOCS_TIMEOUT_MS),
       ideaGraphEnabled: parsed.WIREUP_ENABLE_IDEA_GRAPH,

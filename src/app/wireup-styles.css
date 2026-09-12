@@ -1975,6 +1975,72 @@ html {
   border-top: 1px dashed var(--border);
 }
 
+/* act phase — the moves the loop ran itself */
+.evf-moves {
+  margin-top: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg);
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+.evf-moves > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+}
+
+.evf-moves__count {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+}
+
+.evf-moves__list {
+  list-style: none;
+  margin: 8px 0 2px;
+  padding: 0;
+}
+
+.evf-move {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px dashed var(--border);
+}
+
+.evf-move__summary {
+  flex: 1;
+  color: var(--text);
+}
+
+.evf-move__rev {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.evf-chip--changed {
+  color: var(--ok, #2e7d32);
+  border-color: currentColor;
+}
+
+.evf-chip--failed {
+  color: var(--danger, #c62828);
+  border-color: currentColor;
+}
+
+.evf-chip--skipped,
+.evf-chip--no_change {
+  opacity: 0.75;
+}
+
 /* human → AI additions */
 .evf-add {
   display: flex;
