@@ -34,7 +34,8 @@
     "verify:simulator": "tsx scripts/verify-simulator-link.ts",
     "verify:contracts": "tsx scripts/verify-contracts.ts",
     "verify:idea-graph": "tsx scripts/verify-idea-graph.ts",
-    "verify:atlas": "tsx scripts/verify-project-atlas.ts"
+    "verify:atlas": "tsx scripts/verify-project-atlas.ts",
+    "verify:quantities": "tsx scripts/verify-quantity-delivery.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.699.0",

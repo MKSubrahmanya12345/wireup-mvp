@@ -19,6 +19,7 @@ import { reassignPin } from '@/modules/pin-planner';
 import { normaliseMcuPin, pinSpec, usablePins } from '@/modules/pin-planner/mcu-profiles';
 import { ROLE_BY_CATEGORY } from '@/modules/hardware-planner';
 import { braceBalance } from '@/modules/code-generator';
+import { evaluateQuantityDelivery } from '@/modules/validator/quantities';
 
 /** Keeps a single fix pass reviewable. */
 export const MAX_CHANGES_PER_PASS = 40;
@@ -1019,6 +1020,77 @@ function planForIssue(ctx: Ctx, issue: ValidationIssue): void {
         return;
       }
       giveUp(ctx, issue, 'Choosing this component needs an engineering decision (voltage/current/headroom).');
+      return;
+    }
+
+    case 'quantity_shortfall': {
+      /*
+       * The brief counted parts the design never selected. The validator
+       * already named the catalog part that closes the gap (from the brief's
+       * own detected features), so the repair is a single add — no guessing.
+       *
+       * The count is re-derived rather than parsed out of the message: the
+       * fixer and the validator must agree on what "missing" means, and both
+       * can compute it from the same design.
+       */
+      const componentId = issue.target?.componentId;
+      const definition = componentId ? definitionFor(ctx.catalog, componentId) : undefined;
+      if (!componentId || !definition) {
+        giveUp(
+          ctx,
+          issue,
+          'The brief names a part family but no catalog part is close enough to add safely; choosing one needs an engineering decision.',
+        );
+        return;
+      }
+
+      const shortfall = evaluateQuantityDelivery({
+        requirements: ctx.project.requirements,
+        selections: ctx.project.components,
+        catalog: ctx.catalog,
+      }).find((entry) => entry.suggestedComponentId === componentId && entry.missing > 0);
+
+      if (!shortfall) {
+        giveUp(ctx, issue, 'The shortfall could not be re-derived from the current design.');
+        return;
+      }
+
+      /*
+       * `add_component` reads `quantity` as an ABSOLUTE target, not a delta:
+       * for a part already in the build the applier does
+       * `max(existing, change.quantity)`. The shortfall is a delta, so it has
+       * to be resolved against whatever is already selected — otherwise
+       * "asked for 4, built 1" repairs to 3 and stops one short.
+       */
+      const existing = ctx.project.components.find((selection) => selection.componentId === componentId);
+      const target = (existing?.quantity ?? 0) + shortfall.missing;
+
+      const role: ComponentRole = ROLE_BY_CATEGORY[definition.category] ?? 'other';
+      const added = push(ctx, issue, {
+        artifact: 'components',
+        op: 'add_component',
+        componentId,
+        quantity: target,
+        role,
+        required: true,
+        reason: `The brief asks for ${shortfall.expected} ${shortfall.label}; adding ${shortfall.missing} × ${definition.name}.`,
+      });
+      if (!added) return;
+
+      /*
+       * New hardware changes everything downstream, and the sketch most of
+       * all: the behaviour templates are chosen from the parts actually
+       * present, so a sensor-less build only grows line-following logic when
+       * the firmware is regenerated. `code` is forced for exactly that reason —
+       * the applier's default is to re-sync the managed blocks in place, which
+       * would tidy the pin map and leave the empty skeleton untouched.
+       */
+      rerun(ctx, issue, 'pins', 'The new part needs pin assignments.');
+      rerun(ctx, issue, 'wiring', 'The new part needs power and signal wiring.');
+      rerunForced(ctx, issue, 'code', 'Sketch behaviour is derived from the parts present, so the firmware must be rebuilt.');
+      rerun(ctx, issue, 'libraries', 'The new part may need a library.');
+      rerun(ctx, issue, 'diagram', 'The diagram must show the new part.');
+      rerun(ctx, issue, 'instructions', 'The guide must cover the new part.');
       return;
     }
 

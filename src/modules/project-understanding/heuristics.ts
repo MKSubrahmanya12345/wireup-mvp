@@ -45,7 +45,29 @@ export const FEATURE_RULES: FeatureRule[] = [
   { feature: 'distance', pattern: /\b(ultrasonic|hc[-\s]?sr04|distance\s*sensor|range\s*finder|sonar|parking)\b/i, quantityKey: 'ultrasonic_sensors', quantityNouns: ['ultrasonic sensor', 'ultrasonic'] },
   { feature: 'motion', pattern: /\b(pir|motion|hc[-\s]?sr501|intruder|presence)\b/i },
   { feature: 'obstacle_avoidance', pattern: /\b(obstacle|ir\s*sensor|infrared\s*sensor|avoidance|collision)\b/i },
-  { feature: 'line_following', pattern: /\b(line\s*follow|line\s*follower|line\s*tracking)\b/i, quantityKey: 'ir_sensors', quantityNouns: ['line sensor', 'reflectance sensor', 'ir sensor', 'obstacle sensor', 'infrared sensor'] },
+  {
+    feature: 'line_following',
+    /*
+     * The trailing `\b` in the old `line\s*follow` alternative could not match
+     * between "follow" and "ing", so "Build a line following robot" scored no
+     * line-following feature at all — and because quantity extraction is gated
+     * on the feature being present, `ir_sensors` was never populated either.
+     * The result was a robot with no sensors, no follow logic and a clean
+     * validation report.
+     *
+     * Two shapes are covered: the noun form ("line follower", "line following",
+     * "line tracking") and the verb form ("follow a black line"), which is how
+     * people actually describe the behaviour.
+     *
+     * This is still keyword matching and it will still miss a phrasing nobody
+     * anticipated. What changed is the consequence: the validator now counts
+     * parts against stated quantities, so a miss like this surfaces as a
+     * blocking `quantity_shortfall` instead of shipping an empty build green.
+     */
+    pattern: /\b(line\s*follow\w*|line\s*track\w*|follow\w*\s+(?:a|an|the)?\s*(?:[a-z]+\s+){0,2}?line)\b/i,
+    quantityKey: 'ir_sensors',
+    quantityNouns: ['line sensor', 'reflectance sensor', 'ir sensor', 'obstacle sensor', 'infrared sensor'],
+  },
   { feature: 'gas_air_quality', pattern: /\b(mq[-\s]?\d|gas|smoke|lpg|air\s*quality|flammable|co2)\b/i },
   { feature: 'soil_moisture', pattern: /\b(soil|moisture|plant|irrigation|garden)\b/i },
   { feature: 'light_sensing', pattern: /\b(ldr|photoresistor|light\s*sensor|brightness|ambient\s*light|cds)\b/i },

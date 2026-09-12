@@ -91,6 +91,7 @@ export type ValidationIssueCode =
   | 'power_budget_exceeded'
   | 'unverified_component'
   | 'requirement_uncovered'
+  | 'quantity_shortfall'
   | 'behavioral_assertion_failed'
   | 'model_review';
 
