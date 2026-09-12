@@ -17,6 +17,13 @@
  *                 leaves it open; injections get a follow-up "apply?" ask
  *   6. done     — a state with every goal met and nothing dangling is `done`
  *   7. pass     — the persisted pass runner works against an in-memory store
+ *   8. act      — the loop's own engineering moves, BEFORE any ask is filed:
+ *                 a drifted design is revalidated by the rule engine, a
+ *                 behavioural promise is re-proven BY CODE (no human verify
+ *                 ask for what the evaluator just proved), and a fresh
+ *                 blocking-issue set gets one bounded deterministic fix pass
+ *                 with a frozen revision. Fingerprints + budgets keep every
+ *                 move idempotent; the flag off restores the ask-only loop.
  *
  * Needs no credentials, no MongoDB and no network. Exits 0 when every check
  * passes, 1 otherwise.
@@ -35,6 +42,11 @@ import { createId } from '@/lib/validation/ids';
 import { composeIntake, deriveDeterministicDoubts, deterministicExpansion, mergeIntakeDoubts } from '@/modules/everflow/intake';
 import { materializeGraph } from '@/modules/everflow/materialize';
 import { evaluateEverflow, isPositiveResponse } from '@/modules/everflow/evaluate';
+import { behaviorFingerprint, designFingerprint, ensureActionState, planActions, repairSignature } from '@/modules/everflow/actions';
+import { resetEnvCache } from '@/lib/validation/env';
+import { SEED_COMPONENTS } from '@/modules/components/catalog';
+import type { ComponentInstance, ComponentSelection } from '@/types/component';
+import type { ValidationResult } from '@/types/validation';
 import {
   planContinuation,
   runEverflowPass,
@@ -600,6 +612,253 @@ async function section7(): Promise<void> {
 }
 
 /* -------------------------------------------------------------------------- */
+/* 8. Act phase — the loop's own engineering moves, before any ask is filed    */
+/* -------------------------------------------------------------------------- */
+
+/** Real catalog-shaped selections (the rule engine reads `instances` properly). */
+function actSelections(): ComponentSelection[] {
+  const esp = getSeedComponent('esp32-devkit-v1')!;
+  const motor = getSeedComponent('dc-motor-generic-6v')!;
+  const instance = (instanceId: string, componentId: string, name: string, index: number, label: string, category: ComponentSelection['category']): ComponentInstance => ({
+    instanceId,
+    componentId,
+    name,
+    index,
+    label,
+    category,
+  });
+  return [
+    {
+      id: 'sel-1',
+      componentId: 'esp32-devkit-v1',
+      name: esp.name,
+      category: esp.category,
+      role: 'controller',
+      quantity: 1,
+      reason: 'Bluetooth + PWM controller',
+      required: true,
+      instances: [instance('mcu-1', 'esp32-devkit-v1', esp.name, 1, 'Controller', esp.category)],
+      source: 'catalog',
+    },
+    {
+      id: 'sel-2',
+      componentId: 'dc-motor-generic-6v',
+      name: motor.name,
+      category: motor.category,
+      role: 'actuator',
+      quantity: 2,
+      reason: 'Drive motors',
+      required: true,
+      instances: [
+        instance('motor-l', 'dc-motor-generic-6v', motor.name, 1, 'Left motor', motor.category),
+        instance('motor-r', 'dc-motor-generic-6v', motor.name, 2, 'Right motor', motor.category),
+      ],
+      source: 'catalog',
+    },
+  ];
+}
+
+/** The completed car with real selections, so the act phase can run the real engine. */
+function actCar(): ProjectState {
+  return completedCar() as ProjectState;
+}
+
+function actStore(state: ProjectState): { store: EverflowStore; events: AgentEvent[]; get(): ProjectState } {
+  let current = structuredClone(state);
+  const appended: AgentEvent[] = [];
+  return {
+    events: appended,
+    get: () => structuredClone(current),
+    store: {
+      async getState() {
+        return structuredClone(current);
+      },
+      async save(_id, patch) {
+        current = { ...current, ...(patch as Partial<ProjectState>) };
+        return structuredClone(current);
+      },
+      async appendEvent(_id, event) {
+        const maxSeq = current.events.reduce((max, entry) => Math.max(max, entry.seq), 0);
+        const full = { ...event, seq: event.seq ?? maxSeq + 1 } as AgentEvent;
+        appended.push(full);
+        current = { ...current, events: [...current.events, full] };
+      },
+    },
+  };
+}
+
+/** Pre-seed the act-phase bookkeeping without running a pass (the loop trusts
+ *  the pipeline's fresh validation as the baseline — this makes that explicit). */
+function seeded(state: ProjectState): ProjectState {
+  return { ...state, everflow: { ...state.everflow, actions: ensureActionState(state) } };
+}
+
+const ACT_PASS_OPTIONS = { ideaGraph: { enabled: false }, actions: { catalog: SEED_COMPONENTS } } as const;
+
+async function section8(): Promise<void> {
+  console.log('\n8. act — the loop moves itself before it asks you');
+
+  const car: ProjectState = { ...actCar(), components: actSelections() };
+
+  /* (a) seeding + stability: a fresh pass trusts the build's validation and does nothing */
+  const stable = actStore(car);
+  await runEverflowPass('evf-verify', 'generation_finalised', stable.store, { ...ACT_PASS_OPTIONS });
+  let now = stable.get();
+  const actions0 = now.everflow?.actions;
+  check('the first pass seeds the act-phase bookkeeping', Boolean(actions0));
+  check(
+    'seeding trusts the pipeline validation as the baseline (zero moves)',
+    (actions0?.history.length ?? -1) === 0 && actions0?.lastValidatedFingerprint === designFingerprint(car) && actions0?.lastReprovedFingerprint === behaviorFingerprint(car),
+  );
+  check('a stable project emits no everflow_move events', !now.events.some((event) => event.type === 'everflow_move'));
+
+  await runEverflowPass('evf-verify', 'manual', stable.store, { ...ACT_PASS_OPTIONS });
+  now = stable.get();
+  check('a second pass over an unchanged design still does nothing', (now.everflow?.actions?.history.length ?? -1) === 0);
+
+  /* (b) revalidate: a canvas-sync-style design edit without revalidation is caught by the loop */
+  const diagram = car.artifacts.diagram!;
+  const canvasEdit: ProjectState = {
+    ...seeded(car),
+    artifacts: {
+      ...car.artifacts,
+      diagram: { ...diagram, stats: { ...diagram.stats, components: diagram.stats.components + 1 } } as unknown as typeof diagram,
+    },
+  };
+  const drift = actStore(canvasEdit);
+  await runEverflowPass('evf-verify', 'canvas_sync', drift.store, { ...ACT_PASS_OPTIONS });
+  const afterDrift = drift.get();
+  const reval = afterDrift.everflow?.actions?.history.find((record) => record.move === 'revalidate');
+  check('design drift triggers the revalidate move', Boolean(reval && reval.outcome !== 'skipped'), reval ? `${reval.outcome}: ${reval.summary}` : 'no record');
+  check('the rule engine really ran (fresh validation carries a real duration)', typeof afterDrift.validation?.durationMs === 'number');
+  check('the bookkeeping now matches the design it judged', afterDrift.everflow?.actions?.lastValidatedFingerprint === designFingerprint(canvasEdit));
+  check(
+    'the move is emitted as an everflow_move event',
+    afterDrift.events.some((event) => event.type === 'everflow_move' && (event.metadata as Record<string, unknown> | undefined)?.move === 'revalidate'),
+  );
+
+  /* (c) reprove: a promise the evaluator can prove BY CODE never reaches a human ask */
+  const staticAssertion: BehavioralAssertion = {
+    id: 'beh-pin-len',
+    title: 'The PIN minimum length is six digits',
+    subject: { kind: 'firmware', property: 'pin_min_length' },
+    operator: 'eq',
+    expected: 6,
+    required: true,
+    derivedFrom: ['six digit pin'],
+  };
+  const proofValidation: ValidationResult = {
+    passed: true,
+    iteration: 0,
+    checkedAt: nowIso(),
+    durationMs: 1,
+    issues: [],
+    checks: [
+      { id: 'behavioral.beh-pin-len', name: staticAssertion.title, domain: 'behavior', status: 'skipped', message: 'Needs a simulator or bench run.', issueIds: [] },
+    ],
+    summary: { errors: 0, warnings: 0, info: 0, checksRun: 1, checksPassed: 0 },
+  };
+  const proofBase: ProjectState = {
+    ...car,
+    requirements: { ...car.requirements!, behavioralSpec: spec([staticAssertion]) },
+    validation: proofValidation,
+  };
+  const code = proofBase.artifacts.code!;
+  const provenFirmware: ProjectState = {
+    ...seeded(proofBase),
+    artifacts: {
+      ...proofBase.artifacts,
+      code: {
+        ...code,
+        files: [{ path: 'sketch.ino', language: 'cpp', content: 'const int PIN_MIN_LENGTH = 6;\nvoid setup() {}\nvoid loop() {}', purpose: 'firmware', generatedBy: 'planner' } as unknown as (typeof code.files)[number]],
+      },
+    },
+  };
+  const proof = actStore(provenFirmware);
+  await runEverflowPass('evf-verify', 'firmware_edit', proof.store, { ...ACT_PASS_OPTIONS });
+  const afterProof = proof.get();
+  const reprove = afterProof.everflow?.actions?.history.find((record) => record.move === 'reprove');
+  check('firmware drift triggers the reprove move', Boolean(reprove && (reprove.outcome === 'changed' || reprove.outcome === 'no_change')), reprove ? `${reprove.outcome}: ${reprove.summary}` : 'no record');
+  const pinCheck = afterProof.validation?.checks.find((entry) => entry.id === 'behavioral.beh-pin-len');
+  check('the promise is now proven BY CODE (per-assertion check passed)', pinCheck?.status === 'passed', pinCheck?.message ?? 'no check');
+  const goalResult = afterProof.everflow?.evaluation?.results.find((result) => result.nodeId === 'ev-goal-behaviour-beh-pin-len');
+  check('the behaviour goal is satisfied without a human', goalResult?.satisfied === true, goalResult?.evidence ?? 'no result');
+  const verifyAsks = afterProof.humanTasks.filter((task) => task.direction === 'ai_to_human' && task.type === 'verify' && task.linkedNodeIds.includes('ev-goal-behaviour-beh-pin-len'));
+  check('no human verify ask was filed for what the loop proved itself', verifyAsks.length === 0, `${verifyAsks.length} ask(s)`);
+  check('the reproof is budgeted on the ledger', (afterProof.everflow?.actions?.reproofsUsed ?? 0) === 1);
+
+  /* (d) repair: a FRESH blocking-issue set gets one bounded deterministic fix pass */
+  const brokenValidation: ValidationResult = {
+    passed: false,
+    iteration: 0,
+    checkedAt: nowIso(),
+    durationMs: 1,
+    issues: [
+      {
+        id: 'lib-dht',
+        code: 'library_missing',
+        severity: 'error',
+        domain: 'libraries',
+        message: 'The firmware includes <DHT.h> but libraries.json does not list it.',
+        target: { artifact: 'libraries', library: 'DHT.h' },
+        fixHint: 'List the DHT library in libraries.json.',
+        autoFixable: true,
+        origin: 'rules',
+      },
+    ],
+    checks: [],
+    summary: { errors: 1, warnings: 0, info: 0, checksRun: 0, checksPassed: 0 },
+  };
+  const broken: ProjectState = { ...seeded(car), validation: brokenValidation, status: 'completed_with_errors' };
+  const repair = actStore(broken);
+  await runEverflowPass('evf-verify', 'manual', repair.store, { ideaGraph: { enabled: false }, actions: { catalog: SEED_COMPONENTS, maxRepairs: 1 } });
+  const afterRepair = repair.get();
+  const repairRecord = afterRepair.everflow?.actions?.history.find((record) => record.move === 'repair');
+  check("a fresh blocking issue set triggers the loop's own fix pass", repairRecord?.outcome === 'changed', repairRecord ? `${repairRecord.outcome}: ${repairRecord.summary}` : 'no record');
+  check(
+    'the repair froze a diffable revision',
+    afterRepair.revision === 2 && afterRepair.revisions.some((entry) => entry.version === 2 && entry.reason === 'targeted_fix' && /act-phase repair/i.test(entry.summary)),
+    `revision ${afterRepair.revision}`,
+  );
+  const listed = (afterRepair.artifacts.libraries?.libraries ?? []).some((entry) => /dht/i.test(`${entry.name} ${'import' in entry ? String(entry.import) : ''}`));
+  check('the missing library is now listed in libraries.json', listed);
+  check('the repair is budgeted on the ledger', (afterRepair.everflow?.actions?.repairsUsed ?? 0) === 1);
+  check('the attempted issue signature is recorded (never retried unchanged)', afterRepair.everflow?.actions?.lastRepairSignature === repairSignature(brokenValidation));
+
+  await runEverflowPass('evf-verify', 'manual', repair.store, { ideaGraph: { enabled: false }, actions: { catalog: SEED_COMPONENTS, maxRepairs: 1 } });
+  const afterSecond = repair.get();
+  const repairRecords = (afterSecond.everflow?.actions?.history ?? []).filter((record) => record.move === 'repair');
+  check('the budget backstop stops a second loop repair (the asks own the rest)', repairRecords.length === 1 && (afterSecond.everflow?.actions?.repairsUsed ?? 0) === 1, `${repairRecords.length} repair record(s)`);
+
+  /* (e) the flag restores the ask-only loop exactly */
+  process.env.WIREUP_ENABLE_EVERFLOW_ACTIONS = 'false';
+  resetEnvCache();
+  const off = actStore(canvasEdit);
+  await runEverflowPass('evf-verify', 'manual', off.store, { ...ACT_PASS_OPTIONS });
+  const afterOff = off.get();
+  check(
+    'with WIREUP_ENABLE_EVERFLOW_ACTIONS=false the loop only asks (no moves, no records)',
+    !afterOff.events.some((event) => event.type === 'everflow_move') && (afterOff.everflow?.actions?.history.length ?? 0) === 0,
+  );
+  process.env.WIREUP_ENABLE_EVERFLOW_ACTIONS = 'true';
+  resetEnvCache();
+
+  /* (f) the move planner is pure and honest about every guard */
+  const opts = { maxRepairs: 2, maxReproofs: 3, maxRevisions: 12 };
+  check('a stable design plans no moves', planActions(car, ensureActionState(car), opts).moves.length === 0);
+  const live = planActions({ ...car, status: 'running' }, ensureActionState(car), opts);
+  check('a live build is never acted on', live.moves.length === 0 && live.description.some((line) => /idle/i.test(line)));
+  const sameSignature = planActions(broken, { ...ensureActionState(car), lastRepairSignature: repairSignature(brokenValidation) }, opts);
+  check('the identical issue set is never retried', !sameSignature.moves.some((move) => move.move === 'repair') && sameSignature.description.some((line) => /never retried/i.test(line)));
+  const budgeted = planActions(broken, { ...ensureActionState(car), repairsUsed: 2 }, opts);
+  check('the budget backstop parks the repair', !budgeted.moves.some((move) => move.move === 'repair') && budgeted.description.some((line) => /budget/i.test(line)));
+  const capped = planActions({ ...broken, revision: 12 }, ensureActionState(car), opts);
+  check('the revision cap blocks a loop repair', !capped.moves.some((move) => move.move === 'repair') && capped.description.some((line) => /revision cap/i.test(line)));
+  const driftedPlan = planActions(canvasEdit, ensureActionState(car), opts);
+  check('design drift plans exactly the revalidate move', driftedPlan.moves.length === 1 && driftedPlan.moves[0].move === 'revalidate');
+}
+
+/* -------------------------------------------------------------------------- */
 
 async function main(): Promise<void> {
   console.log('wireup · everflow verifier (project graph + goal loop + human channel)');
@@ -612,6 +871,7 @@ async function main(): Promise<void> {
   section5();
   await section6();
   await section7();
+  await section8();
 
   console.log('');
   if (failures > 0) {

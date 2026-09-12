@@ -136,13 +136,68 @@ Idempotency is a contract: a goal with an open task never gets a duplicate.
 The task budget (`WIREUP_EVERFLOW_MAX_HUMAN_TASKS`) parks extras *without
 filing* — visible, counted, described in the pass record.
 
-`runEverflowPass` materialises, evaluates, plans, persists (tasks + graph +
-evaluation + an `everflow_pass` event) and reports whether it **progressed**.
+`runEverflowPass` materialises, evaluates, **acts** (see below), plans,
+persists (tasks + graph + evaluation + act-phase ledger + an `everflow_pass`
+event) and reports whether it **progressed**.
 `continueEverflow` runs passes until done, blocked-only-on-humans, or no
 progress — bounded by `WIREUP_EVERFLOW_MAX_PASSES` so a looping state can never
 spin the server. The first pass runs automatically when generation finalises
 (orchestrator → dynamic `import('@/modules/everflow')`), so the loop starts
 without any human prompting.
+
+## The act phase — the loop's own engineering moves
+
+The planner files asks; the **act phase does the work the loop can do
+itself**. It runs inside every pass, after the evaluation and *before* the
+planner — so a human is asked only for what the loop could not close by code.
+Both runners (legacy and StateGraph) execute the identical phase; the graph
+runner walks `materialize → evaluate → foldSteers → act → plan → idea →
+research → persist`, and `pnpm verify:graph` asserts that path and the
+runners' equivalence.
+
+Three moves, in order (`src/modules/everflow/actions.ts`):
+
+| Move | Fires when | What it runs | Guard |
+| --- | --- | --- | --- |
+| `revalidate` | the **design fingerprint** (prompt, requirements, components, hardware plan, pins, wiring, artifacts) drifted since the validation the loop last observed — a canvas sync, a ladder repair, an applied addition — or a finished design has no validation on record | the deterministic rule engine (`validateProject`, engine-only: the model review belongs to the build) | fingerprint; only finished designs (`completed*`) are ever acted on |
+| `reprove` | behavioural promises are unproven (no passed `behavioral.<id>` check) **and** the firmware/spec fingerprint drifted | the behavioural evaluator — static proofs plus the host-shim emulator — merged into the validation via the same `behavioralFindings` helper the validator uses | fingerprint + `WIREUP_EVERFLOW_MAX_REPROOFS` |
+| `repair` | blocking issues remain whose **issue signature** the loop has not already tried | the existing deterministic fixer (the idea ladder's `repairNode` mechanics: changeset applied, dependents re-derived, **revision frozen**, revalidated) | signature (an identical set is never retried) + `WIREUP_EVERFLOW_MAX_REPAIRS` + the revision cap |
+
+The wiring this completed: the evaluator and materialiser judge
+`behaviour_proven` goals from per-assertion `behavioral.<id>` validation
+checks — which the validator never used to write (only issues plus one
+aggregate check), so a promise the emulator had *already proven at build
+time* could never satisfy its goal and always became a human verify ask. The
+validator now emits those checks through the shared `behavioralFindings`
+helper, and the act phase merges with the exact same function, so a mid-loop
+emulator re-run writes precisely what the build-time validator would.
+
+**Bookkeeping** (`state.everflow.actions`, optional so older documents stay
+valid): the two fingerprints, the last repair signature, the two budget
+counters and a capped history of `EverflowActionRecord`s — every move,
+including skips and failures, is recorded and emitted as an `everflow_move`
+event; a repair that changes the design freezes a revision like every other
+design change (nothing is silent). The first pass *seeds* the fingerprints
+from the state it finds: the pipeline's fresh validation is trusted as the
+baseline, and a blocking-issue set the build's own fix loop just exhausted is
+recorded as already-attempted — new evidence (drift) is what unlocks a loop
+repair, never a blind retry.
+
+Invariant check: goals are still judged **by code** (moves consume the
+deterministic engine, evaluator and fixer — no model is ever asked whether a
+goal is met); every move is **offline-complete** (engine-only, host-shim,
+deterministic strategies); moves are **idempotent and bounded** (fingerprints
+guard repeats, budgets backstop them); the agent still **never blocks on a
+human** — acting first is what makes the asks that remain genuinely
+human-shaped; and human input still changes design **only via explicit
+apply** — the act phase repairs the agent's own work, never folds an
+addition into the build.
+
+`WIREUP_ENABLE_EVERFLOW_ACTIONS=false` restores the ask-only loop exactly.
+Proofs: `pnpm verify:everflow` section 8 (seed/stability, drift →
+revalidate, prove-by-code → no verify ask, fresh issue set → budgeted repair
+with a frozen revision, flag off, every planner guard) and `pnpm
+verify:graph` (the act node in the path + runner equivalence).
 
 ## The two columns — never one chat
 

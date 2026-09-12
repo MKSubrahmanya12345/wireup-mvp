@@ -25,7 +25,7 @@ import { nowIso, nowMs } from '@/lib/validation/time';
 
 import { groupIssuesByArtifact, runRuleEngine, summariseIssues } from './rules';
 import { issueSignature, runModelReview } from './llm';
-import { evaluateBehavioral } from '@/modules/behaviour-evaluator';
+import { behavioralFindings, evaluateBehavioral } from '@/modules/behaviour-evaluator';
 import { compileFirmware, formatDiagnostic } from '@/modules/firmware-compiler';
 
 export const ENGINE_VERSION = 'wireup-validator/1.0';
@@ -108,35 +108,18 @@ export async function validateProject(input: ValidatorInput): Promise<ValidatePr
       selections: project.components,
     });
 
-    const behavioralIssueIds: string[] = [];
-    for (const check of report.checks) {
-      if (check.status !== 'failed') continue;
-      const issue: ValidationIssue = {
-        id: `behavioral.${check.assertionId}`,
-        code: 'behavioral_assertion_failed',
-        severity: check.severity,
-        domain: 'behavior',
-        message: `Behavioural assertion failed: ${check.title} (${check.mode})`,
-        details: check.failure ?? `expected ${check.expected}, got ${check.actual}`,
-        target: { artifact: 'code' },
-        fixHint: check.failure ?? `expected ${check.expected}, got ${check.actual}`,
-        autoFixable: true,
-        origin: 'rules',
-      };
-      issues.push(issue);
-      behavioralIssueIds.push(issue.id);
-    }
-
-    checks.push({
-      id: 'behavior.assertions',
-      name: 'Behavioural assertions',
-      domain: 'behavior',
-      status: report.failures > 0 ? 'failed' : report.checks.length > 0 ? 'passed' : 'skipped',
-      message: report.runtimeError
-        ? `${report.checks.length} assertion(s) checked statically; emulation unavailable (${report.runtimeError}).`
-        : `${report.checks.length} assertion(s) checked (${report.checks.filter((c) => c.status === 'passed').length} passed, ${report.failures + report.warnings} failed)${report.runtimeRan ? ', emulation ran' : ''}.`,
-      issueIds: behavioralIssueIds,
-    });
+    /*
+     * The shared findings helper is the single source of this vocabulary:
+     * the aggregate check, one `behavioral.<assertionId>` check per assertion
+     * (what the Everflow evaluator reads to satisfy `behaviour_proven` goals
+     * BY CODE — a promise the emulator proved never needs a human ask), and
+     * one auto-fixable issue per failure for the fixer. The Everflow act
+     * phase merges with the exact same function, so a mid-loop emulator
+     * re-run writes precisely what the build-time validator would.
+     */
+    const findings = behavioralFindings(report);
+    issues.push(...findings.issues);
+    checks.push(...findings.checks);
   }
 
   /* --- 1c. Host compile gate ------------------------------------------------ */

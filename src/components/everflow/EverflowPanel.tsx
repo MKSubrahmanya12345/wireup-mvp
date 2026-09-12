@@ -342,6 +342,8 @@ export function EverflowPanel() {
 
   const evaluation = payload?.evaluation ?? null;
   const line = evaluation ? statusLine(evaluation) : null;
+  const actions = payload?.actions ?? null;
+  const moves = useMemo(() => [...(actions?.history ?? [])].reverse(), [actions]);
   const aiAsks = useMemo(() => payload?.humanTasks.filter((task) => task.direction === 'ai_to_human') ?? [], [payload]);
   const injections = useMemo(() => payload?.humanTasks.filter((task) => task.direction === 'human_to_ai') ?? [], [payload]);
   const openAsks = aiAsks.filter((task) => task.status === 'open');
@@ -367,6 +369,29 @@ export function EverflowPanel() {
             </span>
           </div>
         </div>
+      ) : null}
+
+      {actions && moves.length > 0 ? (
+        <details className="evf-moves">
+          <summary>
+            Loop moves — what the agent did itself before asking you
+            <span className="evf-moves__count">{moves.length}</span>
+            <span className="evf-muted">
+              repairs {actions.repairsUsed} · reproofs {actions.reproofsUsed}
+            </span>
+          </summary>
+          <ul className="evf-moves__list">
+            {moves.map((move) => (
+              <li key={move.id} className={`evf-move evf-move--${move.outcome}`}>
+                <span className="evf-chip">{move.move}</span>
+                <span className={`evf-chip evf-chip--${move.outcome}`}>{move.outcome.replace('_', ' ')}</span>
+                <span className="evf-move__summary">{move.summary}</span>
+                {move.revision ? <code className="evf-move__rev">v{move.revision}</code> : null}
+                <span className="evf-muted">pass {move.pass}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       <div className="evf-grid">

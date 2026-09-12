@@ -15,3 +15,5 @@ export { evaluateBehavioral } from './evaluate';
 export type { BehavioralEvaluationInput } from './evaluate';
 export { compileAndRunFirmware } from './emitter';
 export type { RunFirmwareOptions, RunFirmwareResult, RunScenarioStep } from './emitter';
+export { behavioralFindings } from './findings';
+export type { BehavioralFindings } from './findings';

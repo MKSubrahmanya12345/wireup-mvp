@@ -75,6 +75,21 @@ export {
   type EverflowStore,
   type PlanResult,
 } from './continuation';
+export {
+  behaviorFingerprint,
+  designFingerprint,
+  ensureActionState,
+  mergeBehavioralReport,
+  planActions,
+  repairSignature,
+  runEverflowActions,
+  unprovenPromises,
+  type ActionMove,
+  type ActionPlan,
+  type ActOptions,
+  type ActResult,
+} from './actions';
+export { passEventMessage, passEventMetadata, type PassSummaryInput } from './pass-summary';
 export { runIdeaMoves, type IdeaMovesOptions, type IdeaMovesResult } from './idea-moves';
 export { buildPassGraph, runPassGraph, type PassGraphOptions, type PassGraphResult, type PassState, type PassStore } from './pass-graph';
 
