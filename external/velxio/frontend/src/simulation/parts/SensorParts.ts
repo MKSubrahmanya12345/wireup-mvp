@@ -248,7 +248,7 @@ PartSimulationRegistry.register('flame-sensor', {
  * Every 1000ms: briefly pulls OUT HIGH for 100ms, then LOW again.
  */
 PartSimulationRegistry.register('heart-beat-sensor', {
-  attachEvents: (element, simulator, getArduinoPinHelper) => {
+  attachEvents: (_element, simulator, getArduinoPinHelper) => {
     const pin = getArduinoPinHelper('OUT');
     if (pin === null) return () => {};
 
@@ -540,17 +540,29 @@ export function createNeopixelDecoder(
 // ─── LED Ring (WS2812B NeoPixel ring) ────────────────────────────────────────
 
 PartSimulationRegistry.register('led-ring', {
-  attachEvents: (element, simulator, getArduinoPinHelper) => {
+  attachEvents: (element, simulator, getArduinoPinHelper, componentId) => {
     const pinDIN = getArduinoPinHelper('DIN');
     if (pinDIN === null) return () => {};
 
     const el = element as any;
+
+    // The ring keeps its pixel colours in private elements — `setPixel` is the
+    // only way they are ever written, and nothing can read them back. Mirror
+    // the frame the decoder drew into the transient render store so the 3D view
+    // can show the same pixels the ring does (pre-filled: a hole in the array
+    // would shift every later pixel).
+    const count = Number(el.pixels ?? 8) || 8;
+    const frame: { r: number; g: number; b: number }[] = Array.from({ length: count }, () => ({ r: 0, g: 0, b: 0 }));
 
     const unsub = createNeopixelDecoder(simulator as any, pinDIN, (index, r, g, b) => {
       try {
         el.setPixel(index, { r, g, b });
       } catch (_) {
         // setPixel not yet available (element not upgraded) — ignore
+      }
+      if (componentId && index >= 0 && index < frame.length) {
+        frame[index] = { r, g, b };
+        usePartRenderStore.getState().setValue(componentId, { pixels: frame });
       }
     });
 
@@ -561,20 +573,28 @@ PartSimulationRegistry.register('led-ring', {
 // ─── NeoPixel Matrix (WS2812B matrix grid) ────────────────────────────────────
 
 PartSimulationRegistry.register('neopixel-matrix', {
-  attachEvents: (element, simulator, getArduinoPinHelper) => {
+  attachEvents: (element, simulator, getArduinoPinHelper, componentId) => {
     const pinDIN = getArduinoPinHelper('DIN');
     if (pinDIN === null) return () => {};
 
     const el = element as any;
+    // Same mirror as the ring: the matrix's pixel colours are written through
+    // `setPixel` into private elements and are not readable as a property.
+    const cols: number = Number(el.cols ?? 8) || 8;
+    const rows: number = Number(el.rows ?? 8) || 8;
+    const frame: { r: number; g: number; b: number }[] = Array.from({ length: rows * cols }, () => ({ r: 0, g: 0, b: 0 }));
 
     const unsub = createNeopixelDecoder(simulator as any, pinDIN, (index, r, g, b) => {
-      const cols: number = el.cols ?? 8;
       const row = Math.floor(index / cols);
       const col = index % cols;
       try {
         el.setPixel(row, col, { r, g, b });
       } catch (_) {
         // ignore
+      }
+      if (componentId && index >= 0 && index < frame.length) {
+        frame[index] = { r, g, b };
+        usePartRenderStore.getState().setValue(componentId, { pixels: frame });
       }
     });
 

@@ -37,6 +37,7 @@
  */
 
 import type { CadComponentSpec } from '../scene3d/cadTypes';
+import { usePartRenderStore } from '../store/usePartRenderStore';
 
 interface ElementPin {
   name: string;
@@ -119,6 +120,7 @@ export class CadBenchPartElement extends HTMLElement {
   private loadedKey = '';
   private waiting = false;
   private pins: ElementPin[] = [];
+  private liveTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     super();
@@ -133,8 +135,17 @@ export class CadBenchPartElement extends HTMLElement {
         color: #0b1220; background: #f4c95d; opacity: .92;
         pointer-events: none; white-space: nowrap;
       }
+      .live-badge {
+        position: absolute; left: 1px; bottom: 0;
+        font: 600 7px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: .02em; padding: 0 3px; border-radius: 3px;
+        color: #04121c; background: #7fd1ff; opacity: .95;
+        pointer-events: none; white-space: nowrap; display: none;
+      }
+      .live-badge.on { display: inline-block; }
       .loading { font: 500 9px/1.4 ui-sans-serif, system-ui, sans-serif; color: #94a3b8; }
-    </style><div class="sym"></div>`;
+    </style><div class="sym"></div><span class="live-badge"></span>`;
+    this.startLiveState();
   }
 
   /** The catalog key for this instance — set by the canvas from the
@@ -156,6 +167,60 @@ export class CadBenchPartElement extends HTMLElement {
 
   connectedCallback(): void {
     this.ensureSpec();
+    this.startLiveState();
+  }
+
+  disconnectedCallback(): void {
+    this.stopLiveState();
+  }
+
+  /**
+   * Live state, shown on the 2D symbol too.
+   *
+   * A CAD bench part has no electrical model, but it is still a device on a
+   * bench whose pins the sketch drives — `simulation/liveState` traces those
+   * drives and mirrors the result into the transient render store. This badge
+   * is that state, so the canvas and the 3D view never disagree: a pump that is
+   * running says so in both places, and a part with no live net says nothing.
+   *
+   * Polled on an interval rather than subscribed: the store is written by a
+   * 90 ms watcher, the CSS class only changes when the text does, and no React
+   * render is involved.
+   */
+  private startLiveState(): void {
+    if (this.liveTimer !== null) return;
+    this.liveTimer = setInterval(() => this.refreshLiveState(), 200);
+    this.refreshLiveState();
+  }
+
+  private stopLiveState(): void {
+    if (this.liveTimer !== null) {
+      clearInterval(this.liveTimer);
+      this.liveTimer = null;
+    }
+  }
+
+  /** Text for the badge, from the measured state and nothing else. */
+  private liveText(): string {
+    const componentId = this.closest('[data-component-id]')?.getAttribute('data-component-id') ?? '';
+    const values = componentId ? usePartRenderStore.getState().values[componentId] : undefined;
+    if (!values) return '';
+    const num = (key: string): number => (typeof values[key] === 'number' ? (values[key] as number) : 0);
+    const rpm = num('rpm');
+    if (rpm > 0) return `${Math.abs(rpm)} rpm`;
+    if (num('stepAngle') > 0) return `${num('stepAngle').toFixed(1)}°`;
+    if (num('bus') > 0.15) return 'DATA';
+    if (num('triggered') > 0) return 'ON';
+    if (num('drive') > 0) return 'ENERGISED';
+    return '';
+  }
+
+  private refreshLiveState(): void {
+    const badge = this.root.querySelector('.live-badge');
+    if (!(badge instanceof HTMLElement)) return;
+    const text = this.liveText();
+    if (badge.textContent !== text) badge.textContent = text;
+    badge.classList.toggle('on', text.length > 0);
   }
 
   attributeChangedCallback(name: string): void {

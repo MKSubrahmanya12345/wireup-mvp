@@ -5,6 +5,7 @@ import {
   getBoardSimulator,
 } from '../../store/useSimulatorStore';
 import { getBoardBuiltins, getProBoard } from '../../lib/proBoardRegistry';
+import { startPartActivityWatch } from '../../simulation/liveState/partActivity';
 import { useElectricalStore } from '../../store/useElectricalStore';
 import { openDeviceGateway } from '../../lib/openDeviceGateway';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -580,6 +581,14 @@ export const SimulatorCanvas = ({ headerSlot }: SimulatorCanvasProps = {}) => {
   useEffect(() => {
     initSimulator();
   }, [initSimulator]);
+
+  // Live state for the parts the emulator has no model for (CAD-bench parts:
+  // pumps, fans, motors, drivers, relays, radios, regulators …). The watcher
+  // traces each part's own terminals through the wire graph to whatever is
+  // driving them and mirrors the result into the transient render store, where
+  // the 3D view (and the part's own 2D symbol) read it. Started once per canvas,
+  // stopped on unmount; it holds no state of its own beyond change detection.
+  useEffect(() => startPartActivityWatch(), []);
 
   // Runtime parts (pots, switches, sensor panels) emit
   // `velxio:property-change` instead of writing the store directly — one

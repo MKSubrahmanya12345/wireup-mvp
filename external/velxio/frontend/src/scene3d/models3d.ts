@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box3, Group, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { reportModels } from './live/intakeReport';
 
 /**
  * models3d — the CAD-asset side of the new 3D view.
@@ -48,6 +49,15 @@ export interface LoadedModel {
   pins: Map<string, Vector3>;
   /** Natural size in world units (mm). */
   size: Vector3;
+  /**
+   * The recentring offset applied to the raw asset, so a point authored in the
+   * ASSET's own frame (the CAD spec's millimetres, for a generated model) maps
+   * to the group's frame as `p - recenter`. Live surfaces anchored in the spec
+   * frame need it; see `scene3d/live/anchors.ts`.
+   */
+  recenter: Vector3;
+  /** Bounding box of the group in its own frame (origin-centred). */
+  bounds: Box3;
 }
 
 let cache: CadManifest | null = null;
@@ -106,7 +116,8 @@ async function loadModel(key: string, def: CadModelDef): Promise<LoadedModel | n
       }
     });
 
-    const loaded: LoadedModel = { def, group: group.clone(), pins, size };
+    const bounds = new Box3().setFromObject(group);
+    const loaded: LoadedModel = { def, group: group.clone(), pins, size, recenter: center.clone(), bounds };
     groupCache.set(key, loaded);
     return loaded;
   } catch (err) {
@@ -129,12 +140,21 @@ export function isModelRegistered(key: string): boolean {
 export async function loadModelsForKeys(keys: string[]): Promise<Map<string, LoadedModel>> {
   await loadCadManifest();
   const out = new Map<string, LoadedModel>();
+  const failed: string[] = [];
   for (const key of keys) {
     const def = getModelDef(key);
-    if (!def) continue;
+    if (!def) {
+      failed.push(key);
+      continue;
+    }
     const model = await loadModel(key, def);
     if (model) out.set(key, model);
+    else failed.push(key);
   }
+  // Every key the manifest does not cover, or whose GLB would not load. The
+  // scene falls back to the parametric assembly for these; what is left after
+  // that is reported by the scene itself (a part with no body).
+  reportModels({ glb: [...out.keys()].sort(), missing: failed.sort() });
   return out;
 }
 

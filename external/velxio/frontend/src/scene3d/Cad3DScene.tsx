@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { Grid, OrbitControls, Text, TransformControls } from '@react-three/drei';
 import { CatmullRomCurve3, TubeGeometry, Vector3 } from 'three';
 import type { Group as ThreeGroup } from 'three';
 import { useSimulatorStore } from '../store/useSimulatorStore';
-import { usePartRenderStore } from '../store/usePartRenderStore';
 import { useCadModels, resolvePinWorld, type LoadedModel } from './models3d';
-import { useParametricModels } from './cadCatalog';
+import { useCadSpec, useParametricModels } from './cadCatalog';
+import { LivePartSurfaces } from './live/LivePartSurfaces';
 import { OrientationGizmo } from './OrientationGizmo';
+import { IntakeHud } from './live/IntakeHud';
+import { reportInstances, reportWires } from './live/intakeReport';
 import { layoutInstances, type BenchInstance, type InstancePlace } from './placement';
 
 /**
@@ -33,9 +35,13 @@ import { layoutInstances, type BenchInstance, type InstancePlace } from './place
  * Placement (bench anchor, rows, parts resting on the grid) lives in
  * `./placement` and is unit-tested independently of this scene.
  *
- * Animated values (servo horn angle, LED emissive) are read imperatively from
- * usePartRenderStore inside useFrame — never reactively, so a 60 Hz write
- * does not re-render this scene.
+ * Live state (display contents, LED and pixel glow, horn and shaft angles,
+ * sensor readouts) is NOT implemented here: each part's group mounts
+ * `<LivePartSurfaces>`, which renders whatever `/live-surfaces.json` declares
+ * for that key, reading the live 2D element / render store / property bag / pin
+ * state imperatively in its own `useFrame` — never reactively, so a 60 Hz write
+ * from a running sketch does not re-render this scene. This file contains no
+ * per-part animation code at all.
  *
  * Double-click a part to attach a Blender-style move gizmo (TransformControls,
  * translate mode). Releasing the drag writes the new mm position into that
@@ -80,17 +86,6 @@ export function cadBenchKey(metadataId: string): string | null {
     : null;
 }
 
-/** Find the rotating servo horn node in a model (name is not in the pin
- *  contract, so try a few conventional names). Returns null if absent. */
-function findServoHorn(scene: ThreeGroup): { rotation?: { y: number } } | null {
-  const names = ['servo_horn', 'servoHorn', 'Servo_Horn', 'SERVO_HORN', 'horn', 'Horn', 'arm', 'Arm'];
-  for (const n of names) {
-    const o = scene.getObjectByName(n) as unknown as { rotation?: { y: number } } | null;
-    if (o && o.rotation) return o;
-  }
-  return null;
-}
-
 /** Render one model instance on the bench, animating its live parts. */
 function PartMesh({
   id,
@@ -111,16 +106,10 @@ function PartMesh({
 }) {
   // Independent clone per instance so multiple same-kind parts don't share.
   const scene = useMemo(() => model.group.clone(), [model]);
-  const horn = useMemo(() => findServoHorn(scene), [scene]);
+  // The CAD spec is only needed to place live surfaces (screen, LEDs, knobs);
+  // a part with no spec simply renders as geometry, exactly as before.
+  const spec = useCadSpec(place.key);
   const groupRef = useRef<ThreeGroup>(null);
-
-  // Drive the servo horn rotation from the store value each frame (imperative).
-  useFrame(() => {
-    const v = usePartRenderStore.getState().values[id];
-    if (horn && horn.rotation && v?.angle !== undefined) {
-      horn.rotation.y = (v.angle * Math.PI) / 180;
-    }
-  }, 0);
 
   return (
     <group
@@ -138,6 +127,19 @@ function PartMesh({
       }}
     >
       <primitive object={scene} />
+      {/* Live state, straight off the 2D element this instance is running on
+          the (hidden but mounted) canvas: LCD text, OLED/TFT framebuffers,
+          LED glow, servo horn, segment digits, sensor readouts. Data-driven
+          from /live-surfaces.json — no per-part code here. */}
+      <LivePartSurfaces
+        componentId={id}
+        catalogKey={place.key}
+        selected={selected}
+        model={model}
+        root={scene}
+        bounds={model.bounds}
+        {...(spec ? { spec } : {})}
+      />
     </group>
   );
 }
@@ -226,6 +228,39 @@ function Scene({
 
   const componentIds = useMemo(() => new Set(components.map((c) => c.id)), [components]);
 
+  const visibleWires = useMemo(() => {
+    const out: { id: string; a: Vector3; b: Vector3; color: string }[] = [];
+    for (const w of wires) {
+      if (w.bb) continue;
+      const a = endpointsToWorld(w.start.componentId, w.start.pinName, places, models);
+      const b = endpointsToWorld(w.end.componentId, w.end.pinName, places, models);
+      if (a && b) out.push({ id: w.id, a, b, color: w.color });
+    }
+    return out;
+  }, [wires, places, models]);
+
+  /*
+   * Intake report: what this scene received and what it could not draw.
+   *
+   * `layoutInstances` keeps every instance, but an instance whose key has no
+   * body (no GLB and no catalog spec) is skipped when rendering — a silent drop
+   * that used to look identical to a working bench. The same applies to a wire
+   * whose endpoint has no pin anchor in 3D. Both are reported here, once per
+   * change, and surfaced by the HUD.
+   */
+  useEffect(() => {
+    if (!ready) return;
+    reportInstances({
+      total: instances.length,
+      rendered: visibleInstances.length,
+      withoutModel: instances
+        .filter((instance) => !models.get(instance.key))
+        .map((instance) => ({ id: instance.id, key: instance.key })),
+    });
+    const partWires = wires.filter((wire) => !wire.bb);
+    reportWires({ total: partWires.length, drawn: visibleWires.length });
+  }, [ready, instances, visibleInstances, models, wires, visibleWires]);
+
   const groupRefs = useRef(new Map<string, ThreeGroup>());
   // `selectedGroup` (the TransformControls target) is kept in real React
   // state rather than read from `groupRefs.current` during render — reading a
@@ -276,17 +311,6 @@ function Scene({
     },
     [components, pushCommand],
   );
-
-  const visibleWires = useMemo(() => {
-    const out: { id: string; a: Vector3; b: Vector3; color: string }[] = [];
-    for (const w of wires) {
-      if (w.bb) continue;
-      const a = endpointsToWorld(w.start.componentId, w.start.pinName, places, models);
-      const b = endpointsToWorld(w.end.componentId, w.end.pinName, places, models);
-      if (a && b) out.push({ id: w.id, a, b, color: w.color });
-    }
-    return out;
-  }, [wires, places, models]);
 
   const isEmpty = ready && visibleInstances.length === 0;
 
@@ -371,6 +395,7 @@ function endpointsToWorld(
 export default function Cad3DScene() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
     <Canvas
       dpr={[1, 2]}
       camera={{ position: [300, 600, 500], fov: 45, near: 0.5, far: 100000 }}
@@ -381,5 +406,9 @@ export default function Cad3DScene() {
       <color attach="background" args={['#101318']} />
       <Scene selectedId={selectedId} setSelectedId={setSelectedId} />
     </Canvas>
+      {/* Outside the canvas on purpose: a bench that fails to load still has to
+          be able to tell you what it is missing. */}
+      <IntakeHud />
+    </div>
   );
 }

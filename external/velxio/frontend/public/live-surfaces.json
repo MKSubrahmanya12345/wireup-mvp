@@ -1,0 +1,3519 @@
+{
+ "version": 1,
+ "generatedAt": "2026-09-12T02:55:35.845Z",
+ "parts": {
+  "7segment": {
+   "tag": "wokwi-7segment",
+   "name": "7-segment display",
+   "surfaces": [
+    {
+     "id": "panel",
+     "kind": "segments",
+     "anchor": {
+      "frame": "spec",
+      "feature": "glass_panel",
+      "face": "top"
+     },
+     "display": {
+      "values": "values",
+      "digits": "digits",
+      "colon": "colon",
+      "colonValue": "colonValue"
+     },
+     "style": {
+      "onColor": "#ff453a",
+      "offColor": "#1b1f26"
+     }
+    }
+   ]
+  },
+  "analog-joystick": {
+   "tag": "wokwi-analog-joystick",
+   "name": "Analog joystick (2 axis)",
+   "surfaces": [
+    {
+     "id": "stick-press",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "thumb_stick"
+     },
+     "motion": {
+      "mode": "press",
+      "props": [
+       "pressed"
+      ],
+      "range": [
+       0,
+       -1.2
+      ],
+      "axis": "y"
+     }
+    },
+    {
+     "id": "axes",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "thumb_stick",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "X",
+        "prop": "xValue"
+       },
+       {
+        "label": "Y",
+        "prop": "yValue"
+       },
+       {
+        "label": "SW",
+        "prop": "pressed"
+       }
+      ]
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "bh1750-light-sensor": {
+   "tag": "velxio-cad-bench-part",
+   "name": "BH1750 light sensor",
+   "surfaces": [
+    {
+     "id": "addressed",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "primary_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "primary_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Bus",
+        "prop": "bus",
+        "precision": 2
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "bldc-motor-2205-2300kv": {
+   "tag": "velxio-cad-bench-part",
+   "name": "BLDC motor (2205, 2300 kV)",
+   "surfaces": [
+    {
+     "id": "bell",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bell"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "shaft",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "prop_shaft"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "nut",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "prop_nut"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "base_plate",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "bldc-motor-2212-1000kv": {
+   "tag": "velxio-cad-bench-part",
+   "name": "BLDC motor (2212, 1000 kV)",
+   "surfaces": [
+    {
+     "id": "bell",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "blower-fan-5v-radial": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Blower fan (5 V radial)",
+   "surfaces": [
+    {
+     "id": "rotor",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "bme280-environmental": {
+   "tag": "velxio-cad-bench-part",
+   "name": "BME280 environmental sensor",
+   "surfaces": [
+    {
+     "id": "addressed",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bme280_metal_can"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bme280_metal_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Bus",
+        "prop": "bus",
+        "precision": 2
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "breadboard-power-module-mb102": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Breadboard power module (MB102)",
+   "surfaces": [
+    {
+     "id": "rails-live",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "ams1117_5v"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "power_jumpers",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "bts7960-motor-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "BTS7960 high-current driver",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Dir",
+        "prop": "direction"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "buck-converter-lm2596": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Buck converter (LM2596)",
+   "surfaces": [
+    {
+     "id": "converting",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "lm2596_regulator_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "lm2596_regulator_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "buzzer": {
+   "tag": "wokwi-buzzer",
+   "name": "Buzzer (active + passive)",
+   "surfaces": [
+    {
+     "id": "port",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sound_port"
+     },
+     "emissive": {
+      "mode": "boolean",
+      "props": [
+       "playing"
+      ],
+      "color": "#ffd60a",
+      "max": 0.6
+     }
+    }
+   ]
+  },
+  "dc-motor-generic-6v": {
+   "tag": "velxio-cad-bench-part",
+   "name": "DC motor (6 V, gearbox)",
+   "surfaces": [
+    {
+     "id": "shaft-a",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft_left"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "shaft-b",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft_right"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       },
+       {
+        "label": "Dir",
+        "prop": "direction"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "dht11-temperature-humidity": {
+   "tag": "velxio-cad-bench-part",
+   "name": "DHT11 temperature/humidity",
+   "surfaces": [
+    {
+     "id": "reading",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "blue_vented_dht11_body"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "blue_vented_dht11_body",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "dht22": {
+   "tag": "wokwi-dht22",
+   "name": "DHT22 temperature/humidity",
+   "surfaces": [
+    {
+     "id": "reading",
+     "kind": "readout",
+     "anchor": {
+      "frame": "model",
+      "bodyTop": true
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "T",
+        "prop": "temperature",
+        "unit": "°C",
+        "precision": 1
+       },
+       {
+        "label": "RH",
+        "prop": "humidity",
+        "unit": "%",
+        "precision": 1
+       }
+      ]
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "drv8825-stepper-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "DRV8825 stepper driver",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "drv8833-motor-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "DRV8833 motor driver",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "drv8833_qfn"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "drv8833_qfn",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "ds18b20-temperature": {
+   "tag": "velxio-cad-bench-part",
+   "name": "DS18B20 temperature probe",
+   "surfaces": [
+    {
+     "id": "addressed",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "to92_body"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "to92_body",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "ds3231": {
+   "tag": "velxio-ds3231",
+   "name": "RTC DS3231",
+   "surfaces": [
+    {
+     "id": "reading",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "T",
+        "prop": "temperature",
+        "unit": "°C",
+        "precision": 1
+       }
+      ]
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "esc-30a-bldc": {
+   "tag": "velxio-cad-bench-part",
+   "name": "ESC 30 A (BLDC)",
+   "surfaces": [
+    {
+     "id": "armed",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "esc_pcb"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "esc_pcb",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "esp8266-esp01-wifi": {
+   "tag": "velxio-cad-bench-part",
+   "name": "ESP-01 WiFi module",
+   "surfaces": [
+    {
+     "id": "addressed",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "esp8266_shield_can"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "esp8266_shield_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Bus",
+        "prop": "bus",
+        "precision": 2
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "fan-12v-4pin-pwm": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Fan (12 V, 4-pin PWM)",
+   "surfaces": [
+    {
+     "id": "rotor",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "blade_ring"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "hub",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "hub"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "hub",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "fan-5v-40mm": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Fan (5 V, 40 mm)",
+   "surfaces": [
+    {
+     "id": "rotor",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "blade_ring"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "hub",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "hub"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "hub",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "gas-sensor": {
+   "tag": "wokwi-gas-sensor",
+   "name": "Gas sensor (MQ-2)",
+   "surfaces": [
+    {
+     "id": "indicator",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "mq2_heater_can"
+     },
+     "emissive": {
+      "mode": "channels",
+      "props": [
+       "ledPower",
+       "ledD0"
+      ],
+      "colors": [
+       "#34c759",
+       "#ff9f0a"
+      ],
+      "max": 0.5
+     }
+    }
+   ]
+  },
+  "gps-neo6m": {
+   "tag": "velxio-gps-neo6m",
+   "name": "GPS NEO-6M",
+   "surfaces": [
+    {
+     "id": "fix",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Lat",
+        "prop": "lat",
+        "unit": "°",
+        "precision": 4
+       },
+       {
+        "label": "Lng",
+        "prop": "lng",
+        "unit": "°",
+        "precision": 4
+       },
+       {
+        "label": "Spd",
+        "prop": "speed",
+        "unit": "kn",
+        "precision": 1
+       }
+      ]
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "hc-05-bluetooth": {
+   "tag": "velxio-cad-bench-part",
+   "name": "HC-05 Bluetooth module",
+   "surfaces": [
+    {
+     "id": "traffic",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "status_led"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "triggered"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#ffb340",
+      "max": 0.9
+     }
+    },
+    {
+     "id": "powered",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bc417_radio_module"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.3
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bc417_radio_module",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Bus",
+        "prop": "bus",
+        "precision": 2
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "hc-06-bluetooth": {
+   "tag": "velxio-cad-bench-part",
+   "name": "HC-06 Bluetooth module",
+   "surfaces": [
+    {
+     "id": "traffic",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "status_led"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "triggered"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#ffb340",
+      "max": 0.9
+     }
+    },
+    {
+     "id": "powered",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bc417_radio_module"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.3
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bc417_radio_module",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Bus",
+        "prop": "bus",
+        "precision": 2
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "ili9341": {
+   "tag": "wokwi-ili9341",
+   "name": "TFT ILI9341 (240 × 320)",
+   "surfaces": [
+    {
+     "id": "glass",
+     "kind": "canvas",
+     "anchor": {
+      "frame": "spec",
+      "feature": "glass_panel",
+      "face": "top"
+     },
+     "display": {
+      "canvas": "canvas"
+     }
+    }
+   ]
+  },
+  "ina219-current-sensor": {
+   "tag": "velxio-cad-bench-part",
+   "name": "INA219 current sensor",
+   "surfaces": [
+    {
+     "id": "measuring",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "primary_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "primary_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "ir-obstacle-sensor": {
+   "tag": "velxio-cad-bench-part",
+   "name": "IR obstacle sensor",
+   "surfaces": [
+    {
+     "id": "emitter",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "ir_led_emitter"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.7
+     }
+    },
+    {
+     "id": "detection",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "photodiode_receiver"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "triggered"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#ffb340",
+      "max": 0.8
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "comparator_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "ky-040": {
+   "tag": "wokwi-ky-040",
+   "name": "Rotary encoder (KY-040)",
+   "surfaces": [
+    {
+     "id": "knob",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "encoder_shaft"
+     },
+     "motion": {
+      "mode": "angle",
+      "props": [
+       "angle"
+      ],
+      "valueRange": [
+       0,
+       360
+      ],
+      "range": [
+       0,
+       360
+      ],
+      "axis": "y"
+     }
+    }
+   ]
+  },
+  "l293d-motor-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "L293D motor driver",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "l298n-motor-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "L298N dual H-bridge",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Dir",
+        "prop": "direction"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "lcd1602": {
+   "tag": "wokwi-lcd1602",
+   "name": "LCD 1602 (I2C backpack)",
+   "surfaces": [
+    {
+     "id": "glass",
+     "kind": "text-grid",
+     "anchor": {
+      "frame": "spec",
+      "feature": "green_lcd_glass",
+      "face": "top"
+     },
+     "display": {
+      "characters": "characters",
+      "font": "font",
+      "backlight": "backlight",
+      "cursor": "cursor",
+      "cursorX": "cursorX",
+      "cursorY": "cursorY",
+      "cols": 16,
+      "rows": 2
+     },
+     "style": {
+      "textColor": "#0b1a12",
+      "offColor": "#2f6b4a",
+      "backlightColor": "#3ddc84"
+     }
+    }
+   ]
+  },
+  "lcd2004": {
+   "tag": "wokwi-lcd2004",
+   "name": "LCD 2004",
+   "surfaces": [
+    {
+     "id": "glass",
+     "kind": "text-grid",
+     "anchor": {
+      "frame": "spec",
+      "feature": "glass_panel",
+      "face": "top"
+     },
+     "display": {
+      "characters": "characters",
+      "font": "font",
+      "backlight": "backlight",
+      "cursor": "cursor",
+      "cursorX": "cursorX",
+      "cursorY": "cursorY",
+      "cols": 20,
+      "rows": 4
+     },
+     "style": {
+      "textColor": "#0b1a12",
+      "offColor": "#2f6b4a",
+      "backlightColor": "#3ddc84"
+     }
+    }
+   ]
+  },
+  "ldr-photoresistor": {
+   "tag": "velxio-cad-bench-part",
+   "name": "LDR photoresistor",
+   "surfaces": [
+    {
+     "id": "conducting",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "photoresistor_disc"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.3
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "photoresistor_disc",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "led": {
+   "tag": "wokwi-led",
+   "name": "LED (5 mm)",
+   "surfaces": [
+    {
+     "id": "lens",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "diffused_5mm_epoxy_lens"
+     },
+     "emissive": {
+      "mode": "brightness",
+      "props": [
+       "brightness"
+      ],
+      "color": "#ff3b30",
+      "colorProp": "color"
+     }
+    }
+   ]
+  },
+  "led-bar-graph": {
+   "tag": "wokwi-led-bar-graph",
+   "name": "LED bar graph (10)",
+   "surfaces": [
+    {
+     "id": "panel",
+     "kind": "bar-graph",
+     "anchor": {
+      "frame": "spec",
+      "feature": "glass_panel",
+      "face": "top"
+     },
+     "display": {
+      "values": "values"
+     },
+     "style": {
+      "onColor": "#ff9f0a",
+      "offColor": "#1b1f26"
+     }
+    }
+   ]
+  },
+  "led-ring": {
+   "tag": "wokwi-led-ring",
+   "name": "LED ring (8 × WS2812B)",
+   "surfaces": [
+    {
+     "id": "ring",
+     "kind": "rgb-pixels",
+     "anchor": {
+      "frame": "spec",
+      "feature": "actuator_body",
+      "face": "top"
+     },
+     "display": {
+      "pixels": true,
+      "layout": "ring",
+      "rows": 1,
+      "cols": 1
+     },
+     "style": {
+      "glowMm": 1.2
+     }
+    }
+   ]
+  },
+  "limit-switch-microswitch": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Limit switch (microswitch)",
+   "surfaces": [
+    {
+     "id": "contact",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "microswitch_case"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.35
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "microswitch_case",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "linear-actuator-12v-100mm": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Linear actuator (12 V, 100 mm)",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "actuator_body"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "actuator_body",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Dir",
+        "prop": "direction"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "logic-level-shifter-4ch": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Logic level shifter (4 channel)",
+   "surfaces": [
+    {
+     "id": "rail",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bss138_array"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "bss138_array",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "mosfet-module-irf520": {
+   "tag": "velxio-cad-bench-part",
+   "name": "MOSFET module (IRF520)",
+   "surfaces": [
+    {
+     "id": "conducting",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "n20-gear-motor-encoder": {
+   "tag": "velxio-cad-bench-part",
+   "name": "N20 gear motor with encoder",
+   "surfaces": [
+    {
+     "id": "shaft",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "magnet",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "encoder_magnet"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "gearbox",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       },
+       {
+        "label": "Dir",
+        "prop": "direction"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "neopixel": {
+   "tag": "wokwi-neopixel",
+   "name": "NeoPixel strip (WS2812B)",
+   "surfaces": [
+    {
+     "id": "pixel-1",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "ws2812b_5050_pixel_1"
+     },
+     "emissive": {
+      "mode": "rgb01",
+      "props": [
+       "r",
+       "g",
+       "b"
+      ]
+     }
+    },
+    {
+     "id": "pixel-2",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "ws2812b_5050_pixel_2"
+     },
+     "emissive": {
+      "mode": "rgb01",
+      "props": [
+       "r",
+       "g",
+       "b"
+      ]
+     }
+    },
+    {
+     "id": "pixel-3",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "ws2812b_5050_pixel_3"
+     },
+     "emissive": {
+      "mode": "rgb01",
+      "props": [
+       "r",
+       "g",
+       "b"
+      ]
+     }
+    }
+   ]
+  },
+  "neopixel-matrix": {
+   "tag": "wokwi-neopixel-matrix",
+   "name": "NeoPixel matrix (8 × 8)",
+   "surfaces": [
+    {
+     "id": "matrix",
+     "kind": "rgb-pixels",
+     "anchor": {
+      "frame": "spec",
+      "feature": "actuator_body",
+      "face": "top"
+     },
+     "display": {
+      "pixels": true,
+      "layout": "matrix",
+      "rows": 8,
+      "cols": 8
+     },
+     "style": {
+      "glowMm": 0.6
+     }
+    }
+   ]
+  },
+  "ntc-temperature-sensor": {
+   "tag": "wokwi-ntc-temperature-sensor",
+   "name": "NTC thermistor module",
+   "surfaces": [
+    {
+     "id": "reading",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "T",
+        "prop": "bag:temperature",
+        "unit": "°C",
+        "precision": 1
+       }
+      ]
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "pca9685-servo-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "PCA9685 16-channel PWM driver",
+   "surfaces": [
+    {
+     "id": "addressed",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "pca9685_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "pca9685_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "peristaltic-pump-12v": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Peristaltic pump (12 V)",
+   "surfaces": [
+    {
+     "id": "roller-head",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       },
+       {
+        "label": "Speed",
+        "prop": "rpm",
+        "unit": "rpm"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "pir-motion-sensor": {
+   "tag": "wokwi-pir-motion-sensor",
+   "name": "PIR motion sensor (HC-SR501)",
+   "surfaces": [
+    {
+     "id": "motion",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "fresnel_dome"
+     },
+     "emissive": {
+      "mode": "boolean",
+      "props": [
+       "pin:OUT"
+      ],
+      "color": "#ff453a",
+      "max": 0.8
+     }
+    }
+   ]
+  },
+  "potentiometer": {
+   "tag": "wokwi-potentiometer",
+   "name": "Potentiometer (10k)",
+   "surfaces": [
+    {
+     "id": "shaft",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "knurled_shaft"
+     },
+     "motion": {
+      "mode": "angle",
+      "props": [
+       "value"
+      ],
+      "valueRange": [
+       0,
+       1023
+      ],
+      "range": [
+       0,
+       270
+      ],
+      "axis": "y"
+     }
+    }
+   ]
+  },
+  "pushbutton": {
+   "tag": "wokwi-pushbutton",
+   "name": "Pushbutton (6 mm tact)",
+   "surfaces": [
+    {
+     "id": "cap",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "round_button_cap"
+     },
+     "motion": {
+      "mode": "press",
+      "props": [
+       "pressed"
+      ],
+      "range": [
+       0,
+       -1.4
+      ],
+      "axis": "y"
+     }
+    }
+   ]
+  },
+  "raspberry-pi-camera-module": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Raspberry Pi camera module",
+   "surfaces": [
+    {
+     "id": "streaming",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "regulator-ams1117-3v3": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Regulator AMS1117 3.3 V",
+   "surfaces": [
+    {
+     "id": "regulating",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "primary_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "primary_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "relay-module-5v-1ch": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Relay module (5 V, 1 channel)",
+   "surfaces": [
+    {
+     "id": "indicator",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "status_led"
+     },
+     "emissive": {
+      "mode": "boolean",
+      "props": [
+       "pin:IN"
+      ],
+      "color": "#ff453a"
+     }
+    },
+    {
+     "id": "coil",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "songle_relay_block"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "triggered"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#ffb340",
+      "max": 0.45
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "songle_relay_block",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "IN",
+        "prop": "pin:IN"
+       },
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "rgb-led": {
+   "tag": "wokwi-rgb-led",
+   "name": "RGB LED (common cathode)",
+   "surfaces": [
+    {
+     "id": "lens",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "clear_5mm_rgb_epoxy_lens"
+     },
+     "emissive": {
+      "mode": "rgb255",
+      "props": [
+       "ledRed",
+       "ledGreen",
+       "ledBlue"
+      ]
+     }
+    }
+   ]
+  },
+  "servo": {
+   "tag": "wokwi-servo",
+   "name": "Hobby servo (SG90 / MG996R / MG90S / FS90R)",
+   "surfaces": [
+    {
+     "id": "horn",
+     "kind": "motion",
+     "anchor": {
+      "frame": "model",
+      "node": "servo_horn"
+     },
+     "motion": {
+      "mode": "angle",
+      "props": [
+       "angle"
+      ],
+      "valueRange": [
+       0,
+       180
+      ],
+      "range": [
+       0,
+       180
+      ],
+      "axis": "y"
+     }
+    }
+   ]
+  },
+  "slide-potentiometer": {
+   "tag": "wokwi-slide-potentiometer",
+   "name": "Slide potentiometer (10k)",
+   "surfaces": [
+    {
+     "id": "slider",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "actuator_cap"
+     },
+     "motion": {
+      "mode": "fraction",
+      "props": [
+       "value"
+      ],
+      "valueRange": [
+       0,
+       100
+      ],
+      "range": [
+       0,
+       8
+      ],
+      "axis": "x"
+     }
+    }
+   ]
+  },
+  "slide-switch": {
+   "tag": "wokwi-slide-switch",
+   "name": "Slide switch (SPDT)",
+   "surfaces": [
+    {
+     "id": "lever",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "metal_toggle_lever"
+     },
+     "motion": {
+      "mode": "angle",
+      "props": [
+       "value"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "range": [
+       0,
+       24
+      ],
+      "axis": "x"
+     }
+    }
+   ]
+  },
+  "soil-moisture-sensor": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Soil moisture sensor",
+   "surfaces": [
+    {
+     "id": "probes",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "fork_probe_left"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.35
+     }
+    },
+    {
+     "id": "threshold",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "lm393_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "triggered"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#ffb340",
+      "max": 0.8
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "comparator_board",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "solenoid-12v-push-pull": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Push-pull solenoid (12 V)",
+   "surfaces": [
+    {
+     "id": "plunger",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "plunger"
+     },
+     "motion": {
+      "mode": "fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "range": [
+       0,
+       4
+      ],
+      "axis": "y"
+     }
+    },
+    {
+     "id": "coil",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "coil_bobbin"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.4
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "steel_frame",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "solenoid-valve-12v-water": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Solenoid water valve (12 V)",
+   "surfaces": [
+    {
+     "id": "open",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "actuator_body"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "actuator_body",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "ssd1306": {
+   "tag": "wokwi-ssd1306",
+   "name": "OLED SSD1306 (128 × 64)",
+   "surfaces": [
+    {
+     "id": "glass",
+     "kind": "image-data",
+     "anchor": {
+      "frame": "spec",
+      "feature": "oled_glass",
+      "face": "top"
+     },
+     "display": {
+      "imageData": "imageData",
+      "width": 128,
+      "height": 64
+     },
+     "style": {
+      "onColor": "#c8e6ff",
+      "offColor": "#05070c"
+     }
+    }
+   ]
+  },
+  "stepper-28byj48-uln2003": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Stepper 28BYJ-48 with ULN2003",
+   "surfaces": [
+    {
+     "id": "shaft",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft"
+     },
+     "motion": {
+      "mode": "rotate",
+      "props": [
+       "stepAngle"
+      ]
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Shaft",
+        "prop": "stepAngle",
+        "unit": "°",
+        "precision": 1
+       },
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "stepper-motor": {
+   "tag": "wokwi-stepper-motor",
+   "name": "Stepper motor (NEMA 17)",
+   "surfaces": [
+    {
+     "id": "shaft",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "shaft"
+     },
+     "motion": {
+      "mode": "angle",
+      "props": [
+       "angle"
+      ],
+      "valueRange": [
+       0,
+       360
+      ],
+      "range": [
+       0,
+       360
+      ],
+      "axis": "y"
+     }
+    }
+   ]
+  },
+  "tb6612fng-motor-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "TB6612FNG motor driver",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "tilt-switch": {
+   "tag": "wokwi-tilt-switch",
+   "name": "Tilt sensor module",
+   "surfaces": [
+    {
+     "id": "tilt",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic"
+     },
+     "emissive": {
+      "mode": "boolean",
+      "props": [
+       "pin:OUT"
+      ],
+      "color": "#64d2ff",
+      "max": 0.8
+     }
+    }
+   ]
+  },
+  "tmc2209-stepper-driver": {
+   "tag": "velxio-cad-bench-part",
+   "name": "TMC2209 stepper driver",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "uln2003-darlington-array": {
+   "tag": "velxio-cad-bench-part",
+   "name": "ULN2003 darlington array",
+   "surfaces": [
+    {
+     "id": "driving",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "heatsink",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "usb-webcam-generic": {
+   "tag": "velxio-cad-bench-part",
+   "name": "USB webcam",
+   "surfaces": [
+    {
+     "id": "streaming",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "sensor_ic",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "vibration-motor-coin-3v": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Vibration motor (coin)",
+   "surfaces": [
+    {
+     "id": "shaft",
+     "kind": "motion",
+     "anchor": {
+      "frame": "spec",
+      "feature": "output_shaft"
+     },
+     "motion": {
+      "mode": "spin",
+      "props": [
+       "drive",
+       "turnsPerSecond"
+      ],
+      "deadband": 0.05
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_can",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  },
+  "water-pump-5v-submersible": {
+   "tag": "velxio-cad-bench-part",
+   "name": "Water pump (5 V submersible)",
+   "surfaces": [
+    {
+     "id": "running",
+     "kind": "emissive",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_housing"
+     },
+     "emissive": {
+      "mode": "value-fraction",
+      "props": [
+       "activity"
+      ],
+      "valueRange": [
+       0,
+       1
+      ],
+      "color": "#8fd6ff",
+      "max": 0.5
+     }
+    },
+    {
+     "id": "state",
+     "kind": "readout",
+     "anchor": {
+      "frame": "spec",
+      "feature": "motor_housing",
+      "face": "top"
+     },
+     "readout": {
+      "rows": [
+       {
+        "label": "Drive",
+        "prop": "drive",
+        "precision": 2
+       },
+       {
+        "label": "Via",
+        "prop": "via"
+       },
+       {
+        "label": "Pin",
+        "prop": "viaPin"
+       }
+      ],
+      "selectedOnly": true
+     },
+     "style": {
+      "labelColor": "#e8eef7"
+     }
+    }
+   ]
+  }
+ },
+ "noLiveState": {
+  "a4988": "STEP/DIR driver: it has no visible state of its own — the pulse stream rotates the wired stepper-motor (that part animates), and its heatsink temperature is not modelled.",
+  "arduino-mega": "The board body carries no live surface in 2D — its pins are the state, and every other part on the bench reads from them.",
+  "arduino-nano": "The board body carries no live surface in 2D — its pins are the state, and every other part on the bench reads from them.",
+  "arduino-uno": "The board body carries no live surface in 2D — its pins are the state, and every other part on the bench reads from them.",
+  "battery-2s-lipo": "CAD bench part: the emulator registers no behaviour, so the 2D canvas draws the static `velxio-cad-bench-part` symbol (\"it does not react to signals\"). There is no live state in either view.",
+  "battery-9v": "Power source: its state is the voltage it supplies, which the canvas shows only through the parts it powers.",
+  "battery-holder-4xaa": "CAD bench part: the emulator registers no behaviour, so the 2D canvas draws the static `velxio-cad-bench-part` symbol (\"it does not react to signals\"). There is no live state in either view.",
+  "bjt-2n2222": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "capacitor": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "diode-1n4007": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "diode-1n4148": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "diode-1n5819": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "dip-switch-8": "The CAD spec models the 8 levers as one actuator cap, so the individual switch positions have no anchor in 3D.",
+  "esp32": "The board body carries no live surface in 2D — its pins are the state, and every other part on the bench reads from them.",
+  "hc-sr04": "TRIG/ECHO timing is pin-level and the element holds no distance property the canvas shows — the 2D view is static too.",
+  "hx711": "The load-cell value is published over the two-wire interface only; the element has no live property.",
+  "ir-receiver": "irAddress / irCommand are user-set inputs the part reads; the element shows no received-code state.",
+  "membrane-keypad": "Pressed keys are reported as a `keys` array (no per-cap signal), and the 3D key caps have no per-key anchor.",
+  "mosfet-2n7000": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "mosfet-irf540": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "mpu6050": "IMU registers live on the I2C bus; the element exposes no live property, so there is nothing for 3D to read that 2D shows.",
+  "opto-pc817": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "propeller-5045-tri-blade": "CAD bench part: the emulator registers no behaviour, so the 2D canvas draws the static `velxio-cad-bench-part` symbol (\"it does not react to signals\"). There is no live state in either view.",
+  "propeller-ep-1045-two-blade": "CAD bench part: the emulator registers no behaviour, so the 2D canvas draws the static `velxio-cad-bench-part` symbol (\"it does not react to signals\"). There is no live state in either view.",
+  "reg-7805": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D.",
+  "resistor": "Passive/discrete: its only state is electrical (voltage, current, polarity) and the 2D canvas draws it statically — there is nothing to mirror in 3D."
+ }
+}

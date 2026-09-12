@@ -74,6 +74,9 @@ Other scripts:
 | `pnpm export:cad-models` | Writes the 3D assets for every catalog key into `external/velxio/frontend/public/models3d/<key>/`: a GLB (named pin-anchor nodes) plus printable `.stl` and `.ascii.stl` exports and a `spec.json`. Idempotent, and a reviewed asset is never overwritten |
 | `pnpm verify:cad-link` | Proves the registry ↔ CAD link: all 108 catalog parts resolve to a spec, every catalog pin has a matching CAD anchor, and the tier counts the admin studio shows match the files on disk |
 | `pnpm verify:cad-sim-link` | Proves the two halves agree: every catalog part is allocated to exactly one tier (simulated or CAD bench), the key spaces are disjoint, every catalog key is asset-complete (GLB + STL + spec), pin anchors sit inside their own generated mesh, and a board + every CAD-bench part + a simulated partner projects end-to-end with **zero dropped wires** |
+| `pnpm export:element-properties` | Writes `external/velxio/frontend/public/element-properties.json` — the live property surface (every readable field) of all 128 element tags the pinned Velxio build can instantiate, read from the `@wokwi/elements` typings and the vendored element classes. It is the committed contract the 3D view's signals are checked against, so the gate needs neither network nor `node_modules` |
+| `pnpm export:live-surfaces` | Writes `external/velxio/frontend/public/live-surfaces.json` — **what live state each catalog part shows in 2D and where it belongs in 3D**: which element property / render-store key / property-bag key / pin carries the signal, and the spec feature (display glass, lens, shaft, heatsink) it is drawn on. Authored in `src/modules/simulation/live-surfaces.ts`, one entry per part |
+| `pnpm verify:3d-live` | Proves that table is true: the file is exactly what the generator produces now, every CAD key is either driven by a verified signal or declared inert with a reason, every signal has a real producer (the part's own simulator code, its element's declared property, the live-state producer, or a pin the spec really has), every anchor resolves — a `spec` anchor only on an asset generated from that spec — and the vocabulary still matches Velxio's `scene3d/live/surfaceTypes.ts` |
 
 `WIREUP_AUTOSEED_COMPONENTS=true` (the default) also seeds the catalog on first
 use if the collection is empty, so the app is runnable before you ever call
@@ -317,6 +320,37 @@ because that would wire the firmware to pins the real part does not have.
 standalone Wokwi format cannot name), and the `/simulation` page says the same thing on
 screen. The `.vlx` the canvas receives carries the tier in the id (`cad-bench-<catalogId>`)
 so the canvas, the 3D scene and the reverse sync all agree without a lookup table.
+
+### Live 3D — the bench behaves, not just renders
+
+The 3D view is not a picture of the bench: it shows what the running firmware is doing.
+
+* **Simulated parts** — an LCD shows the characters the sketch printed, an OLED/TFT shows
+  the framebuffer the driver pushed, an LED glows with its PWM duty, a servo horn, a
+  stepper shaft, a pot's knob and a joystick's stick move, a NeoPixel strand shows its
+  pixels, a 7-segment panel shows its digits, and sensors carry their measured value. The
+  3D scene does not re-simulate anything: it reads the *same* live element the 2D canvas
+  renders (`el.characters`, `el.imageData`, `el.brightness`, …), plus the transient render
+  store and the component property bag.
+* **Parts the emulator has no model for** (pumps, fans, motors, drivers, relays, radios,
+  regulators) get real live state from `simulation/liveState`: their own terminals are
+  traced through the wire graph — GPIO, PWM channel, board rail, or the OUTPUT pin of an
+  upstream driver — so a motor on an H-bridge spins (duty × its own nominal rpm, direction
+  from `IN1`/`IN2`/`DIR`), a 28BYJ-48 advances one half-step per commanded coil pattern, a
+  relay's coil closes, a Bluetooth module reports traffic on its lines, and a part with no
+  live net stays still and says nothing. The 2D symbol carries the same state in a badge.
+* **Where and how** is data, not code: `/live-surfaces.json` (with `pnpm verify:3d-live`
+  behind it) names the signal and the spec feature for every surface, so
+  `scene3d/Cad3DScene.tsx` contains no per-part animation. Selecting a part reveals its
+  measured state plaque (`drive`, route, `rpm`, bus traffic).
+* **The intake is checked and reported, not assumed.** Four independent loads feed the 3D
+  view — the live-surface table (validated part by part, schema-version checked, and
+  re-fetched rather than latched after a failed download), the CAD catalog, the GLBs, and
+  the running project (bodies, wires, pins). A corner chip in the 3D view (`IntakeHud`)
+  reports what arrived and names every gap it knows about — a part whose key has no body,
+  a wire whose endpoint has no 3D pin anchor, a CAD-bench part whose pin contract never
+  arrived — with the same sentences in the console, once per distinct problem set. A bench
+  that is missing something now says so instead of looking merely still.
 
 ---
 
