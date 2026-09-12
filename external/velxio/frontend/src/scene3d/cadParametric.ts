@@ -126,6 +126,11 @@ function createFeatureAssembly(feature: CadFeature): THREE.Group {
   const name = feature.name.toLowerCase();
   assembly.name = feature.name;
   assembly.position.set(...feature.position);
+  // Identity of this feature, for the live-surface layer: generated GLBs carry
+  // the same information as a material name (`Mat_<feature name>`), so tagging
+  // here makes "find the feature called X" work the same for both pipelines.
+  assembly.userData.cadFeature = { name: feature.name, type: feature.type };
+  material.name = feature.name;
 
   if (feature.type === 'cylinder') {
     const radius = Math.max(width, 0.3);

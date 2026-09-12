@@ -1,0 +1,1199 @@
+{
+ "version": 1,
+ "generatedAt": "2026-09-12T02:12:06.793Z",
+ "packages": {
+  "@wokwi/elements": "1.9.2"
+ },
+ "elements": {
+  "velxio-74hc595": {
+   "props": [
+    "values"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/IC74HC595.ts"
+  },
+  "velxio-a4988": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/MotorDriverElements.ts"
+  },
+  "velxio-attiny85": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/Attiny85Element.ts"
+  },
+  "velxio-bmp280": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/Bmp280Element.ts"
+  },
+  "velxio-breadboard": {
+   "props": [
+    "a",
+    "artPromise",
+    "f",
+    "name",
+    "number",
+    "signals",
+    "tn",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/velxio-elements/breadboard-element.ts"
+  },
+  "velxio-breadboard-mini": {
+   "props": [
+    "a",
+    "artPromise",
+    "f",
+    "name",
+    "number",
+    "signals",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/velxio-elements/breadboard-mini-element.ts"
+  },
+  "velxio-cad-bench-part": {
+   "props": [
+    "cadKey",
+    "catalogId",
+    "catalogPromise",
+    "default",
+    "entries",
+    "generatedAt",
+    "kind",
+    "name",
+    "signals",
+    "spec",
+    "tier",
+    "version",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/velxio-elements/cad-bench-element.ts"
+  },
+  "velxio-capacitor-electrolytic": {
+   "props": [
+    "name",
+    "signals",
+    "value",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/velxio-elements/capacitor-electrolytic-element.ts"
+  },
+  "velxio-custom-chip": {
+   "props": [
+    "chipJson",
+    "chipName",
+    "display",
+    "height",
+    "image",
+    "name",
+    "placed",
+    "signals",
+    "width",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/velxio-elements/custom-chip-element.ts"
+  },
+  "velxio-ds3231": {
+   "props": [
+    "temperature"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/Ds3231Element.ts"
+  },
+  "velxio-epaper": {
+   "props": [
+    "busy",
+    "canvas",
+    "config",
+    "panelKind",
+    "refreshMs"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/EPaperElement.ts"
+  },
+  "velxio-esp32": {
+   "props": [
+    "esp32",
+    "h",
+    "svgUrl",
+    "w"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/Esp32Element.ts"
+  },
+  "velxio-flip-flop-d": {
+   "props": [
+    "inputLabels",
+    "partLabel"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/FlipFlopElements.ts"
+  },
+  "velxio-flip-flop-jk": {
+   "props": [
+    "inputLabels",
+    "partLabel"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/FlipFlopElements.ts"
+  },
+  "velxio-flip-flop-t": {
+   "props": [
+    "inputLabels",
+    "partLabel"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/FlipFlopElements.ts"
+  },
+  "velxio-gps-neo6m": {
+   "props": [
+    "altitude",
+    "lat",
+    "lng",
+    "pps",
+    "speed"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/GpsNeo6mElement.ts"
+  },
+  "velxio-logic-and": {
+   "props": [
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-and-3": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-and-4": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-nand": {
+   "props": [
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-nand-3": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-nand-4": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-nor": {
+   "props": [
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-nor-3": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-nor-4": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-not": {
+   "props": [
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-or": {
+   "props": [
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-or-3": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-or-4": {
+   "props": [
+    "body",
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-xnor": {
+   "props": [
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-logic-xor": {
+   "props": [
+    "body",
+    "inputs",
+    "name",
+    "number",
+    "output",
+    "signals",
+    "text",
+    "variant",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicGateElements.ts"
+  },
+  "velxio-motor-driver-l293d": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/RelayElements.ts"
+  },
+  "velxio-opto-4n25": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/RelayElements.ts"
+  },
+  "velxio-opto-pc817": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/RelayElements.ts"
+  },
+  "velxio-pi-pico-w": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PiPicoWElement.ts"
+  },
+  "velxio-raspberry-pi-3": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/RaspberryPi3Element.ts"
+  },
+  "velxio-raspberry-pi-4": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/RaspberryPi4Element.ts"
+  },
+  "velxio-raspberry-pi-5": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/RaspberryPi5Element.ts"
+  },
+  "velxio-relay": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/RelayElements.ts"
+  },
+  "velxio-ssd1306-i2c-4pin": {
+   "props": [
+    "canvas",
+    "imageData"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/Ssd1306I2cElement.ts"
+  },
+  "wokwi-7segment": {
+   "props": [
+    "background",
+    "colon",
+    "colonValue",
+    "color",
+    "digits",
+    "offColor",
+    "values"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/7segment-element.d.ts"
+  },
+  "wokwi-analog-joystick": {
+   "props": [
+    "knob",
+    "pressed",
+    "xValue",
+    "yValue"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/analog-joystick-element.d.ts"
+  },
+  "wokwi-arduino-mega": {
+   "props": [
+    "led13",
+    "ledPower",
+    "ledRX",
+    "ledTX",
+    "resetButton",
+    "resetPressed"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/arduino-mega-element.d.ts"
+  },
+  "wokwi-arduino-nano": {
+   "props": [
+    "led13",
+    "ledPower",
+    "ledRX",
+    "ledTX",
+    "resetButton",
+    "resetPressed"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/arduino-nano-element.d.ts"
+  },
+  "wokwi-arduino-uno": {
+   "props": [
+    "led13",
+    "ledPower",
+    "ledRX",
+    "ledTX",
+    "resetButton",
+    "resetPressed"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/arduino-uno-element.d.ts"
+  },
+  "wokwi-battery-9v": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-battery-aa": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-battery-coin-cell": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-biaxial-stepper": {
+   "props": [
+    "handMap",
+    "innerHandAngle",
+    "innerHandColor",
+    "innerHandLength",
+    "innerHandShape",
+    "outerHandAngle",
+    "outerHandColor",
+    "outerHandLength",
+    "outerHandShape",
+    "path",
+    "xOff",
+    "yOff"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/biaxial-stepper-element.d.ts"
+  },
+  "wokwi-big-sound-sensor": {
+   "props": [
+    "led1",
+    "led2"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/big-sound-sensor-element.d.ts"
+  },
+  "wokwi-bjt-2n2222": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-bjt-2n3055": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-bjt-2n3906": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-bjt-bc547": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-bjt-bc557": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-buzzer": {
+   "props": [
+    "hasSignal"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/buzzer-element.d.ts"
+  },
+  "wokwi-capacitor": {
+   "props": [
+    "name",
+    "signals",
+    "value",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/velxio-elements/capacitor-element.ts"
+  },
+  "wokwi-dht22": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/dht22-element.d.ts"
+  },
+  "wokwi-diode": {
+   "props": [
+    "cathodeShape",
+    "default",
+    "label",
+    "showLightArrows"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/DiodeElements.ts"
+  },
+  "wokwi-diode-1n4007": {
+   "props": [
+    "cathodeShape",
+    "default",
+    "label",
+    "showLightArrows"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/DiodeElements.ts"
+  },
+  "wokwi-diode-1n4148": {
+   "props": [
+    "cathodeShape",
+    "default",
+    "label",
+    "showLightArrows"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/DiodeElements.ts"
+  },
+  "wokwi-diode-1n5817": {
+   "props": [
+    "cathodeShape",
+    "default",
+    "label",
+    "showLightArrows"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/DiodeElements.ts"
+  },
+  "wokwi-diode-1n5819": {
+   "props": [
+    "cathodeShape",
+    "default",
+    "label",
+    "showLightArrows"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/DiodeElements.ts"
+  },
+  "wokwi-dip-switch-8": {
+   "props": [
+    "values"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/dip-switch-8-element.d.ts"
+  },
+  "wokwi-ds1307": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ds1307-element.d.ts"
+  },
+  "wokwi-esp32-devkit-v1": {
+   "props": [
+    "led1",
+    "ledPower"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/esp32-devkit-v1-element.d.ts"
+  },
+  "wokwi-flame-sensor": {
+   "props": [
+    "ledPower",
+    "ledSignal"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/flame-sensor-element.d.ts"
+  },
+  "wokwi-franzininho": {
+   "props": [
+    "led1",
+    "ledPower",
+    "resetButton",
+    "resetPressed"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/franzininho-element.d.ts"
+  },
+  "wokwi-gas-sensor": {
+   "props": [
+    "ledD0",
+    "ledPower"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/gas-sensor-element.d.ts"
+  },
+  "wokwi-hc-sr04": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/hc-sr04-element.d.ts"
+  },
+  "wokwi-heart-beat-sensor": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/heart-beat-sensor-element.d.ts"
+  },
+  "wokwi-hx711": {
+   "props": [
+    "dimension",
+    "type"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/hx711-element.d.ts"
+  },
+  "wokwi-ic-74hc00": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicICElements.ts"
+  },
+  "wokwi-ic-74hc02": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicICElements.ts"
+  },
+  "wokwi-ic-74hc04": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicICElements.ts"
+  },
+  "wokwi-ic-74hc08": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicICElements.ts"
+  },
+  "wokwi-ic-74hc14": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicICElements.ts"
+  },
+  "wokwi-ic-74hc32": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicICElements.ts"
+  },
+  "wokwi-ic-74hc86": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/LogicICElements.ts"
+  },
+  "wokwi-ili9341": {
+   "props": [
+    "canvas",
+    "flipHorizontal",
+    "flipVertical",
+    "screenHeight",
+    "screenWidth"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ili9341-element.d.ts"
+  },
+  "wokwi-inductor": {
+   "props": [
+    "name",
+    "signals",
+    "value",
+    "x",
+    "y"
+   ],
+   "source": "vendored",
+   "file": "src/velxio-elements/inductor-element.ts"
+  },
+  "wokwi-ir-receiver": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ir-receiver-element.d.ts"
+  },
+  "wokwi-ir-remote": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ir-remote-element.d.ts"
+  },
+  "wokwi-ks2e-m-dc5": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ks2e-m-dc5-element.d.ts"
+  },
+  "wokwi-ky-040": {
+   "props": [
+    "angle",
+    "stepSize"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ky-040-element.d.ts"
+  },
+  "wokwi-lcd1602": {
+   "props": [
+    "background",
+    "backlight",
+    "blink",
+    "characters",
+    "color",
+    "cols",
+    "cursor",
+    "cursorX",
+    "cursorY",
+    "font",
+    "rows",
+    "screenOnly",
+    "text"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/lcd1602-element.d.ts"
+  },
+  "wokwi-lcd2004": {
+   "props": [
+    "background",
+    "backlight",
+    "blink",
+    "characters",
+    "color",
+    "cols",
+    "cursor",
+    "cursorX",
+    "cursorY",
+    "font",
+    "rows",
+    "screenOnly",
+    "text"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/lcd2004-element.d.ts"
+  },
+  "wokwi-led": {
+   "props": [
+    "brightness",
+    "color",
+    "flip",
+    "label",
+    "lightColor",
+    "value"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/led-element.d.ts"
+  },
+  "wokwi-led-bar-graph": {
+   "props": [
+    "color",
+    "offColor",
+    "values"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/led-bar-graph-element.d.ts"
+  },
+  "wokwi-led-ring": {
+   "props": [
+    "animation",
+    "background",
+    "pixelSpacing",
+    "pixels",
+    "radius"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/led-ring-element.d.ts"
+  },
+  "wokwi-membrane-keypad": {
+   "props": [
+    "columns",
+    "connector",
+    "keys"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/membrane-keypad-element.d.ts"
+  },
+  "wokwi-microsd-card": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/microsd-card-element.d.ts"
+  },
+  "wokwi-mosfet-2n7000": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-mosfet-fqp27p06": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-mosfet-irf540": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-mosfet-irf9540": {
+   "props": [
+    "arrowDir",
+    "polarity"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/TransistorElements.ts"
+  },
+  "wokwi-mpu6050": {
+   "props": [
+    "led1"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/mpu6050-element.d.ts"
+  },
+  "wokwi-nano-rp2040-connect": {
+   "props": [
+    "ledBlue",
+    "ledBuiltIn",
+    "ledGreen",
+    "ledPower",
+    "ledRed"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/nano-rp2040-connect-element.d.ts"
+  },
+  "wokwi-neopixel": {
+   "props": [
+    "b",
+    "g",
+    "r"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/neopixel-element.d.ts"
+  },
+  "wokwi-neopixel-matrix": {
+   "props": [
+    "animation",
+    "blurLight",
+    "colSpacing",
+    "cols",
+    "rowSpacing",
+    "rows"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/neopixel-matrix-element.d.ts"
+  },
+  "wokwi-ntc-temperature-sensor": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ntc-temperature-sensor-element.d.ts"
+  },
+  "wokwi-opamp-ideal": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/OpAmpElements.ts"
+  },
+  "wokwi-opamp-lm324": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/OpAmpElements.ts"
+  },
+  "wokwi-opamp-lm358": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/OpAmpElements.ts"
+  },
+  "wokwi-opamp-lm741": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/OpAmpElements.ts"
+  },
+  "wokwi-opamp-tl072": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/OpAmpElements.ts"
+  },
+  "wokwi-photodiode": {
+   "props": [
+    "cathodeShape",
+    "default",
+    "label",
+    "showLightArrows"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/DiodeElements.ts"
+  },
+  "wokwi-photoresistor-sensor": {
+   "props": [
+    "ledDO",
+    "ledPower"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/photoresistor-sensor-element.d.ts"
+  },
+  "wokwi-pir-motion-sensor": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/pir-motion-sensor-element.d.ts"
+  },
+  "wokwi-potentiometer": {
+   "props": [
+    "endDegree",
+    "max",
+    "min",
+    "startDegree",
+    "step",
+    "value"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/potentiometer-element.d.ts"
+  },
+  "wokwi-pushbutton": {
+   "props": [
+    "color",
+    "label",
+    "pressed",
+    "xray"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/pushbutton-element.d.ts"
+  },
+  "wokwi-pushbutton-6mm": {
+   "props": [
+    "color",
+    "label",
+    "pressed",
+    "xray"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/pushbutton-6mm-element.d.ts"
+  },
+  "wokwi-reg-7805": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-reg-7812": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-reg-7905": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-reg-lm317": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-resistor": {
+   "props": [
+    "value"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/resistor-element.d.ts"
+  },
+  "wokwi-rgb-led": {
+   "props": [
+    "ledBlue",
+    "ledGreen",
+    "ledRed"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/rgb-led-element.d.ts"
+  },
+  "wokwi-rotary-dialer": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/rotary-dialer-element.d.ts"
+  },
+  "wokwi-servo": {
+   "props": [
+    "angle",
+    "horn",
+    "hornColor"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/servo-element.d.ts"
+  },
+  "wokwi-signal-generator": {
+   "props": [],
+   "source": "vendored",
+   "file": "src/components/velxio-components/PowerElements.ts"
+  },
+  "wokwi-slide-potentiometer": {
+   "props": [
+    "max",
+    "min",
+    "step",
+    "travelLength",
+    "value"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/slide-potentiometer-element.d.ts"
+  },
+  "wokwi-slide-switch": {
+   "props": [
+    "value"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/slide-switch-element.d.ts"
+  },
+  "wokwi-small-sound-sensor": {
+   "props": [
+    "ledPower",
+    "ledSignal"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/small-sound-sensor-element.d.ts"
+  },
+  "wokwi-ssd1306": {
+   "props": [
+    "height",
+    "imageData",
+    "width"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/ssd1306-element.d.ts"
+  },
+  "wokwi-stepper-motor": {
+   "props": [
+    "angle",
+    "arrow",
+    "bodyRadius",
+    "cornerOffset",
+    "cornerRadius",
+    "frameSize",
+    "holeRadius",
+    "id",
+    "nemaSpecMap",
+    "shaftRadius",
+    "size",
+    "textSize",
+    "units",
+    "unitsYPosition",
+    "value",
+    "valueYPosition"
+   ],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/stepper-motor-element.d.ts"
+  },
+  "wokwi-tilt-switch": {
+   "props": [],
+   "source": "npm",
+   "file": "node_modules/@wokwi/elements/dist/esm/tilt-switch-element.d.ts"
+  },
+  "wokwi-zener-1n4733": {
+   "props": [
+    "cathodeShape",
+    "default",
+    "label",
+    "showLightArrows"
+   ],
+   "source": "vendored",
+   "file": "src/components/velxio-components/DiodeElements.ts"
+  }
+ }
+}

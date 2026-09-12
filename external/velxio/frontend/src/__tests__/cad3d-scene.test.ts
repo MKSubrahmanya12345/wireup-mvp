@@ -15,7 +15,7 @@
  * back to an empty/placeholder mesh.
  */
 import { describe, expect, it } from 'vitest';
-import { Group } from 'three';
+import { Box3, Group, Vector3 } from 'three';
 import { numberProp, layoutInstances, type InstancePlace } from '../scene3d/Cad3DScene';
 import { buildParametricAssembly } from '../scene3d/cadParametric';
 import type { CadComponentSpec } from '../scene3d/cadTypes';
@@ -50,6 +50,8 @@ function fakeModel(sizeX = 20): LoadedModel {
     group: new Group(),
     pins: new Map(),
     size: { x: sizeX, y: 5, z: sizeX } as unknown as LoadedModel['size'],
+    recenter: new Vector3(),
+    bounds: new Box3(new Vector3(-sizeX / 2, -2.5, -sizeX / 2), new Vector3(sizeX / 2, 2.5, sizeX / 2)),
   };
 }
 

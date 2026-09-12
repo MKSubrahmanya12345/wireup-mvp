@@ -21,6 +21,13 @@ import { create } from 'zustand';
  *   - cleared on part unmount so the map never grows unbounded
  */
 
+/** One addressable RGB pixel, 0..255 per channel (the WS2812B convention). */
+export interface StoredPixel {
+  r: number;
+  g: number;
+  b: number;
+}
+
 export interface PartRenderValue {
   /** Servo horn / stepper angle in degrees (matches what el.angle holds). */
   angle?: number;
@@ -31,11 +38,19 @@ export interface PartRenderValue {
   /** DHT22 (and other env sensors) live reading, as set on the element. */
   humidity?: number;
   /**
+   * Decoded WS2812B frame (ring / matrix / strip), mirrored by the neopixel
+   * decoder. Those elements keep their pixel colours in private state, so this
+   * array is the only readable copy of what the sketch drew — the 3D view
+   * renders it. Index = pixel index in the strip's own order, pre-filled with
+   * black so a never-written pixel cannot shift the ones after it.
+   */
+  pixels?: StoredPixel[];
+  /**
    * Phase-0 widen: open bag so future parts (pressed, position, digit, r/g/b,
    * …) can be mirrored without reshaping the store again. Additive only —
    * existing `angle` / `brightness` readers are unaffected.
    */
-  [key: string]: number | boolean | string | undefined;
+  [key: string]: number | boolean | string | StoredPixel[] | undefined;
 }
 
 interface PartRenderState {

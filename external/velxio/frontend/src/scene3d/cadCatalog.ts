@@ -14,9 +14,10 @@
 import { useEffect, useState } from 'react';
 import { Box3, Group, Vector3 } from 'three';
 import type { Object3D } from 'three';
-import type { CadCatalogManifest } from './cadTypes';
+import type { CadCatalogManifest, CadComponentSpec } from './cadTypes';
 import { buildParametricAssembly } from './cadParametric';
 import type { LoadedModel } from './models3d';
+import { reportCatalog, reportModels } from './live/intakeReport';
 
 let cache: CadCatalogManifest | null = null;
 let pending: Promise<CadCatalogManifest> | null = null;
@@ -30,6 +31,11 @@ export function loadCadCatalog(): Promise<CadCatalogManifest> {
       .catch(() => ({ version: 0, generatedAt: '', entries: {} }))
       .then((m) => {
         cache = m as CadCatalogManifest;
+        const entries = Object.values(cache.entries ?? {});
+        reportCatalog({
+          entries: entries.length,
+          withoutSpec: entries.filter((entry) => !entry?.spec?.features || entry.spec.pins === undefined).length,
+        });
         return cache;
       });
   }
@@ -69,9 +75,30 @@ function buildAndIndex(key: string): LoadedModel | null {
   // GLB-compatible CadModelDef is synthesised for the shared LoadedModel
   // shape — `layoutInstances()` and `resolvePinWorld()` only ever read
   // `def.bench`, which parametric parts don't need (auto-grid layout).
-  const loaded: LoadedModel = { def: { file: '' }, group, pins, size };
+  const bounds = new Box3().setFromObject(group);
+  const loaded: LoadedModel = { def: { file: '' }, group, pins, size, recenter: center.clone(), bounds };
   groupCache.set(key, loaded);
   return loaded;
+}
+
+/** The CAD spec for an instance key (live-surface anchors read it), or null. */
+export function cadSpecFor(key: string): CadComponentSpec | null {
+  return cache?.entries?.[key]?.spec ?? null;
+}
+
+/** React hook: the CAD spec for a key, once the catalog has loaded. */
+export function useCadSpec(key: string): CadComponentSpec | null {
+  const [spec, setSpec] = useState<CadComponentSpec | null>(() => cadSpecFor(key));
+  useEffect(() => {
+    let alive = true;
+    void loadCadCatalog().then(() => {
+      if (alive) setSpec(cadSpecFor(key));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+  return spec;
 }
 
 /** Does the CAD catalog have an entry for this instance key? */
@@ -88,6 +115,10 @@ export async function loadParametricForKeys(keys: string[]): Promise<Map<string,
     const model = buildAndIndex(key);
     if (model) out.set(key, model);
   }
+  // The parametric tier is the fallback for a key with no reviewed GLB: what it
+  // could build is part of the intake picture (a key missing from BOTH tiers is
+  // a part the bench cannot draw at all).
+  reportModels({ parametric: [...out.keys()].sort() });
   return out;
 }
 
